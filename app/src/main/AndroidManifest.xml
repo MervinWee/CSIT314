@@ -23,6 +23,20 @@
             android:name=".RegisterActivity"
             android:exported="false" />
         <activity
+            android:name=".ForgotPasswordActivity"
+            android:exported="false" />
+        <activity
+            android:name=".AdminDashboardActivity"
+            android:exported="false" />
+        <activity
+            android:name=".SearchUserActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".AdminCreateUserActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".loginPage"
             android:exported="true">
             <intent-filter>
