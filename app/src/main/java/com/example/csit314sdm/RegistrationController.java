@@ -71,7 +71,7 @@ public class RegistrationController {
         String email = firebaseUser.getEmail();
 
         // Use the User Entity object we created.
-        User userEntity = new User(email, userType);
+        User userEntity = new User(uid,email, userType);
 
         db.collection("users").document(uid)
                 .set(userEntity)

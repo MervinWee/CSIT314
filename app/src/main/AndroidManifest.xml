@@ -11,8 +11,9 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.CSIT314SDM">
-
-
+        <activity
+            android:name=".CreateUserProfileActivity"
+            android:exported="false" />
         <activity
             android:name=".CSRHomeScreenActivity"
             android:exported="false" />
@@ -31,11 +32,9 @@
         <activity
             android:name=".SearchUserActivity"
             android:exported="false" />
-
         <activity
             android:name=".AdminCreateUserActivity"
             android:exported="false" />
-
         <activity
             android:name=".loginPage"
             android:exported="true">

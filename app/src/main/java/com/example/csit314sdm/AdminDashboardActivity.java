@@ -31,9 +31,10 @@ public class AdminDashboardActivity extends AppCompatActivity {
             startActivity(new Intent(AdminDashboardActivity.this, AdminCreateUserActivity.class));
         });
 
-        // Add listeners for the new cards
+        // Replace it with this:
         cardCreateUserProfile.setOnClickListener(v -> {
-            Toast.makeText(this, "Create User Profile feature coming soon!", Toast.LENGTH_SHORT).show();
+            // Launch the new create profile activity
+            startActivity(new Intent(AdminDashboardActivity.this, CreateUserProfileActivity.class));
         });
 
         // Replace it with this:
