@@ -1,15 +1,19 @@
 package com.example.csit314sdm;
 
+import android.content.Intent; // Import for future navigation
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager; // Import for LayoutManager
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.textfield.TextInputEditText;
+
+import java.util.ArrayList;
 
 public class SearchUserActivity extends AppCompatActivity {
 
@@ -29,12 +33,11 @@ public class SearchUserActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_search_user);
 
-        // Initialize Controller, Adapter, and UI
+        // --- CHANGE 1: Initialize the Adapter correctly BEFORE initializing the UI ---
         searchController = new SearchUserController();
-        userAdapter = new UserAdapter();
-        initializeUI();
+        // The adapter is now initialized inside initializeUI() where it has access to the click listener logic.
 
-        // Set up observers to listen for data changes from the controller
+        initializeUI();
         setupObservers();
 
         // Perform an initial search to show all users
@@ -48,7 +51,23 @@ public class SearchUserActivity extends AppCompatActivity {
         tvNoResults = findViewById(R.id.tvNoResults);
         btnBack = findViewById(R.id.btnBack);
 
+        // --- CHANGE 2: Correctly set up the Adapter and RecyclerView ---
+        // Define what happens when a user item is clicked
+        UserAdapter.OnItemClickListener clickListener = user -> {
+            // This is where you handle the click.
+// NEW: Launch the UserDetailActivity
+            Intent intent = new Intent(SearchUserActivity.this, UserDetailActivity.class);
+            intent.putExtra("USER_ID", user.getUid()); // Pass the unique ID of the clicked user
+            startActivity(intent);
+
+
+        };
+
+        // Create the adapter instance, passing the listener to the constructor
+        userAdapter = new UserAdapter(clickListener);
+
         // Setup RecyclerView
+        recyclerViewUsers.setLayoutManager(new LinearLayoutManager(this)); // Don't forget to set a layout manager!
         recyclerViewUsers.setAdapter(userAdapter);
 
         // Back button listener
@@ -65,8 +84,11 @@ public class SearchUserActivity extends AppCompatActivity {
             if (!checkedIds.isEmpty()) {
                 Chip selectedChip = group.findViewById(checkedIds.get(0));
                 selectedRole = selectedChip.getText().toString();
-                performSearch();
+            } else {
+                // Handle case where all chips are deselected, if applicable
+                selectedRole = "All";
             }
+            performSearch();
         });
     }
 
@@ -74,10 +96,12 @@ public class SearchUserActivity extends AppCompatActivity {
         // Observe user list from the controller
         searchController.getUsersLiveData().observe(this, users -> {
             if (users != null && !users.isEmpty()) {
-                userAdapter.setUsers(users);
+                userAdapter.setUsers(users); // This method correctly updates the adapter
                 recyclerViewUsers.setVisibility(View.VISIBLE);
                 tvNoResults.setVisibility(View.GONE);
             } else {
+                // If the user list is null or empty, clear the adapter
+                userAdapter.setUsers(new ArrayList<>()); // Clear previous results
                 recyclerViewUsers.setVisibility(View.GONE);
                 tvNoResults.setVisibility(View.VISIBLE);
             }

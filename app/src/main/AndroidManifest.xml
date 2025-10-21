@@ -35,6 +35,13 @@
         <activity
             android:name=".AdminCreateUserActivity"
             android:exported="false" />
+        <activity android:name=".ViewAllUsersActivity"
+            android:exported="false" />
+
+        <activity android:name=".UserDetailActivity"
+            android:exported="false" />
+
+
         <activity
             android:name=".loginPage"
             android:exported="true">

@@ -13,45 +13,44 @@ public class AdminDashboardActivity extends AppCompatActivity {
 
     // Add variables for the new cards
     private MaterialCardView cardCreateUserAccount, cardCreateUserProfile, cardRetrieveUserAccount, cardRetrieveUserProfile;
-    private Button btnAdminLogout;
+    private Button btnAdminLogout, btnViewAllProfiles;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_admin_dashboard);
 
-        // Find the new views by their IDs
-        cardCreateUserAccount = findViewById(R.id.cardCreateUserAccount);
-        cardCreateUserProfile = findViewById(R.id.cardCreateUserProfile);
-        cardRetrieveUserAccount = findViewById(R.id.cardRetrieveUserAccount);
-        cardRetrieveUserProfile = findViewById(R.id.cardRetrieveUserProfile);
-        btnAdminLogout = findViewById(R.id.btnAdminLogout);
+        MaterialCardView cardCreateUserAccount = findViewById(R.id.cardCreateUserAccount);
+        MaterialCardView cardCreateUserProfile = findViewById(R.id.cardCreateUserProfile);
+        MaterialCardView cardRetrieveUserAccount = findViewById(R.id.cardRetrieveUserAccount);
+        MaterialCardView cardRetrieveUserProfile = findViewById(R.id.cardRetrieveUserProfile); // The card for searching
+        Button btnAdminLogout = findViewById(R.id.btnAdminLogout);
 
+// Set up the click listeners
         cardCreateUserAccount.setOnClickListener(v -> {
             startActivity(new Intent(AdminDashboardActivity.this, AdminCreateUserActivity.class));
         });
 
-        // Replace it with this:
         cardCreateUserProfile.setOnClickListener(v -> {
-            // Launch the new create profile activity
             startActivity(new Intent(AdminDashboardActivity.this, CreateUserProfileActivity.class));
         });
 
-        // Replace it with this:
-        cardRetrieveUserAccount.setOnClickListener(v -> {
-            // Launch the new search activity
+// THIS IS THE FIX: Make the "Retrieve User Profiles" card open the Search Activity
+        cardRetrieveUserProfile.setOnClickListener(v -> {
+            // The SearchUserActivity is the best screen for this, as it allows searching and viewing.
             startActivity(new Intent(AdminDashboardActivity.this, SearchUserActivity.class));
         });
 
-        cardRetrieveUserProfile.setOnClickListener(v -> {
-            Toast.makeText(this, "Retrieve User Profiles feature coming soon!", Toast.LENGTH_SHORT).show();
+// This card will open the screen that shows only roles (ViewAllUsersActivity)
+        cardRetrieveUserAccount.setOnClickListener(v -> {
+            startActivity(new Intent(AdminDashboardActivity.this, ViewAllUsersActivity.class));
         });
 
-
         btnAdminLogout.setOnClickListener(v -> {
+            // Your logout logic here...
             FirebaseAuth.getInstance().signOut();
             Intent intent = new Intent(AdminDashboardActivity.this, loginPage.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
             finish();
         });

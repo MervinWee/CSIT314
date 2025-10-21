@@ -10,6 +10,7 @@ public class User {
     private String email;
     private String userType;
 
+    private String accountStatus; // Can be "Active", "Suspended", etc.
 
     // Profile Info
     private String fullName;
@@ -22,16 +23,22 @@ public class User {
     private Date createdAt;
 
     // Firestore requires a no-argument constructor to deserialize objects.
-    public User() {}
+    public User() {
+        this.accountStatus = "Active"; // Default to active
+    }
 
     // Constructor for initial account creation
     public User(String uid, String email, String userType) {
         this.uid = uid;
         this.email = email;
         this.userType = userType;
+        this.accountStatus = "Active";
     }
 
     // --- Getters and Setters for all fields ---
+
+    public String getAccountStatus() { return accountStatus; }
+    public void setAccountStatus(String accountStatus) { this.accountStatus = accountStatus; }
 
     public String getUid() { return uid; }
     public void setUid(String uid) { this.uid = uid; }
