@@ -3,7 +3,7 @@ package com.example.csit314sdm;
 import android.app.DatePickerDialog;
 import android.app.ProgressDialog;
 import android.os.Bundle;
-import android.util.Log; // <-- IMPORT THE LOG CLASS
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -14,10 +14,11 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.android.material.textfield.TextInputEditText;
+
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
-// BOUNDARY: Manages the Create User Profile UI
 public class CreateUserProfileActivity extends AppCompatActivity {
 
     private UserProfileController profileController;
@@ -27,10 +28,9 @@ public class CreateUserProfileActivity extends AppCompatActivity {
     private ImageButton btnBack;
     private ProgressDialog progressDialog;
 
-    private List<User> userList;
+    private List<User> userList; // This will hold the filtered list of users without profiles
     private User selectedUser;
 
-    // Define a tag for logging
     private static final String TAG = "CreateUserProfile";
 
     @Override
@@ -55,14 +55,18 @@ public class CreateUserProfileActivity extends AppCompatActivity {
         progressDialog = new ProgressDialog(this);
         btnBack.setOnClickListener(v -> finish());
         btnSaveProfile.setOnClickListener(v -> handleSaveProfile());
-
         etDateOfBirth.setOnClickListener(v -> showDatePickerDialog());
 
-        spinnerUserAccount.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                selectedUser = (User) parent.getItemAtPosition(position);
-                Log.d(TAG, "User selected: " + selectedUser.toString());
+        spinnerUserAccount.setOnItemClickListener((parent, view, position, id) -> {
+            String selectedEmail = (String) parent.getItemAtPosition(position);
+            for (User user : userList) {
+                if (user.getEmail().equals(selectedEmail)) {
+                    selectedUser = user;
+                    break;
+                }
+            }
+            if (selectedUser != null) {
+                Log.d(TAG, "User selected: " + selectedUser.getEmail());
             }
         });
     }
@@ -70,43 +74,46 @@ public class CreateUserProfileActivity extends AppCompatActivity {
     private void loadUsersWithoutProfiles() {
         progressDialog.setMessage("Loading Users...");
         progressDialog.show();
-        profileController.getUsersWithoutProfiles(new UserProfileController.UsersLoadCallback() {
-            @Override
-            public void onUsersLoaded(List<User> users) {
-                progressDialog.dismiss();
 
-                // --- THIS IS THE NEW DEBUGGING BLOCK ---
-                if (users == null) {
-                    Log.d(TAG, "onUsersLoaded: The user list from Firestore is null.");
+        profileController.getAllUsersWithProfileCheck(new UserProfileController.UsersLoadCallback() {
+            @Override
+            public void onUsersLoaded(List<User> allUsers) {
+                progressDialog.dismiss();
+                if (allUsers == null || allUsers.isEmpty()) {
+                    Toast.makeText(CreateUserProfileActivity.this, "No users found in the system.", Toast.LENGTH_LONG).show();
                     return;
                 }
 
-                Log.d(TAG, "onUsersLoaded: " + users.size() + " users were loaded from Firestore.");
-
-                if (users.isEmpty()) {
-                    Log.d(TAG, "The list is empty. Check Firestore query, data, and security rules.");
-                    Toast.makeText(CreateUserProfileActivity.this, "No users found needing a profile.", Toast.LENGTH_LONG).show();
-                } else {
-                    for (User user : users) {
-                        // Log the details of each user found. Relies on the toString() method in User.java
-                        Log.d(TAG, "Found user: " + user.toString());
+                // Filter the list on the client side for users needing a profile
+                List<User> usersWithoutProfile = new ArrayList<>();
+                for (User user : allUsers) {
+                    if (user.getFullName() == null || user.getFullName().trim().isEmpty()) {
+                        usersWithoutProfile.add(user);
                     }
                 }
-                // --- END OF DEBUGGING BLOCK ---
 
-                // This is the original code to set up the adapter
-                userList = users;
-                ArrayAdapter<User> adapter = new ArrayAdapter<>(CreateUserProfileActivity.this, android.R.layout.simple_spinner_item, userList);
-                adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                Log.d(TAG, "Found " + usersWithoutProfile.size() + " users needing a profile.");
 
-                AutoCompleteTextView autoCompleteTextView = findViewById(R.id.spinnerUserAccount);
-                autoCompleteTextView.setAdapter(adapter);
+                if (usersWithoutProfile.isEmpty()) {
+                    Toast.makeText(CreateUserProfileActivity.this, "All users already have a profile.", Toast.LENGTH_LONG).show();
+                    return;
+                }
+
+                // The rest of the code works with the correctly filtered list
+                userList = usersWithoutProfile; // Save the filtered list
+
+                List<String> userEmails = new ArrayList<>();
+                for (User user : userList) {
+                    userEmails.add(user.getEmail());
+                }
+
+                ArrayAdapter<String> adapter = new ArrayAdapter<>(CreateUserProfileActivity.this, android.R.layout.simple_dropdown_item_1line, userEmails);
+                spinnerUserAccount.setAdapter(adapter);
             }
 
             @Override
             public void onDataLoadFailed(String errorMessage) {
                 progressDialog.dismiss();
-                // Add logging to the failure case
                 Log.e(TAG, "onDataLoadFailed: " + errorMessage);
                 Toast.makeText(CreateUserProfileActivity.this, "Error loading users: " + errorMessage, Toast.LENGTH_LONG).show();
             }
@@ -120,7 +127,7 @@ public class CreateUserProfileActivity extends AppCompatActivity {
         String address = etAddress.getText().toString().trim();
 
         if (selectedUser == null) {
-            Toast.makeText(this, "Please select a user account.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Please select a user account from the dropdown.", Toast.LENGTH_SHORT).show();
             return;
         }
         if (fullName.isEmpty() || contact.isEmpty() || dob.isEmpty() || address.isEmpty()) {
@@ -136,7 +143,7 @@ public class CreateUserProfileActivity extends AppCompatActivity {
             public void onProfileSaveSuccess() {
                 progressDialog.dismiss();
                 Toast.makeText(CreateUserProfileActivity.this, "Profile created successfully!", Toast.LENGTH_LONG).show();
-                finish(); // Go back to the dashboard after success
+                finish();
             }
 
             @Override
@@ -153,11 +160,10 @@ public class CreateUserProfileActivity extends AppCompatActivity {
         int month = c.get(Calendar.MONTH);
         int day = c.get(Calendar.DAY_OF_MONTH);
 
-        DatePickerDialog datePickerDialog = new DatePickerDialog(this,
+        new DatePickerDialog(this,
                 (view, year1, monthOfYear, dayOfMonth) -> {
                     String selectedDate = dayOfMonth + "/" + (monthOfYear + 1) + "/" + year1;
                     etDateOfBirth.setText(selectedDate);
-                }, year, month, day);
-        datePickerDialog.show();
+                }, year, month, day).show();
     }
 }

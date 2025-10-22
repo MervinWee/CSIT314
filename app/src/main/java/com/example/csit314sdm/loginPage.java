@@ -100,9 +100,14 @@ public class loginPage extends AppCompatActivity {
         // The existing checks follow.
         else if ("PIN".equals(userType)) {
             intent = new Intent(loginPage.this, PINHomeScreenActivity.class);
-        } else if ("CSR_Representative".equals(userType)) {
-            intent = new Intent(loginPage.this, CSRHomeScreenActivity.class);
-        } else {
+        }
+        // --- THIS IS THE MODIFIED LINE ---
+        else if ("CSR_Representative".equals(userType)) {
+            // OLD: intent = new Intent(loginPage.this, CSRHomeScreenActivity.class);
+            // NEW: Direct CSR users to their new dashboard.
+            intent = new Intent(loginPage.this, CsrDashboardActivity.class);
+        }
+        else {
             // Controller should prevent this, but have a fallback just in case.
             Toast.makeText(this, "Unknown user type. Please contact support.", Toast.LENGTH_LONG).show();
             // It's a good idea to sign out a user with an invalid role for security.

@@ -35,12 +35,23 @@
         <activity
             android:name=".AdminCreateUserActivity"
             android:exported="false" />
+
         <activity android:name=".ViewAllUsersActivity"
             android:exported="false" />
 
         <activity android:name=".UserDetailActivity"
             android:exported="false" />
 
+        <activity android:name=".ViewSavedRequestsActivity"
+            android:exported="false" />
+
+        <activity android:name=".CsrDashboardActivity"
+            android:exported="false" />
+
+        <!-- Add this line inside your <application> tag -->
+        <activity
+            android:name=".HelpRequestDetailActivity"
+            android:exported="false" />
 
         <activity
             android:name=".loginPage"
