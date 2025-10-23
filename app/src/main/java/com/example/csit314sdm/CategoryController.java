@@ -51,4 +51,29 @@ public class CategoryController {
                 })
                 .addOnFailureListener(e -> callback.onFailure("Failed to fetch categories: " + e.getMessage()));
     }
+
+    // Inside your CategoryController.java class...
+
+    /**
+     * Updates an existing category document in Firestore.
+     *
+     * @param category The category object with its updated details and existing ID.
+     * @param callback The callback to report success or failure.
+     */
+    public void updateCategory(Category category, final CategoryOperationCallback callback) {
+        if (category.getId() == null || category.getId().isEmpty()) {
+            callback.onFailure("Category ID is missing. Cannot update.");
+            return;
+        }
+
+        db.collection("categories").document(category.getId())
+                .set(category) // Using .set() will overwrite the document with the new data
+                .addOnSuccessListener(aVoid -> {
+                    callback.onSuccess("Category updated successfully.");
+                })
+                .addOnFailureListener(e -> {
+                    callback.onFailure("Failed to update category: " + e.getMessage());
+                });
+    }
+
 }

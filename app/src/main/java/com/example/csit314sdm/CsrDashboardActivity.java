@@ -43,6 +43,8 @@ public class CsrDashboardActivity extends AppCompatActivity {
     private AutoCompleteTextView spinnerLocation, spinnerCategory;
     private Button btnSearch;
 
+    private CategoryController categoryController;
+
     // --- Controllers ---
     private HelpRequestController controller;
     private UserProfileController userProfileController;
@@ -55,6 +57,7 @@ public class CsrDashboardActivity extends AppCompatActivity {
 
         controller = new HelpRequestController();
         userProfileController = new UserProfileController();
+        categoryController = new CategoryController();
 
         initializeUI();
         setupNavigationDrawer();
@@ -97,15 +100,58 @@ public class CsrDashboardActivity extends AppCompatActivity {
     }
 
     private void populateFilterSpinners() {
+        // --- Location spinner remains the same (hardcoded) ---
         String[] locations = new String[]{"All", "Anywhere", "North", "South", "East", "West", "Central"};
-        String[] categories = new String[]{"All", "Medical Transport", "Grocery Shopping Help", "Prescription Pickup"};
-
         ArrayAdapter<String> locationAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, locations);
         spinnerLocation.setAdapter(locationAdapter);
+        spinnerLocation.setText(locations[0], false); // Set default value
 
-        ArrayAdapter<String> categoryAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, categories);
-        spinnerCategory.setAdapter(categoryAdapter);
+
+        // --- DYNAMICALLY LOAD CATEGORIES ---
+        categoryController.getAllCategories(new CategoryController.CategoryFetchCallback() {
+            @Override
+            public void onCategoriesFetched(List<Category> categories) {
+                // This runs when categories are successfully fetched from Firestore
+                runOnUiThread(() -> {
+                    // Create a list of strings for the dropdown
+                    List<String> categoryNames = new ArrayList<>();
+                    categoryNames.add("All"); // Add the default "All" option first
+
+                    // Add the names of the fetched categories
+                    for (Category category : categories) {
+                        categoryNames.add(category.getName());
+                    }
+
+                    // Create the adapter for the category spinner
+                    ArrayAdapter<String> categoryAdapter = new ArrayAdapter<>(
+                            CsrDashboardActivity.this,
+                            android.R.layout.simple_dropdown_item_1line,
+                            categoryNames
+                    );
+                    spinnerCategory.setAdapter(categoryAdapter);
+                    spinnerCategory.setText(categoryNames.get(0), false); // Set default value
+                });
+            }
+
+            @Override
+            public void onFailure(String errorMessage) {
+                // This runs if fetching fails
+                runOnUiThread(() -> {
+                    Toast.makeText(CsrDashboardActivity.this, "Could not load categories: " + errorMessage, Toast.LENGTH_SHORT).show();
+                    // As a fallback, load an empty list with "All"
+                    List<String> fallbackCategories = new ArrayList<>();
+                    fallbackCategories.add("All");
+                    ArrayAdapter<String> categoryAdapter = new ArrayAdapter<>(
+                            CsrDashboardActivity.this,
+                            android.R.layout.simple_dropdown_item_1line,
+                            fallbackCategories
+                    );
+                    spinnerCategory.setAdapter(categoryAdapter);
+                });
+            }
+        });
     }
+
 
     private void setupListeners() {
         cardShortlisted.setOnClickListener(v -> {

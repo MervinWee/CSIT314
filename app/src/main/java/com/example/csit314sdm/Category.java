@@ -10,6 +10,16 @@ public class Category {
     @ServerTimestamp
     private Date createdAt;
 
+
+    public Category() {
+
+    }
+
+    public Category(String name, String description) {
+        this.name = name;
+        this.description = description;
+    }
+
     // Getters and Setters
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }

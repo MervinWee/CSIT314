@@ -51,6 +51,9 @@
         <activity android:name=".HistoryActivity"
             android:exported="false"/>
 
+        <activity android:name=".CategoryManagementActivity"
+            android:exported="false"/>
+
         <activity android:name=".PlatformDashboardActivity"
             android:exported="false"/>
 
