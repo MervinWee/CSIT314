@@ -18,6 +18,8 @@ public class User {
     private String dateOfBirth;
     private String address;
 
+    private String role;
+
     // @ServerTimestamp tells Firestore to automatically set the server time when creating the object.
     @ServerTimestamp
     private Date createdAt;
@@ -48,6 +50,14 @@ public class User {
 
     public String getUserType() { return userType; }
     public void setUserType(String userType) { this.userType = userType; }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
+    }
 
     public String getFullName() { return fullName; }
     public void setFullName(String fullName) { this.fullName = fullName; }

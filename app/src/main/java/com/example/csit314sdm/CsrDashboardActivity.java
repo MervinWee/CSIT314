@@ -4,15 +4,18 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
+import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import com.google.android.material.textfield.TextInputEditText;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -24,6 +27,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
 import java.util.List;
+import java.util.ArrayList;
 
 public class CsrDashboardActivity extends AppCompatActivity {
 
@@ -35,6 +39,9 @@ public class CsrDashboardActivity extends AppCompatActivity {
     private ProgressBar progressBar;
     private TextView tvNoResults, tvListTitle, tvWelcome;
     private MaterialCardView cardShortlisted;
+    private TextInputEditText etSearchKeyword;
+    private AutoCompleteTextView spinnerLocation, spinnerCategory;
+    private Button btnSearch;
 
     // --- Controllers ---
     private HelpRequestController controller;
@@ -46,18 +53,17 @@ public class CsrDashboardActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_csr_dashboard);
 
-        // --- Initialize Controllers ---
         controller = new HelpRequestController();
         userProfileController = new UserProfileController();
 
-        // --- Initialize UI and Setup Listeners ---
         initializeUI();
         setupNavigationDrawer();
         setupListeners();
 
-        // --- Load Initial Data ---
+        // --- CORRECTED LOAD ORDER ---
+        // 1. First, load the user's details.
+        // 2. ONLY AFTER user details are loaded, then populate filters and load requests.
         loadUserDetails();
-        loadSavedRequests();
     }
 
     private void initializeUI() {
@@ -74,17 +80,84 @@ public class CsrDashboardActivity extends AppCompatActivity {
         tvWelcome = findViewById(R.id.tvWelcome);
         cardShortlisted = findViewById(R.id.cardShortlisted);
 
+        // Search UI
+        etSearchKeyword = findViewById(R.id.etSearchKeyword);
+        spinnerLocation = findViewById(R.id.spinnerLocation);
+        spinnerCategory = findViewById(R.id.spinnerCategory);
+        btnSearch = findViewById(R.id.btnSearch);
+
         // Setup RecyclerView
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        // Replace the old Toast with the logic to start the new activity
         adapter = new HelpRequestAdapter(request -> {
             Intent intent = new Intent(CsrDashboardActivity.this, HelpRequestDetailActivity.class);
-            // Pass the unique ID of the clicked request to the detail activity
             intent.putExtra(HelpRequestDetailActivity.EXTRA_REQUEST_ID, request.getId());
             startActivity(intent);
         });
-
         recyclerView.setAdapter(adapter);
+    }
+
+    private void populateFilterSpinners() {
+        String[] locations = new String[]{"All", "Anywhere", "North", "South", "East", "West", "Central"};
+        String[] categories = new String[]{"All", "Medical Transport", "Grocery Shopping Help", "Prescription Pickup"};
+
+        ArrayAdapter<String> locationAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, locations);
+        spinnerLocation.setAdapter(locationAdapter);
+
+        ArrayAdapter<String> categoryAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, categories);
+        spinnerCategory.setAdapter(categoryAdapter);
+    }
+
+    private void setupListeners() {
+        cardShortlisted.setOnClickListener(v -> {
+            tvListTitle.setText("My Shortlisted Requests");
+            loadSavedRequests(); // Reloads the full list
+        });
+
+        btnSearch.setOnClickListener(v -> performSearch());
+
+        etSearchKeyword.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                performSearch();
+                return true;
+            }
+            return false;
+        });
+    }
+
+    private void performSearch() {
+        String keyword = etSearchKeyword.getText().toString().trim();
+        String location = spinnerLocation.getText().toString();
+        String category = spinnerCategory.getText().toString();
+
+        progressBar.setVisibility(View.VISIBLE);
+        recyclerView.setVisibility(View.GONE);
+        tvNoResults.setVisibility(View.GONE);
+
+        controller.searchShortlistedRequests(keyword, location, category, new HelpRequestController.HelpRequestsLoadCallback() {
+            @Override
+            public void onRequestsLoaded(List<HelpRequest> requests) {
+                runOnUiThread(() -> { // Ensure UI updates are on the main thread
+                    progressBar.setVisibility(View.GONE);
+                    if (requests.isEmpty()) {
+                        tvNoResults.setText("No matching requests found.");
+                        tvNoResults.setVisibility(View.VISIBLE);
+                    } else {
+                        recyclerView.setVisibility(View.VISIBLE);
+                        adapter.setRequests(requests);
+                    }
+                });
+            }
+
+            @Override
+            public void onDataLoadFailed(String errorMessage) {
+                runOnUiThread(() -> { // FIX: Wrap UI updates in runOnUiThread
+                    progressBar.setVisibility(View.GONE);
+                    tvNoResults.setText(errorMessage);
+                    tvNoResults.setVisibility(View.VISIBLE);
+                    Toast.makeText(CsrDashboardActivity.this, errorMessage, Toast.LENGTH_LONG).show();
+                });
+            }
+        });
     }
 
     private void setupNavigationDrawer() {
@@ -93,17 +166,20 @@ public class CsrDashboardActivity extends AppCompatActivity {
 
             if (itemId == R.id.nav_logout) {
                 handleLogout();
-            } else {
-                // Handle other menu items here with Toasts for now
+            }
+            // --- ADD THIS BLOCK ---
+            else if (itemId == R.id.nav_history) {
+                Intent intent = new Intent(CsrDashboardActivity.this, HistoryActivity.class);
+                startActivity(intent);
+            }
+            // --------------------
+            else {
                 Toast.makeText(CsrDashboardActivity.this, "Clicked: " + item.getTitle(), Toast.LENGTH_SHORT).show();
             }
-
-            // Close the drawer after an item is tapped
             drawerLayout.closeDrawer(GravityCompat.START);
             return true;
         });
 
-        // Make the hamburger icon open the drawer
         btnDrawer.setOnClickListener(v -> {
             if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
                 drawerLayout.closeDrawer(GravityCompat.START);
@@ -114,15 +190,12 @@ public class CsrDashboardActivity extends AppCompatActivity {
     }
 
     private void setWelcomeMessage(User user) {
-        // Update main screen welcome text
         String username = user.getFullName();
         if (username != null && !username.isEmpty()) {
             tvWelcome.setText("Hello, " + username + "!");
         } else {
             tvWelcome.setText("Hello! Your Request");
         }
-
-        // Update the header in the navigation drawer
         View headerView = navigationView.getHeaderView(0);
         TextView navHeaderName = headerView.findViewById(R.id.nav_header_name);
         TextView navHeaderEmail = headerView.findViewById(R.id.nav_header_email);
@@ -130,7 +203,7 @@ public class CsrDashboardActivity extends AppCompatActivity {
         if (username != null && !username.isEmpty()) {
             navHeaderName.setText(username);
         } else {
-            navHeaderName.setText("CSR Representative"); // Fallback
+            navHeaderName.setText("CSR Representative");
         }
         navHeaderEmail.setText(user.getEmail());
     }
@@ -138,7 +211,6 @@ public class CsrDashboardActivity extends AppCompatActivity {
     private void handleLogout() {
         FirebaseAuth.getInstance().signOut();
         Intent intent = new Intent(CsrDashboardActivity.this, loginPage.class);
-        // Clear the activity stack to prevent user from going back to the dashboard
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
         finish();
@@ -152,19 +224,23 @@ public class CsrDashboardActivity extends AppCompatActivity {
         userProfileController.getUserById(currentUser.getUid(), new UserProfileController.UserLoadCallback() {
             @Override
             public void onUserLoaded(User user) {
-                setWelcomeMessage(user);
+                runOnUiThread(() -> { // Ensure UI updates are on the main thread
+                    setWelcomeMessage(user);
+
+                    // --- FIX: Now that user is loaded, populate other UI ---
+                    populateFilterSpinners();
+                    loadSavedRequests(); // Load initial full list
+                });
             }
             @Override
             public void onDataLoadFailed(String errorMessage) {
-                Toast.makeText(CsrDashboardActivity.this, "Could not load user profile.", Toast.LENGTH_SHORT).show();
+                runOnUiThread(() -> { // FIX: Wrap UI updates in runOnUiThread
+                    Toast.makeText(CsrDashboardActivity.this, "Could not load user profile.", Toast.LENGTH_SHORT).show();
+                    // Even if profile fails, load the rest of the app
+                    populateFilterSpinners();
+                    loadSavedRequests();
+                });
             }
-        });
-    }
-
-    private void setupListeners() {
-        cardShortlisted.setOnClickListener(v -> {
-            tvListTitle.setText("My Shortlisted Requests");
-            loadSavedRequests();
         });
     }
 
@@ -176,26 +252,29 @@ public class CsrDashboardActivity extends AppCompatActivity {
         controller.getSavedHelpRequests(new HelpRequestController.HelpRequestsLoadCallback() {
             @Override
             public void onRequestsLoaded(List<HelpRequest> requests) {
-                progressBar.setVisibility(View.GONE);
-                if (requests.isEmpty()) {
-                    tvNoResults.setText("You have no shortlisted requests.");
-                    tvNoResults.setVisibility(View.VISIBLE);
-                } else {
-                    recyclerView.setVisibility(View.VISIBLE);
-                    adapter.setRequests(requests);
-                }
+                runOnUiThread(() -> { // Ensure UI updates are on the main thread
+                    progressBar.setVisibility(View.GONE);
+                    if (requests.isEmpty()) {
+                        tvNoResults.setText("You have no shortlisted requests.");
+                        tvNoResults.setVisibility(View.VISIBLE);
+                    } else {
+                        recyclerView.setVisibility(View.VISIBLE);
+                        adapter.setRequests(requests);
+                    }
+                });
             }
             @Override
             public void onDataLoadFailed(String errorMessage) {
-                progressBar.setVisibility(View.GONE);
-                tvNoResults.setText(errorMessage);
-                tvNoResults.setVisibility(View.VISIBLE);
-                Toast.makeText(CsrDashboardActivity.this, errorMessage, Toast.LENGTH_LONG).show();
+                runOnUiThread(() -> { // FIX: Wrap UI updates in runOnUiThread
+                    progressBar.setVisibility(View.GONE);
+                    tvNoResults.setText(errorMessage);
+                    tvNoResults.setVisibility(View.VISIBLE);
+                    Toast.makeText(CsrDashboardActivity.this, errorMessage, Toast.LENGTH_LONG).show();
+                });
             }
         });
     }
 
-    // Handle the back button press to close the drawer if it's open
     @Override
     public void onBackPressed() {
         if (drawerLayout.isDrawerOpen(GravityCompat.START)) {

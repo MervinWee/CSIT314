@@ -52,22 +52,35 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
         tvStatus = findViewById(R.id.detail_tv_status);
     }
 
+    // In HelpRequestDetailActivity.java
+
     private void loadRequestDetails(String requestId) {
         progressBar.setVisibility(View.VISIBLE);
-        controller.getHelpRequestById(requestId, new HelpRequestController.HelpRequestLoadCallback() {
+
+        // --- THIS IS THE FIX ---
+        // The callback interface was renamed to SingleRequestLoadCallback in the controller.
+        // We must use the new name here.
+        controller.getHelpRequestById(requestId, new HelpRequestController.SingleRequestLoadCallback() {
             @Override
             public void onRequestLoaded(HelpRequest request) {
-                progressBar.setVisibility(View.GONE);
-                populateUI(request);
+                // This part is correct. We must ensure UI updates run on the main thread.
+                runOnUiThread(() -> {
+                    progressBar.setVisibility(View.GONE);
+                    populateUI(request);
+                });
             }
 
             @Override
             public void onDataLoadFailed(String errorMessage) {
-                progressBar.setVisibility(View.GONE);
-                Toast.makeText(HelpRequestDetailActivity.this, "Failed to load details: " + errorMessage, Toast.LENGTH_LONG).show();
+                // This part is correct. We must ensure UI updates run on the main thread.
+                runOnUiThread(() -> {
+                    progressBar.setVisibility(View.GONE);
+                    Toast.makeText(HelpRequestDetailActivity.this, "Failed to load details: " + errorMessage, Toast.LENGTH_LONG).show();
+                });
             }
         });
     }
+
 
     private void populateUI(HelpRequest request) {
         tvTitle.setText(request.getTitle());

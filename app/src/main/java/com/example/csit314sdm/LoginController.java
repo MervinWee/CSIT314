@@ -13,8 +13,9 @@ public class LoginController {
     private final FirebaseFirestore db;
 
     // Interface to communicate results back to the Boundary (loginPage).
+    // I've renamed the parameter for clarity, but the interface itself is unchanged.
     public interface LoginCallback {
-        void onLoginSuccess(String userType);
+        void onLoginSuccess(String userRole);
         void onLoginFailure(String errorMessage);
     }
 
@@ -29,8 +30,8 @@ public class LoginController {
     public void checkForExistingSession(final LoginCallback callback) {
         FirebaseUser currentUser = mAuth.getCurrentUser();
         if (currentUser != null) {
-            // User is already logged in, so fetch their user type from Firestore.
-            fetchUserType(currentUser.getUid(), callback);
+            // User is already logged in, so fetch their role from Firestore.
+            fetchUserRole(currentUser.getUid(), callback);
         }
         // If no user is logged in, do nothing. The UI will just wait for input.
     }
@@ -55,8 +56,8 @@ public class LoginController {
                     if (task.isSuccessful()) {
                         FirebaseUser firebaseUser = mAuth.getCurrentUser();
                         if (firebaseUser != null) {
-                            // After successful login, fetch the user type from Firestore.
-                            fetchUserType(firebaseUser.getUid(), callback);
+                            // After successful login, fetch the user role from Firestore.
+                            fetchUserRole(firebaseUser.getUid(), callback);
                         } else {
                             callback.onLoginFailure("Login successful, but failed to get user details.");
                         }
@@ -67,22 +68,28 @@ public class LoginController {
     }
 
     /**
-     * Fetches the user's document from Firestore to get their userType.
+     * Fetches the user's document from Firestore to get their role.
+     * (Formerly fetchUserType)
      */
-    private void fetchUserType(String uid, final LoginCallback callback) {
+    private void fetchUserRole(String uid, final LoginCallback callback) {
         db.collection("users").document(uid).get()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
                         DocumentSnapshot document = task.getResult();
                         if (document.exists()) {
-                            // You can use the User Entity here for better structure
+                            // Use the User Entity to deserialize the document.
                             User user = document.toObject(User.class);
-                            if (user != null && user.getUserType() != null) {
-                                callback.onLoginSuccess(user.getUserType());
+
+                            // --- THIS IS THE KEY CHANGE ---
+                            // Instead of user.getUserType(), we now use user.getRole().
+                            if (user != null && user.getRole() != null) {
+                                callback.onLoginSuccess(user.getRole());
                             } else {
-                                callback.onLoginFailure("User data is incomplete. Please contact support.");
+                                callback.onLoginFailure("User data is incomplete (role not found). Please contact support.");
                                 mAuth.signOut(); // Sign out user with corrupt data
                             }
+                            // -----------------------------
+
                         } else {
                             // This is a critical error: user exists in Auth but not in Firestore.
                             callback.onLoginFailure("User data not found. Please re-register or contact support.");

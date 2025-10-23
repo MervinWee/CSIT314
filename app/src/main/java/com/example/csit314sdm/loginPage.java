@@ -90,36 +90,37 @@ public class loginPage extends AppCompatActivity {
         };
     }
 
-    private void navigateToDashboard(String userType) {
+    // Replace the existing navigateToDashboard method with this one.
+    private void navigateToDashboard(String userRole) {
         Intent intent;
 
-        // Check for the "Admin" user type first.
-        if ("Admin".equals(userType)) {
+        // Use if/else if to check the role string returned by the controller.
+        if ("Admin".equals(userRole)) {
+            // This is the correct case for your Administrator.
+            Toast.makeText(this, "Admin Login Successful", Toast.LENGTH_SHORT).show();
             intent = new Intent(loginPage.this, AdminDashboardActivity.class);
         }
-        // The existing checks follow.
-        else if ("PIN".equals(userType)) {
+        else if ("PIN".equals(userRole)) {
+            // Your existing PIN role
             intent = new Intent(loginPage.this, PINHomeScreenActivity.class);
         }
-        // --- THIS IS THE MODIFIED LINE ---
-        else if ("CSR_Representative".equals(userType)) {
-            // OLD: intent = new Intent(loginPage.this, CSRHomeScreenActivity.class);
-            // NEW: Direct CSR users to their new dashboard.
+        else if ("CSR".equals(userRole)) {
+            // Your existing CSR role
             intent = new Intent(loginPage.this, CsrDashboardActivity.class);
         }
         else {
-            // Controller should prevent this, but have a fallback just in case.
-            Toast.makeText(this, "Unknown user type. Please contact support.", Toast.LENGTH_LONG).show();
-            // It's a good idea to sign out a user with an invalid role for security.
-            FirebaseAuth.getInstance().signOut();
-            return; // Stay on the login page.
+            // Fallback for any unknown or null role.
+            Toast.makeText(this, "Unknown user role. Please contact support.", Toast.LENGTH_LONG).show();
+            FirebaseAuth.getInstance().signOut(); // Sign out for security
+            return; // Do not navigate anywhere.
         }
 
-        // These flags apply to all successful role-based navigations.
+        // These flags apply to all successful navigations.
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
         finish();
     }
+
 
     private void setupClickableSpans() {
 

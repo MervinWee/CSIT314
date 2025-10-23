@@ -48,6 +48,12 @@
         <activity android:name=".CsrDashboardActivity"
             android:exported="false" />
 
+        <activity android:name=".HistoryActivity"
+            android:exported="false"/>
+
+        <activity android:name=".PlatformDashboardActivity"
+            android:exported="false"/>
+
         <!-- Add this line inside your <application> tag -->
         <activity
             android:name=".HelpRequestDetailActivity"

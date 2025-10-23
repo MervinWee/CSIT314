@@ -26,6 +26,10 @@ public class AdminDashboardActivity extends AppCompatActivity {
         MaterialCardView cardRetrieveUserProfile = findViewById(R.id.cardRetrieveUserProfile); // The card for searching
         Button btnAdminLogout = findViewById(R.id.btnAdminLogout);
 
+        // --- ADD THIS LINE TO FIND THE NEW CARD ---
+        MaterialCardView cardManageCategories = findViewById(R.id.cardManageCategories);
+
+
 // Set up the click listeners
         cardCreateUserAccount.setOnClickListener(v -> {
             startActivity(new Intent(AdminDashboardActivity.this, AdminCreateUserActivity.class));
@@ -53,6 +57,16 @@ public class AdminDashboardActivity extends AppCompatActivity {
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
             finish();
+        });
+
+        cardManageCategories.setOnClickListener(v -> {
+            // This is where we will navigate to the Category Management screen.
+            // For now, we'll show a Toast message until we build that screen.
+            Toast.makeText(this, "Opening Category Management...", Toast.LENGTH_SHORT).show();
+
+            // The next step will be to create CategoryManagementActivity and then uncomment this:
+            // Intent intent = new Intent(AdminDashboardActivity.this, CategoryManagementActivity.class);
+            // startActivity(intent);
         });
     }
 }
