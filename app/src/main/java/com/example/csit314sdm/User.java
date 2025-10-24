@@ -8,7 +8,7 @@ import java.util.Date;
 public class User {
     private String uid; // Store the UID for easy reference
     private String email;
-    private String userType;
+
 
     private String accountStatus; // Can be "Active", "Suspended", etc.
 
@@ -30,10 +30,10 @@ public class User {
     }
 
     // Constructor for initial account creation
-    public User(String uid, String email, String userType) {
+    public User(String uid, String email, String role) {
         this.uid = uid;
         this.email = email;
-        this.userType = userType;
+        this.role = role;
         this.accountStatus = "Active";
     }
 
@@ -48,8 +48,7 @@ public class User {
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
 
-    public String getUserType() { return userType; }
-    public void setUserType(String userType) { this.userType = userType; }
+
 
     public String getRole() {
         return role;

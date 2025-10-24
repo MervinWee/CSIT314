@@ -65,6 +65,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         }
 
         // --- MODIFIED: The bind method now handles display logic and click events ---
+        // --- MODIFIED: The bind method now handles display logic and click events ---
         public void bind(final User user, final OnItemClickListener listener) {
             // Set the primary identifier (email)
             tvUserEmail.setText(user.getEmail());
@@ -73,11 +74,15 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
             if (user.getFullName() != null && !user.getFullName().isEmpty()) {
                 tvUserRole.setText("Name: " + user.getFullName());
             } else {
-                tvUserRole.setText("Role: " + user.getUserType());
+                // =========== THIS IS THE FIX ===========
+                // Change user.getUserType() to user.getRole()
+                tvUserRole.setText("Role: " + user.getRole());
+                // =====================================
             }
 
             // Set the click listener on the entire item view
             itemView.setOnClickListener(v -> listener.onItemClick(user));
         }
+
     }
 }

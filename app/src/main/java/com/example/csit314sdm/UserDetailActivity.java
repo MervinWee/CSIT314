@@ -15,6 +15,8 @@ import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.material.button.MaterialButton;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -70,8 +72,8 @@ public class UserDetailActivity extends AppCompatActivity {
         btnToggleEdit = findViewById(R.id.btnToggleEdit);
         btnUpdateProfile = findViewById(R.id.btnUpdateProfile);
 
-        // Setup Spinner
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, new String[]{"PIN", "Admin", "CSR_Representative"});
+        // --- FIX 1: Standardize the roles in the spinner ---
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, new String[]{"PIN", "Admin", "CSR"});
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerDetailRole.setAdapter(adapter);
     }
@@ -117,7 +119,8 @@ public class UserDetailActivity extends AppCompatActivity {
         Map<String, Object> updatedData = new HashMap<>();
         updatedData.put("fullName", newFullName);
         updatedData.put("contactNumber", newContact);
-        updatedData.put("userType", newRole);
+        // --- FIX 2: Save to the 'role' field instead of 'userType' ---
+        updatedData.put("role", newRole);
 
         progressBar.setVisibility(View.VISIBLE);
 
@@ -183,8 +186,8 @@ public class UserDetailActivity extends AppCompatActivity {
                 currentUser = user; // Save the loaded user
                 progressBar.setVisibility(View.GONE);
                 contentScrollView.setVisibility(View.VISIBLE);
-                btnToggleEdit.setVisibility(View.VISIBLE); // Show the Edit button
-                btnToggleSuspend.setVisibility(View.VISIBLE); // Make the suspend button visible
+                btnToggleEdit.setVisibility(View.VISIBLE);
+                btnToggleSuspend.setVisibility(View.VISIBLE);
                 populateUI(user);
             }
 
@@ -204,45 +207,35 @@ public class UserDetailActivity extends AppCompatActivity {
         etDetailContact.setText(user.getContactNumber() != null ? user.getContactNumber() : "");
         tvDetailEmail.setText(user.getEmail());
 
-        // --- POPULATE THE NEW STATUS and BUTTON ---
         String status = user.getAccountStatus();
-
-        // --- FIX: Cast the Button to a MaterialButton to access setStrokeColor ---
-        com.google.android.material.button.MaterialButton suspendButton = (com.google.android.material.button.MaterialButton) btnToggleSuspend;
+        MaterialButton suspendButton = (MaterialButton) btnToggleSuspend;
 
         if (status != null && !status.isEmpty()) {
             tvDetailStatus.setText(status);
 
             if ("Suspended".equals(status)) {
-                // --- Style for a SUSPENDED user ---
                 tvDetailStatus.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
                 suspendButton.setText("Reinstate User");
-                // Set button text color to the theme's primary color (e.g., blue or green)
                 suspendButton.setTextColor(getResources().getColor(com.google.android.material.R.color.design_default_color_primary));
-                // Set the button's outline color to match
                 suspendButton.setStrokeColorResource(com.google.android.material.R.color.design_default_color_primary);
 
             } else {
-                // --- Style for an ACTIVE user ---
                 tvDetailStatus.setTextColor(getResources().getColor(com.google.android.material.R.color.design_default_color_primary));
                 suspendButton.setText("Suspend User");
-                // Set button text color to the theme's error color (red)
                 suspendButton.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
-                // Set the button's outline color to match
                 suspendButton.setStrokeColorResource(android.R.color.holo_red_dark);
             }
         } else {
-            // Default for users created before this feature
             tvDetailStatus.setText("Active");
             suspendButton.setText("Suspend User");
             suspendButton.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
             suspendButton.setStrokeColorResource(android.R.color.holo_red_dark);
         }
 
-        // Set spinner selection
-        if (user.getUserType() != null) {
+        // --- FIX 3: Get the role from getRole() instead of getUserType() ---
+        if (user.getRole() != null) {
             ArrayAdapter<String> adapter = (ArrayAdapter<String>) spinnerDetailRole.getAdapter();
-            int position = adapter.getPosition(user.getUserType());
+            int position = adapter.getPosition(user.getRole());
             spinnerDetailRole.setSelection(position);
         }
     }
