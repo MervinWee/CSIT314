@@ -72,7 +72,7 @@ public class UserDetailActivity extends AppCompatActivity {
         btnToggleEdit = findViewById(R.id.btnToggleEdit);
         btnUpdateProfile = findViewById(R.id.btnUpdateProfile);
 
-        // --- FIX 1: Standardize the roles in the spinner ---
+
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, new String[]{"PIN", "Admin", "CSR"});
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerDetailRole.setAdapter(adapter);
@@ -232,7 +232,6 @@ public class UserDetailActivity extends AppCompatActivity {
             suspendButton.setStrokeColorResource(android.R.color.holo_red_dark);
         }
 
-        // --- FIX 3: Get the role from getRole() instead of getUserType() ---
         if (user.getRole() != null) {
             ArrayAdapter<String> adapter = (ArrayAdapter<String>) spinnerDetailRole.getAdapter();
             int position = adapter.getPosition(user.getRole());
