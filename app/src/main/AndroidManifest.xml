@@ -62,6 +62,18 @@
             android:name=".HelpRequestDetailActivity"
             android:exported="false" />
 
+        <activity android:name=".DailyReportActivity"
+            android:exported="false" />
+
+        <activity android:name=".WeeklyReportActivity"
+            android:exported="false" />
+
+        <activity android:name=".MonthlyReportActivity"
+            android:exported="false" />
+
+        <activity android:name=".ManageCategoriesActivity"
+            android:exported="false" />
+
         <activity
             android:name=".loginPage"
             android:exported="true">

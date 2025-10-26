@@ -108,6 +108,10 @@ public class loginPage extends AppCompatActivity {
             // Your existing CSR role
             intent = new Intent(loginPage.this, CsrDashboardActivity.class);
         }
+        else if ("Platform".equals(userRole)) {
+            // Your existing Platform management role
+            intent = new Intent ( loginPage.this, PlatformDashboardActivity.class);
+        }
         else {
             // Fallback for any unknown or null role.
             Toast.makeText(this, "Unknown user role. Please contact support.", Toast.LENGTH_LONG).show();
