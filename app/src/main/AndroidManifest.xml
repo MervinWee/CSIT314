@@ -45,6 +45,9 @@
         <activity android:name=".ViewSavedRequestsActivity"
             android:exported="false" />
 
+        <activity android:name=".HomepageAsPinActivity"
+            android:exported="false"/>
+
         <activity android:name=".CsrDashboardActivity"
             android:exported="false" />
 
