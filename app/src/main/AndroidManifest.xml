@@ -54,12 +54,27 @@
         <activity android:name=".HistoryActivity"
             android:exported="false"/>
 
+        <activity android:name=".CategoryManagementActivity"
+            android:exported="false"/>
+
         <activity android:name=".PlatformDashboardActivity"
             android:exported="false"/>
 
         <!-- Add this line inside your <application> tag -->
         <activity
             android:name=".HelpRequestDetailActivity"
+            android:exported="false" />
+
+        <activity android:name=".DailyReportActivity"
+            android:exported="false" />
+
+        <activity android:name=".WeeklyReportActivity"
+            android:exported="false" />
+
+        <activity android:name=".MonthlyReportActivity"
+            android:exported="false" />
+
+        <activity android:name=".ManageCategoriesActivity"
             android:exported="false" />
 
         <activity

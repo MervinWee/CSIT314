@@ -55,7 +55,7 @@ public class AdminCreateUserActivity extends AppCompatActivity {
         btnBack = findViewById(R.id.btnBack);
 
         // Setup Spinner
-        String[] userTypes = {"PIN", "CSR_Representative"}; // Add Admin role
+        String[] userTypes = {"PIN", "CSR","Admin"}; // Add Admin role
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, userTypes);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerCreateUserRole.setAdapter(adapter);

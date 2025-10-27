@@ -57,12 +57,13 @@ public class UserRoleAdapter extends RecyclerView.Adapter<UserRoleAdapter.UserRo
             tvUserRole = itemView.findViewById(R.id.tvUserRole);
         }
 
-        // *** THIS IS THE IMPORTANT PART ***
-        // This bind method is simplified and will NEVER show the user's full name.
         public void bind(final User user, final OnItemClickListener listener) {
             tvUserEmail.setText(user.getEmail());
-            // Always display the userType, regardless of whether a profile exists.
-            tvUserRole.setText("Role: " + user.getUserType());
+
+            // =========== THIS IS THE CORRECTED LINE ===========
+            // Always display the role, regardless of whether a profile exists.
+            tvUserRole.setText("Role: " + user.getRole());
+            // ================================================
 
             // The item is still clickable to view details
             itemView.setOnClickListener(v -> listener.onItemClick(user));

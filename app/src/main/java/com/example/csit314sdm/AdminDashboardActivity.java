@@ -61,12 +61,11 @@ public class AdminDashboardActivity extends AppCompatActivity {
 
         cardManageCategories.setOnClickListener(v -> {
             // This is where we will navigate to the Category Management screen.
-            // For now, we'll show a Toast message until we build that screen.
             Toast.makeText(this, "Opening Category Management...", Toast.LENGTH_SHORT).show();
 
             // The next step will be to create CategoryManagementActivity and then uncomment this:
-            // Intent intent = new Intent(AdminDashboardActivity.this, CategoryManagementActivity.class);
-            // startActivity(intent);
+            Intent intent = new Intent(AdminDashboardActivity.this, CategoryManagementActivity.class);
+            startActivity(intent);
         });
     }
 }
