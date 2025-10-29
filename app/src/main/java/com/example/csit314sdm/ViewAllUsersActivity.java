@@ -43,6 +43,7 @@ public class ViewAllUsersActivity extends AppCompatActivity {
             // Launch the UserDetailActivity for the clicked user
             Intent intent = new Intent(ViewAllUsersActivity.this, UserDetailActivity.class);
             intent.putExtra("USER_ID", user.getUid());
+            intent.putExtra("MODE", "AdminMode");
             startActivity(intent);
         };
 

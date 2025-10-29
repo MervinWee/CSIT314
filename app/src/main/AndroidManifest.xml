@@ -45,6 +45,9 @@
         <activity android:name=".ViewSavedRequestsActivity"
             android:exported="false" />
 
+        <activity android:name=".HomepageAsPinActivity"
+            android:exported="false"/>
+
         <activity android:name=".CsrDashboardActivity"
             android:exported="false" />
 
@@ -60,6 +63,18 @@
         <!-- Add this line inside your <application> tag -->
         <activity
             android:name=".HelpRequestDetailActivity"
+            android:exported="false" />
+
+        <activity android:name=".DailyReportActivity"
+            android:exported="false" />
+
+        <activity android:name=".WeeklyReportActivity"
+            android:exported="false" />
+
+        <activity android:name=".MonthlyReportActivity"
+            android:exported="false" />
+
+        <activity android:name=".ManageCategoriesActivity"
             android:exported="false" />
 
         <activity

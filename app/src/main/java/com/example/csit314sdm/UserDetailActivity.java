@@ -35,6 +35,8 @@ public class UserDetailActivity extends AppCompatActivity {
     // UI Elements
     private EditText etDetailFullName, etDetailContact;
     private TextView tvDetailEmail;
+
+    private TextView tvActivityTitle;
     private Spinner spinnerDetailRole;
     private Button btnToggleEdit, btnUpdateProfile;
 
@@ -47,7 +49,14 @@ public class UserDetailActivity extends AppCompatActivity {
         initializeUI();
         setupListeners();
 
-        // Get the User ID passed from the previous activity
+        String mode = getIntent().getStringExtra("MODE");
+
+        if ("AdminMode".equals(mode)) {
+            configureForAdmin();
+        } else {
+            configureForUserProfile();
+        }
+
         currentUserId = getIntent().getStringExtra("USER_ID");
         if (currentUserId != null) {
             loadUserData(currentUserId);
@@ -69,6 +78,8 @@ public class UserDetailActivity extends AppCompatActivity {
         tvDetailEmail = findViewById(R.id.tvDetailEmail);
         spinnerDetailRole = findViewById(R.id.spinnerDetailRole);
 
+        tvActivityTitle = findViewById(R.id.tv_user_detail_title);
+
         btnToggleEdit = findViewById(R.id.btnToggleEdit);
         btnUpdateProfile = findViewById(R.id.btnUpdateProfile);
 
@@ -76,6 +87,19 @@ public class UserDetailActivity extends AppCompatActivity {
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, new String[]{"PIN", "Admin", "CSR"});
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerDetailRole.setAdapter(adapter);
+    }
+
+    private void configureForAdmin() {
+        tvActivityTitle.setText("User Account Details");
+        // Ensure admin buttons are visible (the suspend button is handled in populateUI)
+    }
+
+    private void configureForUserProfile() {
+        tvActivityTitle.setText("User Profile Details");
+        // Hide admin-only functionality
+        if (btnToggleSuspend != null) {
+            btnToggleSuspend.setVisibility(View.GONE);
+        }
     }
 
     private void setupListeners() {
