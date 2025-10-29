@@ -60,6 +60,10 @@
         <activity android:name=".PlatformDashboardActivity"
             android:exported="false"/>
 
+        <activity
+            android:name=".CSRSettingsActivity"
+            android:exported="false" />
+
         <!-- Add this line inside your <application> tag -->
         <activity
             android:name=".HelpRequestDetailActivity"

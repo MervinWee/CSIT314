@@ -106,7 +106,7 @@ public class loginPage extends AppCompatActivity {
         }
         else if ("CSR".equals(userRole)) {
             // Your existing CSR role
-            intent = new Intent(loginPage.this, CsrDashboardActivity.class);
+            intent = new Intent(loginPage.this, CSRHomeScreenActivity.class);
         }
         else if ("Platform".equals(userRole)) {
             // Your existing Platform management role

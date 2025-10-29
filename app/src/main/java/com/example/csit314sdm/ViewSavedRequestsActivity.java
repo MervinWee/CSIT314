@@ -42,7 +42,7 @@ public class ViewSavedRequestsActivity extends AppCompatActivity {
         adapter = new HelpRequestAdapter(request -> {
             // TODO: Handle click to view request details
             Toast.makeText(this, "Clicked on: " + request.getTitle(), Toast.LENGTH_SHORT).show();
-        });
+        }, this);
         recyclerView.setAdapter(adapter);
     }
 

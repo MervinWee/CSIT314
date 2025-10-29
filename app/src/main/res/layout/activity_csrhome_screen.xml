@@ -83,7 +83,7 @@
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:padding="16dp"
-                    android:text="Ongoing Requests"
+                    android:text="Shortlisted Requests"
                     android:textColor="#00695C"
                     android:textStyle="bold" />
             </com.google.android.material.card.MaterialCardView>
@@ -187,7 +187,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_marginTop="16dp"
-            android:text="Ongoing Requests"
+            android:text="Shortlisted Requests"
             android:textColor="@android:color/black"
             android:textSize="18sp"
             android:textStyle="bold"

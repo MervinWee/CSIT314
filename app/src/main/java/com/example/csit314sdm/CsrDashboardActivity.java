@@ -95,7 +95,7 @@ public class CsrDashboardActivity extends AppCompatActivity {
             Intent intent = new Intent(CsrDashboardActivity.this, HelpRequestDetailActivity.class);
             intent.putExtra(HelpRequestDetailActivity.EXTRA_REQUEST_ID, request.getId());
             startActivity(intent);
-        });
+        }, this);
         recyclerView.setAdapter(adapter);
     }
 
@@ -212,14 +212,13 @@ public class CsrDashboardActivity extends AppCompatActivity {
 
             if (itemId == R.id.nav_logout) {
                 handleLogout();
-            }
-            // --- ADD THIS BLOCK ---
-            else if (itemId == R.id.nav_history) {
+            } else if (itemId == R.id.nav_history) {
                 Intent intent = new Intent(CsrDashboardActivity.this, HistoryActivity.class);
                 startActivity(intent);
-            }
-            // --------------------
-            else {
+            } else if (itemId == R.id.nav_settings) {
+                Intent intent = new Intent(CsrDashboardActivity.this, CSRSettingsActivity.class);
+                startActivity(intent);
+            } else {
                 Toast.makeText(CsrDashboardActivity.this, "Clicked: " + item.getTitle(), Toast.LENGTH_SHORT).show();
             }
             drawerLayout.closeDrawer(GravityCompat.START);

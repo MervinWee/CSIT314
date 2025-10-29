@@ -147,13 +147,17 @@ public class HistoryActivity extends AppCompatActivity {
 
     private void setupRecyclerView() {
         recyclerViewHistory.setLayoutManager(new LinearLayoutManager(this));
+
+        // Create the adapter by passing BOTH the click listener and the context
         adapter = new HelpRequestAdapter(request -> {
             Intent intent = new Intent(HistoryActivity.this, HelpRequestDetailActivity.class);
             intent.putExtra(HelpRequestDetailActivity.EXTRA_REQUEST_ID, request.getId());
             startActivity(intent);
-        });
+        }, HistoryActivity.this); // <-- Add 'HistoryActivity.this' as the second argument
+
         recyclerViewHistory.setAdapter(adapter);
     }
+
 
     private void setupSpinners() {
         String[] categories = {"All", "Medical Transport", "Grocery Shopping Help", "Prescription Pickup", "Other"};

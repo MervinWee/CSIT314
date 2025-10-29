@@ -2,6 +2,7 @@ package com.example.csit314sdm;
 
 import com.google.firebase.firestore.ServerTimestamp;
 import java.util.Date;
+import java.util.List;
 
 // ENTITY: Represents the data model for a single help request.
 public class HelpRequest {
@@ -15,7 +16,7 @@ public class HelpRequest {
     private String urgency;      // e.g., "High Urgency", "Medium", "Low"
     private String status;       // e.g., "New", "In Progress", "Resolved"
     private String submittedBy;  // UID of the user who submitted it
-    private String savedByCsrId; // UID of the CSR who saved/shortlisted this request
+    private List<String> savedBy; // List of UIDs of CSRs who saved this
 
     @ServerTimestamp
     private Date createdAt;
@@ -55,8 +56,8 @@ public class HelpRequest {
     public String getSubmittedBy() { return submittedBy; }
     public void setSubmittedBy(String submittedBy) { this.submittedBy = submittedBy; }
 
-    public String getSavedByCsrId() { return savedByCsrId; }
-    public void setSavedByCsrId(String savedByCsrId) { this.savedByCsrId = savedByCsrId; }
+    public List<String> getSavedBy() { return savedBy; }
+    public void setSavedBy(List<String> savedBy) { this.savedBy = savedBy; }
 
     public Date getCreatedAt() { return createdAt; }
     public void setCreatedAt(Date createdAt) { this.createdAt = createdAt; }
