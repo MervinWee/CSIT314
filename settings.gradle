@@ -1,24 +1,18 @@
+// File: C:/Users/suhai/StudioProjects/CSIT314/settings.gradle
+// This file defines where to find plugins and dependencies.
+
 pluginManagement {
-    repositories {
-        google {
-            content {
-                includeGroupByRegex("com\\.android.*")
-                includeGroupByRegex("com\\.google.*")
-                includeGroupByRegex("androidx.*")
-            }
-        }
+    repositories {        // These lines tell Gradle where to search for the plugins themselves.
+        google()
         mavenCentral()
         gradlePluginPortal()
     }
-    // ADD THIS 'plugins' BLOCK
-    plugins {
-        id 'com.android.application' version '8.2.0' apply false
-        id 'com.google.gms.google-services' version '4.4.1' apply false
-    }
 }
+
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
+        // These lines tell Gradle where to search for your app's dependencies (like Firebase).
         google()
         mavenCentral()
     }

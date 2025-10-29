@@ -1,4 +1,10 @@
-// Top-level build file.
-//
-// This file is intentionally left blank.
-// All plugin and repository configurations are now handled in settings.gradle.
+// File: C:\Users\suhai\StudioProjects\CSIT314\build.gradle
+// This file should ONLY define plugin versions for the project.
+// Repository declarations are correctly handled by the settings.gradle file.
+
+plugins {
+    id 'com.android.application' version '8.13.0' apply false
+    id 'com.google.gms.google-services' version '4.4.2' apply false
+}
+
+// DO NOT add an 'allprojects' or 'buildscript' block here.

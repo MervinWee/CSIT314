@@ -4,6 +4,7 @@ import android.app.DatePickerDialog;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -33,7 +34,7 @@ public class MonthlyReportActivity extends AppCompatActivity {
         platformDataAccount = new PlatformDataAccount();
 
         etMonth = findViewById(R.id.etMonth);
-        btnGenerateReport = findViewById(R.id.btnGenerateReportM);
+        btnGenerateReport = findViewById(R.id.btnGenerateReport);
         btnBack = findViewById(R.id.btnBack);
         tvTopCompany = findViewById(R.id.tvTopCompany);
         tvMostRequestedService = findViewById(R.id.tvMostRequestedService);
@@ -68,13 +69,25 @@ public class MonthlyReportActivity extends AppCompatActivity {
     }
 
     private void generateReport() {
+        btnGenerateReport.setEnabled(false);
+        Toast.makeText(this, "Generating monthly report...", Toast.LENGTH_SHORT).show();
+
         int year = selectedMonth.get(Calendar.YEAR);
         int month = selectedMonth.get(Calendar.MONTH) + 1; // Calendar.MONTH is 0-based
 
-        String topCompany = platformDataAccount.getTopPerformingCompany(year, month);
-        String mostRequestedService = platformDataAccount.getMostRequestedService(year, month);
+        platformDataAccount.generateMonthlyReport(year, month, new PlatformDataAccount.MonthlyReportCallback() {
+            @Override
+            public void onReportDataLoaded(String topCompany, String mostRequestedService) {
+                tvTopCompany.setText(topCompany != null ? topCompany : "N/A");
+                tvMostRequestedService.setText(mostRequestedService != null ? mostRequestedService : "N/A");
+                btnGenerateReport.setEnabled(true);
+            }
 
-        tvTopCompany.setText(topCompany != null ? topCompany : "N/A");
-        tvMostRequestedService.setText(mostRequestedService != null ? mostRequestedService : "N/A");
+            @Override
+            public void onError(String message) {
+                Toast.makeText(MonthlyReportActivity.this, "Error: " + message, Toast.LENGTH_LONG).show();
+                btnGenerateReport.setEnabled(true);
+            }
+        });
     }
 }

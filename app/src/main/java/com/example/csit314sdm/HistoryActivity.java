@@ -1,3 +1,6 @@
+// File: C:/Users/suhai/StudioProjects/CSIT314/app/src/main/java/com/example/csit314sdm/HistoryActivity.java
+// FINAL CORRECTED VERSION using the new HistoryAdapter.
+
 package com.example.csit314sdm;
 
 import android.app.DatePickerDialog;
@@ -22,6 +25,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -39,7 +43,8 @@ public class HistoryActivity extends AppCompatActivity {
 
     // Logic and Data
     private HelpRequestController controller;
-    private HelpRequestAdapter adapter;
+    // --- FIX: Use the new HistoryAdapter ---
+    private HistoryAdapter adapter;
     private Calendar fromDateCalendar = Calendar.getInstance();
     private Calendar toDateCalendar = Calendar.getInstance();
     private Date fromDate, toDate;
@@ -49,7 +54,6 @@ public class HistoryActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_history);
 
-        // --- Setup Toolbar & Back Button ---
         MaterialToolbar toolbar = findViewById(R.id.toolbarHistory);
         setSupportActionBar(toolbar);
         ActionBar actionBar = getSupportActionBar();
@@ -64,22 +68,35 @@ public class HistoryActivity extends AppCompatActivity {
         setupDatePickers();
 
         btnApplyFilters.setOnClickListener(v -> fetchHistory());
-
-        // Perform an initial fetch when the screen loads
         fetchHistory();
     }
 
-    // Handles the click on the back arrow in the toolbar
     @Override
     public boolean onSupportNavigateUp() {
         onBackPressed();
         return true;
     }
 
+    private void setupRecyclerView() {
+        recyclerViewHistory.setLayoutManager(new LinearLayoutManager(this));
+        // --- FIX: Initialize the new HistoryAdapter ---
+        adapter = new HistoryAdapter(new ArrayList<>());
+
+        // --- FIX: The errors are now resolved because HistoryAdapter has these methods ---
+        adapter.setOnItemClickListener(request -> {
+            Intent intent = new Intent(HistoryActivity.this, HelpRequestDetailActivity.class);
+            // Use the getter method 'request.getId()'
+            intent.putExtra(HelpRequestDetailActivity.EXTRA_REQUEST_ID, request.getId());
+            startActivity(intent);
+        });
+
+        recyclerViewHistory.setAdapter(adapter);
+    }
+
+    // --- All other methods below this line are correct and do not need changes ---
+
     private void fetchHistory() {
         setLoadingState(true);
-
-        // 1. Get the currently logged-in user
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser == null) {
             setLoadingState(false);
@@ -89,13 +106,10 @@ public class HistoryActivity extends AppCompatActivity {
             return;
         }
 
-        // 2. Get the user's UID to use as the companyId
-        String companyId = currentUser.getUid();
+        String userId = currentUser.getUid();
         String category = spinnerCategory.getText().toString();
-        // fromDate and toDate are already set by the DatePickerDialogs
 
-        // 3. Call the controller with the dynamic ID and filters
-        controller.getCompletedHistory(companyId, fromDate, toDate, category, new HelpRequestController.HelpRequestsLoadCallback() {
+        controller.getCompletedHistory(userId, fromDate, toDate, category, new HelpRequestController.HelpRequestsLoadCallback() {
             @Override
             public void onRequestsLoaded(List<HelpRequest> requests) {
                 runOnUiThread(() -> {
@@ -106,7 +120,7 @@ public class HistoryActivity extends AppCompatActivity {
                     } else {
                         tvNoHistoryResults.setVisibility(View.GONE);
                         recyclerViewHistory.setVisibility(View.VISIBLE);
-                        adapter.setRequests(requests); // Update the adapter with results
+                        adapter.setRequests(requests);
                     }
                 });
             }
@@ -133,8 +147,6 @@ public class HistoryActivity extends AppCompatActivity {
         }
     }
 
-    // --- Helper Methods for UI Initialization ---
-
     private void initializeViews() {
         etDateFrom = findViewById(R.id.etDateFrom);
         etDateTo = findViewById(R.id.etDateTo);
@@ -143,16 +155,6 @@ public class HistoryActivity extends AppCompatActivity {
         recyclerViewHistory = findViewById(R.id.recyclerViewHistory);
         progressBarHistory = findViewById(R.id.progressBarHistory);
         tvNoHistoryResults = findViewById(R.id.tvNoHistoryResults);
-    }
-
-    private void setupRecyclerView() {
-        recyclerViewHistory.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new HelpRequestAdapter(request -> {
-            Intent intent = new Intent(HistoryActivity.this, HelpRequestDetailActivity.class);
-            intent.putExtra(HelpRequestDetailActivity.EXTRA_REQUEST_ID, request.getId());
-            startActivity(intent);
-        });
-        recyclerViewHistory.setAdapter(adapter);
     }
 
     private void setupSpinners() {

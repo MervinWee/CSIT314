@@ -74,7 +74,7 @@ public class UserProfileController {
         Map<String, Object> profileData = new HashMap<>();
         profileData.put("fullName", fullName);
         profileData.put("contactNumber", contact);
-        profileData.put("dateOfBirth", dob);
+        profileData.put("dob", dob);
         profileData.put("address", address);
 
         db.collection("users").document(selectedUser.getUid())

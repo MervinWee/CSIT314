@@ -1,15 +1,15 @@
 package com.example.csit314sdm;
 
 import android.app.DatePickerDialog;
-import android.app.ProgressDialog;
+// import android.app.ProgressDialog; // FIX: Remove the deprecated import
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.ProgressBar; // FIX: Import the modern ProgressBar
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -26,9 +26,10 @@ public class CreateUserProfileActivity extends AppCompatActivity {
     private TextInputEditText etFullName, etContactNumber, etDateOfBirth, etAddress;
     private Button btnSaveProfile;
     private ImageButton btnBack;
-    private ProgressDialog progressDialog;
+    // private ProgressDialog progressDialog; // FIX: Remove the deprecated variable
+    private ProgressBar progressBar; // FIX: Add the new ProgressBar variable
 
-    private List<User> userList; // This will hold the filtered list of users without profiles
+    private List<User> userList;
     private User selectedUser;
 
     private static final String TAG = "CreateUserProfile";
@@ -51,8 +52,10 @@ public class CreateUserProfileActivity extends AppCompatActivity {
         etAddress = findViewById(R.id.etAddress);
         btnSaveProfile = findViewById(R.id.btnSaveProfile);
         btnBack = findViewById(R.id.btnBack);
+        progressBar = findViewById(R.id.progressBar); // FIX: Find the new ProgressBar
 
-        progressDialog = new ProgressDialog(this);
+        // progressDialog = new ProgressDialog(this); // FIX: Remove this line
+
         btnBack.setOnClickListener(v -> finish());
         btnSaveProfile.setOnClickListener(v -> handleSaveProfile());
         etDateOfBirth.setOnClickListener(v -> showDatePickerDialog());
@@ -72,22 +75,24 @@ public class CreateUserProfileActivity extends AppCompatActivity {
     }
 
     private void loadUsersWithoutProfiles() {
-        progressDialog.setMessage("Loading Users...");
-        progressDialog.show();
+        // FIX: Show the ProgressBar
+        progressBar.setVisibility(View.VISIBLE);
 
         profileController.getAllUsersWithProfileCheck(new UserProfileController.UsersLoadCallback() {
             @Override
             public void onUsersLoaded(List<User> allUsers) {
-                progressDialog.dismiss();
+                // FIX: Hide the ProgressBar
+                progressBar.setVisibility(View.GONE);
+
                 if (allUsers == null || allUsers.isEmpty()) {
                     Toast.makeText(CreateUserProfileActivity.this, "No users found in the system.", Toast.LENGTH_LONG).show();
                     return;
                 }
 
-                // Filter the list on the client side for users needing a profile
+                // Filter the list to find users needing a profile
                 List<User> usersWithoutProfile = new ArrayList<>();
                 for (User user : allUsers) {
-                    if (user.getFullName() == null || user.getFullName().trim().isEmpty()) {
+                    if (user.getPhoneNumber() == null || user.getPhoneNumber().trim().isEmpty()) {
                         usersWithoutProfile.add(user);
                     }
                 }
@@ -99,8 +104,7 @@ public class CreateUserProfileActivity extends AppCompatActivity {
                     return;
                 }
 
-                // The rest of the code works with the correctly filtered list
-                userList = usersWithoutProfile; // Save the filtered list
+                userList = usersWithoutProfile;
 
                 List<String> userEmails = new ArrayList<>();
                 for (User user : userList) {
@@ -113,7 +117,8 @@ public class CreateUserProfileActivity extends AppCompatActivity {
 
             @Override
             public void onDataLoadFailed(String errorMessage) {
-                progressDialog.dismiss();
+                // FIX: Hide the ProgressBar
+                progressBar.setVisibility(View.GONE);
                 Log.e(TAG, "onDataLoadFailed: " + errorMessage);
                 Toast.makeText(CreateUserProfileActivity.this, "Error loading users: " + errorMessage, Toast.LENGTH_LONG).show();
             }
@@ -135,20 +140,22 @@ public class CreateUserProfileActivity extends AppCompatActivity {
             return;
         }
 
-        progressDialog.setMessage("Saving Profile...");
-        progressDialog.show();
+        // FIX: Show the ProgressBar
+        progressBar.setVisibility(View.VISIBLE);
 
         profileController.saveUserProfile(selectedUser, fullName, contact, dob, address, new UserProfileController.ProfileCallback() {
             @Override
             public void onProfileSaveSuccess() {
-                progressDialog.dismiss();
+                // FIX: Hide the ProgressBar
+                progressBar.setVisibility(View.GONE);
                 Toast.makeText(CreateUserProfileActivity.this, "Profile created successfully!", Toast.LENGTH_LONG).show();
                 finish();
             }
 
             @Override
             public void onProfileSaveFailure(String errorMessage) {
-                progressDialog.dismiss();
+                // FIX: Hide the ProgressBar
+                progressBar.setVisibility(View.GONE);
                 Toast.makeText(CreateUserProfileActivity.this, errorMessage, Toast.LENGTH_LONG).show();
             }
         });
@@ -162,7 +169,8 @@ public class CreateUserProfileActivity extends AppCompatActivity {
 
         new DatePickerDialog(this,
                 (view, year1, monthOfYear, dayOfMonth) -> {
-                    String selectedDate = dayOfMonth + "/" + (monthOfYear + 1) + "/" + year1;
+                    // Format the date consistently
+                    String selectedDate = String.format("%02d/%02d/%d", dayOfMonth, (monthOfYear + 1), year1);
                     etDateOfBirth.setText(selectedDate);
                 }, year, month, day).show();
     }

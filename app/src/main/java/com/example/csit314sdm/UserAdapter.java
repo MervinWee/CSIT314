@@ -9,19 +9,15 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.util.ArrayList;
 import java.util.List;
 
-// ADAPTER: Binds User data to the views in the RecyclerView.
 public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder> {
 
-    private List<User> userList = new ArrayList<>();
-    // --- NEW: Add a listener for click events ---
-    private final OnItemClickListener listener;
-
-    // --- NEW: Create an interface to define the click handler ---
     public interface OnItemClickListener {
         void onItemClick(User user);
     }
 
-    // --- MODIFIED: Update the constructor to accept the listener ---
+    private List<User> users = new ArrayList<>();
+    private final OnItemClickListener listener;
+
     public UserAdapter(OnItemClickListener listener) {
         this.listener = listener;
     }
@@ -29,60 +25,45 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
     @NonNull
     @Override
     public UserViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        // I noticed your old adapter used R.layout.item_user_card. Let's keep that.
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_user_card, parent, false);
+        // --- FIX #1: Use your existing layout file ---
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.user_list_item, parent, false);
         return new UserViewHolder(view);
     }
 
     @Override
     public void onBindViewHolder(@NonNull UserViewHolder holder, int position) {
-        User user = userList.get(position);
-        // --- MODIFIED: Pass the user and the listener to the ViewHolder ---
-        holder.bind(user, listener);
+        User currentUser = users.get(position);
+        holder.bind(currentUser, listener);
     }
 
     @Override
     public int getItemCount() {
-        return userList.size();
+        return users.size();
     }
 
-    // This method is great for updating the list. No changes needed here.
-    public void setUsers(List<User> users) {
-        this.userList = users;
-        notifyDataSetChanged(); // Tell the RecyclerView to refresh
+    public void setUsers(List<User> newUsers) {
+        this.users = newUsers;
+        notifyDataSetChanged();
     }
 
-    // Represents a single list item view
     static class UserViewHolder extends RecyclerView.ViewHolder {
-        private final TextView tvUserEmail;
-        private final TextView tvUserRole;
+        // --- FIX #2: Declare TextViews that match your XML ---
+        TextView tvUserEmail;
+        TextView tvUserRole;
 
         public UserViewHolder(@NonNull View itemView) {
             super(itemView);
-            // Assuming your item_user_card.xml has these IDs.
-            tvUserEmail = itemView.findViewById(R.id.tvUserEmail);
-            tvUserRole = itemView.findViewById(R.id.tvUserRole);
+            // --- FIX #3: Find the TextViews using their correct IDs ---
+            tvUserEmail = itemView.findViewById(R.id.tv_user_email);
+            tvUserRole = itemView.findViewById(R.id.tv_user_role);
         }
 
-        // --- MODIFIED: The bind method now handles display logic and click events ---
-        // --- MODIFIED: The bind method now handles display logic and click events ---
         public void bind(final User user, final OnItemClickListener listener) {
-            // Set the primary identifier (email)
+            // --- FIX #4: Set the text using the correct methods from your User class ---
             tvUserEmail.setText(user.getEmail());
+            tvUserRole.setText("Role: " + user.getRole()); // Example: "Role: Admin"
 
-            // Set the secondary info: show full name if available, otherwise show the role.
-            if (user.getFullName() != null && !user.getFullName().isEmpty()) {
-                tvUserRole.setText("Name: " + user.getFullName());
-            } else {
-                // =========== THIS IS THE FIX ===========
-                // Change user.getUserType() to user.getRole()
-                tvUserRole.setText("Role: " + user.getRole());
-                // =====================================
-            }
-
-            // Set the click listener on the entire item view
             itemView.setOnClickListener(v -> listener.onItemClick(user));
         }
-
     }
 }

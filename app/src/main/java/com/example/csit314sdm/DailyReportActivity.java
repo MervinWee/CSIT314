@@ -4,6 +4,7 @@ import android.app.DatePickerDialog;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -34,7 +35,7 @@ public class DailyReportActivity extends AppCompatActivity {
         platformDataAccount = new PlatformDataAccount();
 
         etDate = findViewById(R.id.etDate);
-        btnGenerateReport = findViewById(R.id.btnGenerateReportD);
+        btnGenerateReport = findViewById(R.id.btnGenerateReport);
         btnBack = findViewById(R.id.btnBack);
         tvNewUsersCount = findViewById(R.id.tvNewUsersCount);
         tvNewRequestsCount = findViewById(R.id.tvNewRequestsCount);
@@ -71,12 +72,27 @@ public class DailyReportActivity extends AppCompatActivity {
     }
 
     private void generateReport() {
-        int newUserCount = platformDataAccount.getNewUserCount(selectedDate.getTime());
-        int newRequestCount = platformDataAccount.getNewRequestCount(selectedDate.getTime());
-        int completedMatchesCount = platformDataAccount.getCompletedMatchesCount(selectedDate.getTime());
+        btnGenerateReport.setEnabled(false); // Disable button to prevent multiple clicks
+        Toast.makeText(this, "Generating report...", Toast.LENGTH_SHORT).show();
 
-        tvNewUsersCount.setText(String.valueOf(newUserCount));
-        tvNewRequestsCount.setText(String.valueOf(newRequestCount));
-        tvCompletedMatchesCount.setText(String.valueOf(completedMatchesCount));
+        platformDataAccount.generateDailyReport(selectedDate.getTime(), new PlatformDataAccount.DailyReportCallback() {
+            @Override
+            public void onReportDataLoaded(int newUserCount, int newRequestCount, int completedMatchesCount) {
+                // This toast will show even if the counts are 0.
+                String successMsg = String.format("Report complete: %d users, %d requests, %d matches", newUserCount, newRequestCount, completedMatchesCount);
+                Toast.makeText(DailyReportActivity.this, successMsg, Toast.LENGTH_LONG).show();
+
+                tvNewUsersCount.setText(String.valueOf(newUserCount));
+                tvNewRequestsCount.setText(String.valueOf(newRequestCount));
+                tvCompletedMatchesCount.setText(String.valueOf(completedMatchesCount));
+                btnGenerateReport.setEnabled(true); // Re-enable button
+            }
+
+            @Override
+            public void onError(String message) {
+                Toast.makeText(DailyReportActivity.this, "Error: " + message, Toast.LENGTH_LONG).show();
+                btnGenerateReport.setEnabled(true); // Re-enable button
+            }
+        });
     }
 }

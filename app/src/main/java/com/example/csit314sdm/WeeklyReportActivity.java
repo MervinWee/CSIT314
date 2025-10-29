@@ -4,6 +4,7 @@ import android.app.DatePickerDialog;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -37,7 +38,7 @@ public class WeeklyReportActivity extends AppCompatActivity {
 
         etStartDate = findViewById(R.id.etStartDate);
         etEndDate = findViewById(R.id.etEndDate);
-        btnGenerateReport = findViewById(R.id.btnGenerateReportW);
+        btnGenerateReport = findViewById(R.id.btnGenerateReport);
         btnBack = findViewById(R.id.btnBack);
         tvUniquePinsCount = findViewById(R.id.tvUniquePinsCount);
         tvUniqueCsrCompaniesCount = findViewById(R.id.tvUniqueCsrCompaniesCount);
@@ -97,12 +98,23 @@ public class WeeklyReportActivity extends AppCompatActivity {
     }
 
     private void generateReport() {
-        int uniquePinsCount = platformDataAccount.getUniqueActivePINs(startDate.getTime(), endDate.getTime());
-        int uniqueCsrCompaniesCount = platformDataAccount.getUniqueActiveCRSs(startDate.getTime(), endDate.getTime());
-        int totalCompletedMatches = platformDataAccount.getTotalMatch(startDate.getTime(), endDate.getTime());
+        btnGenerateReport.setEnabled(false);
+        Toast.makeText(this, "Generating weekly report...", Toast.LENGTH_SHORT).show();
 
-        tvUniquePinsCount.setText(String.valueOf(uniquePinsCount));
-        tvUniqueCsrCompaniesCount.setText(String.valueOf(uniqueCsrCompaniesCount));
-        tvTotalCompletedMatchesCount.setText(String.valueOf(totalCompletedMatches));
+        platformDataAccount.generateWeeklyReport(startDate.getTime(), endDate.getTime(), new PlatformDataAccount.WeeklyReportCallback() {
+            @Override
+            public void onReportDataLoaded(int uniquePins, int uniqueCsrs, int totalMatches) {
+                tvUniquePinsCount.setText(String.valueOf(uniquePins));
+                tvUniqueCsrCompaniesCount.setText(String.valueOf(uniqueCsrs));
+                tvTotalCompletedMatchesCount.setText(String.valueOf(totalMatches));
+                btnGenerateReport.setEnabled(true);
+            }
+
+            @Override
+            public void onError(String message) {
+                Toast.makeText(WeeklyReportActivity.this, "Error: " + message, Toast.LENGTH_LONG).show();
+                btnGenerateReport.setEnabled(true);
+            }
+        });
     }
 }

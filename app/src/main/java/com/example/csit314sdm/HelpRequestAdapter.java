@@ -1,6 +1,6 @@
+// FINAL, UPGRADED, AND CLICKABLE ADAPTER
 package com.example.csit314sdm;
 
-import android.text.format.DateUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -8,20 +8,26 @@ import android.widget.Button;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class HelpRequestAdapter extends RecyclerView.Adapter<HelpRequestAdapter.RequestViewHolder> {
 
-    private List<HelpRequest> requestList = new ArrayList<>();
-    private final OnItemClickListener listener;
+    private List<HelpRequest> requestList;
+    private OnItemClickListener listener;
 
+    // The interface for handling clicks is now restored.
     public interface OnItemClickListener {
         void onItemClick(HelpRequest request);
     }
 
-    public HelpRequestAdapter(OnItemClickListener listener) {
+    // The method to set the listener is now restored.
+    public void setOnItemClickListener(OnItemClickListener listener) {
         this.listener = listener;
+    }
+
+    public HelpRequestAdapter(List<HelpRequest> requestList) {
+        this.requestList = requestList;
     }
 
     public void setRequests(List<HelpRequest> requests) {
@@ -32,56 +38,61 @@ public class HelpRequestAdapter extends RecyclerView.Adapter<HelpRequestAdapter.
     @NonNull
     @Override
     public RequestViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_help_request, parent, false);
+        // --- FIX: Use the new, more complex layout file ---
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_request_card, parent, false);
         return new RequestViewHolder(view);
     }
 
     @Override
     public void onBindViewHolder(@NonNull RequestViewHolder holder, int position) {
+        // Pass the listener to the ViewHolder's bind method.
         holder.bind(requestList.get(position), listener);
     }
 
     @Override
     public int getItemCount() {
-        return requestList.size();
+        return requestList != null ? requestList.size() : 0;
     }
 
     static class RequestViewHolder extends RecyclerView.ViewHolder {
-        private final TextView tvCategory, tvOrg, tvDate, tvUrgency;
-        private final Button btnViewDetails;
+        // --- FIX: Declare all the views from the new layout ---
+        TextView tvRequestTitle, tvRequestDescription, tvPostedDate, tvRequestStatus;
+        Button btnViewDetails;
 
         public RequestViewHolder(@NonNull View itemView) {
             super(itemView);
-            tvCategory = itemView.findViewById(R.id.tvRequestCategory);
-            tvOrg = itemView.findViewById(R.id.tvRequestOrg);
-            tvDate = itemView.findViewById(R.id.tvShortlistedDate);
-            tvUrgency = itemView.findViewById(R.id.tvUrgency);
+            // --- FIX: Find all the views by their ID in the new layout ---
+            tvRequestTitle = itemView.findViewById(R.id.tvRequestTitle);
+            tvRequestDescription = itemView.findViewById(R.id.tvRequestDescription);
+            tvPostedDate = itemView.findViewById(R.id.tvPostedDate);
+            tvRequestStatus = itemView.findViewById(R.id.tvRequestStatus);
             btnViewDetails = itemView.findViewById(R.id.btnViewDetails);
         }
 
         public void bind(final HelpRequest request, final OnItemClickListener listener) {
-            // This line needs the 'category' field from Firestore.
-            tvCategory.setText(request.getCategory());
+            // Populate the views
+            tvRequestTitle.setText(request.getRequestType());
+            tvRequestDescription.setText(request.getDescription());
+            tvRequestStatus.setText(request.getStatus());
 
-            // This line needs the 'organization' field from Firestore.
-            tvOrg.setText(request.getOrganization());
-
-            // This line needs the 'shortlistedDate' field from Firestore.
-            if (request.getShortlistedDate() != null) {
-                long now = System.currentTimeMillis();
-                CharSequence relativeTime = DateUtils.getRelativeTimeSpanString(request.getShortlistedDate().getTime(), now, DateUtils.DAY_IN_MILLIS);
-                tvDate.setText("Shortlisted " + relativeTime);
-            }
-
-            // This block needs the 'urgency' field from Firestore.
-            if (request.getUrgency() != null && !request.getUrgency().isEmpty()) {
-                tvUrgency.setText(request.getUrgency());
-                tvUrgency.setVisibility(View.VISIBLE);
+            if (request.getCreationTimestamp() != null) {
+                long diff = System.currentTimeMillis() - request.getCreationTimestamp().getTime();
+                long days = TimeUnit.MILLISECONDS.toDays(diff);
+                if (days == 0) tvPostedDate.setText("Posted today");
+                else if (days == 1) tvPostedDate.setText("Posted yesterday");
+                else tvPostedDate.setText("Posted " + days + " days ago");
             } else {
-                tvUrgency.setVisibility(View.GONE);
+                tvPostedDate.setText("");
             }
 
-            btnViewDetails.setOnClickListener(v -> listener.onItemClick(request));
+            // --- FIX: The click listener logic is now restored ---
+            if (btnViewDetails != null) {
+                btnViewDetails.setOnClickListener(v -> {
+                    if (listener != null) {
+                        listener.onItemClick(request);
+                    }
+                });
+            }
         }
     }
 }

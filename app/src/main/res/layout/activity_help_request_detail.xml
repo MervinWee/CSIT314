@@ -4,24 +4,23 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/white"
     tools:context=".HelpRequestDetailActivity">
 
+    <!-- Top App Bar with the back button -->
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
+        android:layout_height="wrap_content">
 
-        <androidx.appcompat.widget.Toolbar
-            android:id="@+id/toolbar"
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/topAppBar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="?attr/colorPrimary"
-            app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
-
+            app:navigationIcon="@drawable/ic_arrow_back"
+            app:title="Request Details" />
     </com.google.android.material.appbar.AppBarLayout>
 
-    <ScrollView
+    <!-- Main Content Area that scrolls -->
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
@@ -30,109 +29,62 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="24dp">
 
+            <!-- Each TextView has the correct ID that the Java code is looking for -->
             <TextView
+                android:id="@+id/tvDetailRequestType"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Title"
-                android:textSize="12sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/detail_tv_title"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:textColor="@android:color/black"
-                android:textSize="20sp"
-                tools:text="Cannot Reset My Password" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Organization"
-                android:textSize="12sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/detail_tv_organization"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:textColor="@android:color/black"
-                android:textSize="16sp"
-                tools:text="Seed to Branch Company" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Category"
-                android:textSize="12sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/detail_tv_category"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:textColor="@android:color/black"
-                android:textSize="16sp"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:textColor="?android:attr/textColorPrimary"
                 tools:text="Medical Transport" />
 
             <TextView
+                android:id="@+id/tvDetailStatus"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Description"
+                android:layout_marginTop="4dp"
+                android:background="#1976D2"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:textColor="@android:color/white"
                 android:textSize="12sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                tools:text="Open" />
 
-            <TextView
-                android:id="@+id/detail_tv_description"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="16dp"
                 android:layout_marginBottom="16dp"
-                android:textColor="@android:color/black"
-                android:textSize="16sp"
-                tools:text="A detailed description of the issue goes here, explaining what the user needs help with." />
+                android:background="#CCCCCC" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Urgency"
-                android:textSize="12sp"
-                android:textStyle="bold" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Description" android:textStyle="bold"/>
+            <TextView android:id="@+id/tvDetailDescription" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" tools:text="Need a ride to the hospital for a check-up."/>
 
-            <TextView
-                android:id="@+id/detail_tv_urgency"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:textColor="@android:color/black"
-                android:textSize="16sp"
-                tools:text="High Urgency" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:text="Location" android:textStyle="bold"/>
+            <TextView android:id="@+id/tvDetailLocation" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" tools:text="123 Main St, Anytown"/>
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Status"
-                android:textSize="12sp"
-                android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/detail_tv_status"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:textColor="@android:color/black"
-                android:textSize="16sp"
-                tools:text="New" />
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:text="Preferred Time" android:textStyle="bold"/>
+            <TextView android:id="@+id/tvDetailPreferredTime" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" tools:text="Tomorrow around 2 PM"/>
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:text="Urgency" android:textStyle="bold"/>
+            <TextView android:id="@+id/tvDetailUrgency" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" tools:text="High"/>
+
+            <TextView android:id="@+id/tvDetailPostedDate" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="24dp" android:textSize="12sp" tools:text="Posted on: 28 October 2025 at 07:11 PM"/>
 
         </LinearLayout>
-    </ScrollView>
+    </androidx.core.widget.NestedScrollView>
 
+    <!-- The ProgressBar for loading -->
     <ProgressBar
-        android:id="@+id/detail_progress_bar"
+        android:id="@+id/progressBar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
