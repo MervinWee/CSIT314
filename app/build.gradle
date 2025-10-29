@@ -1,16 +1,16 @@
 plugins {
-    alias(libs.plugins.android.application)
+    id 'com.android.application'
     id 'com.google.gms.google-services'
 }
 
 android {
     namespace 'com.example.csit314sdm'
-    compileSdk 36
+    compileSdk 34
 
     defaultConfig {
         applicationId "com.example.csit314sdm"
-        minSdk 34
-        targetSdk 36
+        minSdk 24
+        targetSdk 34
         versionCode 1
         versionName "1.0"
 
@@ -23,31 +23,37 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+    // Using a more compatible Java version
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_11
-        targetCompatibility JavaVersion.VERSION_11
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 }
 
 dependencies {
+    // Firebase BOM must be the first dependency declared
+    implementation platform('com.google.firebase:firebase-bom:33.1.1')
+
+    // Standard AndroidX Libraries
     implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'com.google.android.material:material:1.12.0' // Recommended stable version as of now
+
+    // Using a known-stable version of the Material library to resolve potential conflicts.
+    implementation 'com.google.android.material:material:1.11.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.activity:activity:1.8.0'
-    implementation libs.firebase.inappmessaging
 
+    // New UI component libraries needed for the PIN Home Screen
+    implementation 'androidx.recyclerview:recyclerview:1.3.2'
+    implementation 'androidx.cardview:cardview:1.0.0'
 
+    // All Firebase dependencies are declared here without versions, managed by the BOM
+    implementation 'com.google.firebase:firebase-analytics'
+    implementation 'com.google.firebase:firebase-auth'
+    implementation 'com.google.firebase:firebase-database'
+    implementation 'com.google.firebase:firebase-firestore'
+
+    // Testing Libraries
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
-
-    implementation platform('com.google.firebase:firebase-bom:34.3.0')
-    implementation 'com.google.firebase:firebase-analytics'
-    implementation 'com.google.firebase:firebase-auth:22.3.1'
-    implementation 'com.google.firebase:firebase-database:22.0.1'
-    implementation 'com.google.firebase:firebase-firestore:25.0.0'
-
-    testImplementation libs.junit
-    androidTestImplementation libs.ext.junit
-    androidTestImplementation libs.espresso.core
 }

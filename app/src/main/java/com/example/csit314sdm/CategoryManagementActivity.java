@@ -1,181 +1,130 @@
 package com.example.csit314sdm;
 
 import android.os.Bundle;
-import android.view.LayoutInflater;
+import android.util.Log;
 import android.view.View;
-// --- ADD THIS IMPORT ---
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.ListView;
 import android.widget.ProgressBar;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-import com.google.android.material.appbar.MaterialToolbar;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
-import java.util.List;
+import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
-public class CategoryManagementActivity extends AppCompatActivity implements CategoryAdapter.OnEditClickListener {
+public class CategoryManagementActivity extends AppCompatActivity {
 
-    private RecyclerView recyclerViewCategories;
-    private CategoryAdapter adapter;
-    private CategoryController controller;
+    private static final String TAG = "CategoryManagement";
+
+    // UI Elements
+    private ListView categoriesListView;
+    private Button btnAddCategory;
     private ProgressBar progressBar;
-    private TextView tvNoCategories;
-    private FloatingActionButton fabAddCategory;
+
+    // Firebase Firestore
+    private FirebaseFirestore db;
+    private CollectionReference categoriesCollection;
+
+    private ArrayList<String> categoryList;
+    private ArrayAdapter<String> categoryAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Make sure this layout file exists and has the correct UI elements
         setContentView(R.layout.activity_category_management);
 
-        // Setup Toolbar
-        MaterialToolbar toolbar = findViewById(R.id.toolbarCategoryManagement);
-        setSupportActionBar(toolbar);
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        // Initialize Firebase
+        db = FirebaseFirestore.getInstance();
+        categoriesCollection = db.collection("categories");
+
+        initializeUI();
+        loadCategories();
+    }
+
+    private void initializeUI() {
+        categoriesListView = findViewById(R.id.categoriesListView);
+        btnAddCategory = findViewById(R.id.btnAddCategory);
+        progressBar = findViewById(R.id.progressBar);
+        ImageButton btnBack = findViewById(R.id.btnBack);
+
+        categoryList = new ArrayList<>();
+        categoryAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, categoryList);
+        categoriesListView.setAdapter(categoryAdapter);
+
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> finish());
         }
-        toolbar.setNavigationOnClickListener(v -> onBackPressed());
 
-
-        recyclerViewCategories = findViewById(R.id.recyclerViewCategories);
-        progressBar = findViewById(R.id.progressBarCategories);
-        tvNoCategories = findViewById(R.id.tvNoCategories);
-        fabAddCategory = findViewById(R.id.fabAddCategory);
-
-
-        controller = new CategoryController();
-        setupRecyclerView();
-
-
-
-        fabAddCategory.setOnClickListener(v -> showCreateOrUpdateCategoryDialog(null));
-
-
-        fetchCategories();
+        btnAddCategory.setOnClickListener(v -> showAddCategoryDialog());
     }
 
-    private void setupRecyclerView() {
-        recyclerViewCategories.setLayoutManager(new LinearLayoutManager(this));
-
-        adapter = new CategoryAdapter(this);
-        recyclerViewCategories.setAdapter(adapter);
-    }
-
-
-    @Override
-    public void onEditClick(Category category) {
-        showCreateOrUpdateCategoryDialog(category);
-    }
-
-
-    private void fetchCategories() {
+    private void loadCategories() {
         progressBar.setVisibility(View.VISIBLE);
-        recyclerViewCategories.setVisibility(View.GONE);
-        tvNoCategories.setVisibility(View.GONE);
-
-        controller.getAllCategories(new CategoryController.CategoryFetchCallback() {
-            @Override
-            public void onCategoriesFetched(List<Category> categories) {
-                runOnUiThread(() -> {
-                    progressBar.setVisibility(View.GONE);
-                    if (categories.isEmpty()) {
-                        tvNoCategories.setVisibility(View.VISIBLE);
-                    } else {
-                        recyclerViewCategories.setVisibility(View.VISIBLE);
-                        adapter.setCategories(categories);
+        categoriesCollection.get().addOnCompleteListener(task -> {
+            progressBar.setVisibility(View.GONE);
+            if (task.isSuccessful()) {
+                categoryList.clear();
+                for (QueryDocumentSnapshot document : task.getResult()) {
+                    String categoryName = document.getString("name");
+                    if (categoryName != null) {
+                        categoryList.add(categoryName);
                     }
-                });
-            }
-
-            @Override
-            public void onFailure(String errorMessage) {
-                runOnUiThread(() -> {
-                    progressBar.setVisibility(View.GONE);
-                    Toast.makeText(CategoryManagementActivity.this, errorMessage, Toast.LENGTH_SHORT).show();
-                });
+                }
+                categoryAdapter.notifyDataSetChanged();
+            } else {
+                Log.e(TAG, "Error loading categories: ", task.getException());
+                Toast.makeText(this, "Failed to load categories.", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    // The method is now correctly named
-    private void showCreateOrUpdateCategoryDialog(final Category categoryToUpdate) {
+    private void showAddCategoryDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        LayoutInflater inflater = this.getLayoutInflater();
-        View dialogView = inflater.inflate(R.layout.dialog_create_category, null);
-        builder.setView(dialogView);
+        builder.setTitle("Add New Category");
 
-        final EditText etCategoryName = dialogView.findViewById(R.id.etCategoryName);
-        final EditText etCategoryDescription = dialogView.findViewById(R.id.etCategoryDescription);
+        final EditText input = new EditText(this);
+        input.setHint("Category Name");
+        builder.setView(input);
 
-        // --- THIS BLOCK HANDLES BOTH CREATE AND EDIT ---
-        if (categoryToUpdate != null) {
-            // This is an EDIT operation, so pre-populate the form
-            builder.setTitle("Edit Category");
-            etCategoryName.setText(categoryToUpdate.getName());
-            etCategoryDescription.setText(categoryToUpdate.getDescription());
-            builder.setPositiveButton("Update", null);
-        } else {
-            // This is a CREATE operation
-            builder.setTitle("Create New Category");
-            builder.setPositiveButton("Create", null);
-        }
-
-        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
-        // --------------------------------------------------
-
-        AlertDialog dialog = builder.create();
-
-        // Use onShowListener to override the default closing behavior
-        dialog.setOnShowListener(d -> {
-            // =========== FIX 3: Use the correct android.widget.Button class ===========
-            Button positiveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
-            positiveButton.setOnClickListener(v -> {
-                String name = etCategoryName.getText().toString().trim();
-                String description = etCategoryDescription.getText().toString().trim();
-
-                if (name.isEmpty()) {
-                    etCategoryName.setError("Category name cannot be empty.");
-                    // Don't close the dialog if validation fails
-                    return;
-                }
-
-                if (categoryToUpdate != null) {
-                    // --- UPDATE LOGIC ---
-                    categoryToUpdate.setName(name);
-                    categoryToUpdate.setDescription(description);
-                    controller.updateCategory(categoryToUpdate, createOperationCallback());
-                } else {
-                    // --- CREATE LOGIC ---
-                    // You need to have a constructor in your Category class
-                    Category newCategory = new Category(name, description);
-                    controller.createCategory(newCategory, createOperationCallback());
-                }
-                dialog.dismiss(); // Close the dialog ONLY after successful validation
-            });
+        builder.setPositiveButton("Add", (dialog, which) -> {
+            String categoryName = input.getText().toString().trim();
+            if (!categoryName.isEmpty()) {
+                addNewCategory(categoryName);
+            } else {
+                Toast.makeText(this, "Category name cannot be empty.", Toast.LENGTH_SHORT).show();
+            }
         });
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
 
-        dialog.show();
+        builder.show();
     }
 
-    // --- CREATE A REUSABLE CALLBACK ---
-    private CategoryController.CategoryOperationCallback createOperationCallback() {
-        return new CategoryController.CategoryOperationCallback() {
-            @Override
-            public void onSuccess(String message) {
-                Toast.makeText(CategoryManagementActivity.this, message, Toast.LENGTH_SHORT).show();
-                fetchCategories(); // Refresh the list on success
-            }
+    private void addNewCategory(String categoryName) {
+        progressBar.setVisibility(View.VISIBLE);
+        Map<String, Object> category = new HashMap<>();
+        category.put("name", categoryName);
 
-            @Override
-            public void onFailure(String errorMessage) {
-                Toast.makeText(CategoryManagementActivity.this, errorMessage, Toast.LENGTH_LONG).show();
-            }
-        };
+        categoriesCollection.add(category)
+                .addOnSuccessListener(documentReference -> {
+                    Log.d(TAG, "Category added with ID: " + documentReference.getId());
+                    Toast.makeText(this, "Category added successfully!", Toast.LENGTH_SHORT).show();
+                    loadCategories(); // Refresh the list
+                })
+                .addOnFailureListener(e -> {
+                    progressBar.setVisibility(View.GONE);
+                    Log.e(TAG, "Error adding category", e);
+                    Toast.makeText(this, "Failed to add category.", Toast.LENGTH_SHORT).show();
+                });
     }
 }

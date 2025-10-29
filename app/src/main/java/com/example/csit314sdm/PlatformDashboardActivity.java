@@ -3,7 +3,6 @@ package com.example.csit314sdm;
 import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Button;
-import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.auth.FirebaseAuth;
 
@@ -35,8 +34,8 @@ public class PlatformDashboardActivity extends AppCompatActivity {
         });
 
         btnManageCategories.setOnClickListener(v -> {
-            // For now, this is a placeholder. In the next step, we will create CategoryManagementActivity.
-            Toast.makeText(this, "Category Management screen coming soon!", Toast.LENGTH_SHORT).show();
+            Intent intent = new Intent(PlatformDashboardActivity.this, ManageCategoriesActivity.class);
+            startActivity(intent);
         });
 
         btnPlatformLogout.setOnClickListener(v -> {

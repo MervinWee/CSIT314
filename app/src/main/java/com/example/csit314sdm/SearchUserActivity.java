@@ -33,11 +33,14 @@ public class SearchUserActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_search_user);
 
+        // --- CHANGE 1: Initialize the Adapter correctly BEFORE initializing the UI ---
         searchController = new SearchUserController();
+        // The adapter is now initialized inside initializeUI() where it has access to the click listener logic.
 
         initializeUI();
         setupObservers();
 
+        // Perform an initial search to show all users
         searchController.searchUsers("", selectedRole);
     }
 
@@ -48,35 +51,41 @@ public class SearchUserActivity extends AppCompatActivity {
         tvNoResults = findViewById(R.id.tvNoResults);
         btnBack = findViewById(R.id.btnBack);
 
-
+        // --- CHANGE 2: Correctly set up the Adapter and RecyclerView ---
+        // Define what happens when a user item is clicked
         UserAdapter.OnItemClickListener clickListener = user -> {
-
+            // This is where you handle the click.
+// NEW: Launch the UserDetailActivity
             Intent intent = new Intent(SearchUserActivity.this, UserDetailActivity.class);
-            intent.putExtra("USER_ID", user.getUid());
-            intent.putExtra("MODE", "ProfileMode");
+            intent.putExtra("USER_ID", user.getUid()); // Pass the unique ID of the clicked user
             startActivity(intent);
 
 
         };
 
-
+        // Create the adapter instance, passing the listener to the constructor
         userAdapter = new UserAdapter(clickListener);
 
-        recyclerViewUsers.setLayoutManager(new LinearLayoutManager(this));
+        // Setup RecyclerView
+        recyclerViewUsers.setLayoutManager(new LinearLayoutManager(this)); // Don't forget to set a layout manager!
         recyclerViewUsers.setAdapter(userAdapter);
 
+        // Back button listener
         btnBack.setOnClickListener(v -> finish());
 
+        // Search text listener
         etSearchQuery.setOnEditorActionListener((v, actionId, event) -> {
             performSearch();
             return true;
         });
 
+        // Chip group listener for role filtering
         chipGroupRoleFilter.setOnCheckedStateChangeListener((group, checkedIds) -> {
             if (!checkedIds.isEmpty()) {
                 Chip selectedChip = group.findViewById(checkedIds.get(0));
                 selectedRole = selectedChip.getText().toString();
             } else {
+                // Handle case where all chips are deselected, if applicable
                 selectedRole = "All";
             }
             performSearch();
@@ -84,6 +93,7 @@ public class SearchUserActivity extends AppCompatActivity {
     }
 
     private void setupObservers() {
+        // Observe user list from the controller
         searchController.getUsersLiveData().observe(this, users -> {
             if (users != null && !users.isEmpty()) {
                 userAdapter.setUsers(users); // This method correctly updates the adapter

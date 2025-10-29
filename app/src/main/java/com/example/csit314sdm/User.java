@@ -1,46 +1,22 @@
+// File: app/src/main/java/com/example/csit314sdm/User.java
+// RESTORED to the standard, stable structure.
+
 package com.example.csit314sdm;
 
-import com.google.firebase.firestore.ServerTimestamp;
-import com.google.firebase.firestore.FieldValue;
-import java.util.Date;
-
-// ENTITY: Represents the data model for a user. It's a simple data holder.
 public class User {
-    private String uid; // Store the UID for easy reference
+
+    private String uid;
     private String email;
-
-
-    private String accountStatus; // Can be "Active", "Suspended", etc.
-
-    // Profile Info
     private String fullName;
-    private String contactNumber;
-    private String dateOfBirth;
-    private String address;
-
+    private String phoneNumber;
+    private String dob;
     private String role;
+    private String accountStatus;
 
-    // @ServerTimestamp tells Firestore to automatically set the server time when creating the object.
-    @ServerTimestamp
-    private Date createdAt;
+    // Public, no-argument constructor is REQUIRED
+    public User() {}
 
-    // Firestore requires a no-argument constructor to deserialize objects.
-    public User() {
-        this.accountStatus = "Active"; // Default to active
-    }
-
-    // Constructor for initial account creation
-    public User(String uid, String email, String role) {
-        this.uid = uid;
-        this.email = email;
-        this.role = role;
-        this.accountStatus = "Active";
-    }
-
-    // --- Getters and Setters for all fields ---
-
-    public String getAccountStatus() { return accountStatus; }
-    public void setAccountStatus(String accountStatus) { this.accountStatus = accountStatus; }
+    // --- Getters and Setters ---
 
     public String getUid() { return uid; }
     public void setUid(String uid) { this.uid = uid; }
@@ -48,40 +24,18 @@ public class User {
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
 
-
-
-    public String getRole() {
-        return role;
-    }
-
-    public void setRole(String role) {
-        this.role = role;
-    }
-
     public String getFullName() { return fullName; }
     public void setFullName(String fullName) { this.fullName = fullName; }
 
-    public String getContactNumber() { return contactNumber; }
-    public void setContactNumber(String contactNumber) { this.contactNumber = contactNumber; }
+    public String getPhoneNumber() { return phoneNumber; }
+    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
 
-    public String getDateOfBirth() { return dateOfBirth; }
-    public void setDateOfBirth(String dateOfBirth) { this.dateOfBirth = dateOfBirth; }
+    public String getDob() { return dob; }
+    public void setDob(String dob) { this.dob = dob; }
 
-    public String getAddress() { return address; }
-    public void setAddress(String address) { this.address = address; }
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
 
-    public Date getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Date createdAt) { this.createdAt = createdAt; }
-
-    // This is useful for the Spinner to display the user's email
-    // In User.java
-    @Override
-    public String toString() {
-        // If the email is null, return a placeholder to avoid crashes
-        if (this.email == null) {
-            return "Invalid User";
-        }
-        return this.email;
-    }
-
+    public String getAccountStatus() { return accountStatus; }
+    public void setAccountStatus(String accountStatus) { this.accountStatus = accountStatus; }
 }

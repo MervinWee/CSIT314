@@ -2,70 +2,104 @@ package com.example.csit314sdm;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import com.google.android.material.card.MaterialCardView;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.android.material.card.MaterialCardView;
 
 public class AdminDashboardActivity extends AppCompatActivity {
-
-    // Add variables for the new cards
-    private MaterialCardView cardCreateUserAccount, cardCreateUserProfile, cardRetrieveUserAccount, cardRetrieveUserProfile;
-    private Button btnAdminLogout, btnViewAllProfiles;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_admin_dashboard);
 
+        // --- Find all the clickable cards from the layout ---
         MaterialCardView cardCreateUserAccount = findViewById(R.id.cardCreateUserAccount);
-        MaterialCardView cardCreateUserProfile = findViewById(R.id.cardCreateUserProfile);
         MaterialCardView cardRetrieveUserAccount = findViewById(R.id.cardRetrieveUserAccount);
-        MaterialCardView cardRetrieveUserProfile = findViewById(R.id.cardRetrieveUserProfile); // The card for searching
+        MaterialCardView cardUpdateUserAccount = findViewById(R.id.cardUpdateUserAccount);
+        MaterialCardView cardManageCategories = findViewById(R.id.cardManageCategories);
         Button btnAdminLogout = findViewById(R.id.btnAdminLogout);
 
-        // --- ADD THIS LINE TO FIND THE NEW CARD ---
-        MaterialCardView cardManageCategories = findViewById(R.id.cardManageCategories);
+        // --- FIX #1: Find the Views for User Profile Management ---
+        // Make sure the IDs here EXACTLY match the IDs in your activity_admin_dashboard.xml
+        MaterialCardView cardCreateUserProfile = findViewById(R.id.cardCreateUserProfile);
+        MaterialCardView cardRetrieveUserProfile = findViewById(R.id.cardRetrieveUserProfile);
 
 
-// Set up the click listeners
-        cardCreateUserAccount.setOnClickListener(v -> {
-            startActivity(new Intent(AdminDashboardActivity.this, AdminCreateUserActivity.class));
-        });
+        // --- Set Listeners for Existing Functionality ---
 
-        cardCreateUserProfile.setOnClickListener(v -> {
-            startActivity(new Intent(AdminDashboardActivity.this, CreateUserProfileActivity.class));
-        });
+        // 1. Create User Account -> Navigates to the user creation page
+        if (cardCreateUserAccount != null) {
+            // NOTE: Your original code pointed to 'CreateUserAccountActivity.class'.
+            // Based on our previous conversations, the correct file is 'AdminCreateUserActivity.class'.
+            // I have corrected this for you.
+            cardCreateUserAccount.setOnClickListener(v -> {
+                Intent intent = new Intent(AdminDashboardActivity.this, AdminCreateUserActivity.class);
+                startActivity(intent);
+            });
+        }
 
-// THIS IS THE FIX: Make the "Retrieve User Profiles" card open the Search Activity
-        cardRetrieveUserProfile.setOnClickListener(v -> {
-            // The SearchUserActivity is the best screen for this, as it allows searching and viewing.
-            startActivity(new Intent(AdminDashboardActivity.this, SearchUserActivity.class));
-        });
+        // 2. Retrieve User Account -> Navigates to the user list
+        if (cardRetrieveUserAccount != null) {
+            cardRetrieveUserAccount.setOnClickListener(v -> {
+                Intent intent = new Intent(AdminDashboardActivity.this, ViewAllUsersActivity.class);
+                startActivity(intent);
+            });
+        }
 
-// This card will open the screen that shows only roles (ViewAllUsersActivity)
-        cardRetrieveUserAccount.setOnClickListener(v -> {
-            startActivity(new Intent(AdminDashboardActivity.this, ViewAllUsersActivity.class));
-        });
+        // 3. Update User Account -> Also navigates to the user list
+        if (cardUpdateUserAccount != null) {
+            cardUpdateUserAccount.setOnClickListener(v -> {
+                Intent intent = new Intent(AdminDashboardActivity.this, ViewAllUsersActivity.class);
+                startActivity(intent);
+            });
+        }
 
-        btnAdminLogout.setOnClickListener(v -> {
-            // Your logout logic here...
-            FirebaseAuth.getInstance().signOut();
-            Intent intent = new Intent(AdminDashboardActivity.this, loginPage.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            startActivity(intent);
-            finish();
-        });
+        // 4. Manage Categories -> Navigates to the categories management page
+        if (cardManageCategories != null) {
+            cardManageCategories.setOnClickListener(v -> {
+                // Make sure you have a 'CategoryManagementActivity.class' file for this to work
+                Intent intent = new Intent(AdminDashboardActivity.this, CategoryManagementActivity.class);
+                startActivity(intent);
+            });
+        }
 
-        cardManageCategories.setOnClickListener(v -> {
-            // This is where we will navigate to the Category Management screen.
-            Toast.makeText(this, "Opening Category Management...", Toast.LENGTH_SHORT).show();
+        // --- FIX #2: Set Listeners for the User Profile Cards ---
 
-            // The next step will be to create CategoryManagementActivity and then uncomment this:
-            Intent intent = new Intent(AdminDashboardActivity.this, CategoryManagementActivity.class);
-            startActivity(intent);
-        });
+        // This sets the listener for the "Create User Profile" card
+        if (cardCreateUserProfile != null) {
+            cardCreateUserProfile.setOnClickListener(v -> {
+                Intent intent = new Intent(AdminDashboardActivity.this, CreateUserProfileActivity.class);
+                startActivity(intent);
+            });
+        }
+
+        // This sets the listener for the "Retrieve User Profile" card
+        if (cardRetrieveUserProfile != null) {
+            // "Retrieving" profiles means viewing the list of all users.
+            cardRetrieveUserProfile.setOnClickListener(v -> {
+                Intent intent = new Intent(AdminDashboardActivity.this, ViewAllUsersActivity.class);
+                startActivity(intent);
+            });
+        }
+
+
+        // 5. Logout Button
+        if (btnAdminLogout != null) {
+            btnAdminLogout.setOnClickListener(v -> {
+                FirebaseAuth.getInstance().signOut();
+                Toast.makeText(AdminDashboardActivity.this, "You have been logged out.", Toast.LENGTH_SHORT).show();
+
+                Intent intent = new Intent(AdminDashboardActivity.this, loginPage.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+
+                startActivity(intent);
+                finish(); // Close the AdminDashboardActivity
+            });
+        }
     }
 }

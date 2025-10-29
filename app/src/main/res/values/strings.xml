@@ -1,3 +1,23 @@
 <resources>
-    <string name="app_name">CSIT314(SDM)</string>
+<string name="app_name">CSIT314(SDM)</string>
+
+<!-- This array provides the options for the role spinner in CreateUserAccountActivity -->
+<string-array name="user_roles">
+    <item>PIN</item>
+    <item>Admin</item>
+    <item>CSR</item>
+</string-array>
+    <string-array name="request_types">
+        <item>Medical Transport</item>
+        <item>Grocery Shopping Help</item>
+        <item>Prescription Pickup</item>
+        <item>Other</item>
+    </string-array>
+
+    <string-array name="urgency_levels">
+        <item>Low</item>
+        <item>Medium</item>
+        <item>High</item>
+    </string-array>
+
 </resources>
