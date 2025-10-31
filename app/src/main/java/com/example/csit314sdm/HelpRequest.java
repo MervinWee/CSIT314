@@ -4,30 +4,29 @@ import com.google.firebase.firestore.ServerTimestamp;
 import java.util.Date;
 import java.util.List;
 
-// ENTITY: Represents the data model for a single help request.
 public class HelpRequest {
 
-    private String id; // Firestore document ID
+    private String id;
     private String title;
     private String description;
-    private String organization; // e.g., "Seed to Branch Company"
-    private String category;     // e.g., "Medical Transport"
-    private String location;     // e.g., "Anywhere"
-    private String urgency;      // e.g., "High Urgency", "Medium", "Low"
-    private String status;       // e.g., "New", "In Progress", "Resolved"
-    private String submittedBy;  // UID of the user who submitted it
-    private List<String> savedBy; // List of UIDs of CSRs who saved this
+    private String location;
+    private String pinId;
+    private String requestType;
+    private String preferredTime;
+    private String urgencyLevel;
+    private String status;
+
+    private String category;
+    private String organization;
+    private Date shortlistedDate;
+    private List<String> savedBy;
 
     @ServerTimestamp
-    private Date createdAt;
+    private Date creationTimestamp;
 
-    @ServerTimestamp
-    private Date shortlistedDate; // NEW: To track when it was shortlisted
 
-    // Firestore requires a no-argument constructor
     public HelpRequest() {}
 
-    // --- Getters and Setters for all fields ---
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
@@ -38,30 +37,42 @@ public class HelpRequest {
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
 
-    public String getOrganization() { return organization; }
-    public void setOrganization(String organization) { this.organization = organization; }
-
-    public String getCategory() { return category; }
-    public void setCategory(String category) { this.category = category; }
-
     public String getLocation() { return location; }
     public void setLocation(String location) { this.location = location; }
 
-    public String getUrgency() { return urgency; }
-    public void setUrgency(String urgency) { this.urgency = urgency; }
+    public String getPinId() { return pinId; }
+    public void setPinId(String pinId) { this.pinId = pinId; }
+
+    public String getRequestType() { return requestType; }
+    public void setRequestType(String requestType) { this.requestType = requestType; }
+
+    public String getPreferredTime() { return preferredTime; }
+    public void setPreferredTime(String preferredTime) { this.preferredTime = preferredTime; }
+
+    public String getUrgencyLevel() { return urgencyLevel; }
+    public void setUrgencyLevel(String urgencyLevel) { this.urgencyLevel = urgencyLevel; }
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
 
-    public String getSubmittedBy() { return submittedBy; }
-    public void setSubmittedBy(String submittedBy) { this.submittedBy = submittedBy; }
+    public Date getCreationTimestamp() { return creationTimestamp; }
+    public void setCreationTimestamp(Date creationTimestamp) { this.creationTimestamp = creationTimestamp; }
+
+    // --- NEW GETTERS AND SETTERS to fix the adapter errors ---
+
+    public String getCategory() { return category; }
+    public void setCategory(String category) { this.category = category; }
+
+    public String getOrganization() { return organization; }
+    public void setOrganization(String organization) { this.organization = organization; }
+
+    public Date getShortlistedDate() { return shortlistedDate; }
+    public void setShortlistedDate(Date shortlistedDate) { this.shortlistedDate = shortlistedDate; }
 
     public List<String> getSavedBy() { return savedBy; }
     public void setSavedBy(List<String> savedBy) { this.savedBy = savedBy; }
 
-    public Date getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Date createdAt) { this.createdAt = createdAt; }
 
-    public Date getShortlistedDate() { return shortlistedDate; }
-    public void setShortlistedDate(Date shortlistedDate) { this.shortlistedDate = shortlistedDate; }
+    public String getUrgency() { return urgencyLevel; }
+
 }

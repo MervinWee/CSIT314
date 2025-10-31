@@ -15,6 +15,8 @@ public class UserRoleAdapter extends RecyclerView.Adapter<UserRoleAdapter.UserRo
     private List<User> userList = new ArrayList<>();
     private final OnItemClickListener listener;
 
+
+
     public interface OnItemClickListener {
         void onItemClick(User user);
     }
@@ -49,23 +51,20 @@ public class UserRoleAdapter extends RecyclerView.Adapter<UserRoleAdapter.UserRo
 
     static class UserRoleViewHolder extends RecyclerView.ViewHolder {
         private final TextView tvUserEmail;
-        private final TextView tvUserRole;
+        private final TextView tvUserNameChip; // More descriptive name
 
         public UserRoleViewHolder(@NonNull View itemView) {
             super(itemView);
             tvUserEmail = itemView.findViewById(R.id.tvUserEmail);
-            tvUserRole = itemView.findViewById(R.id.tvUserRole);
-        }
+            tvUserNameChip = itemView.findViewById(R.id.tvUserName);        }
 
         public void bind(final User user, final OnItemClickListener listener) {
             tvUserEmail.setText(user.getEmail());
 
-            // =========== THIS IS THE CORRECTED LINE ===========
-            // Always display the role, regardless of whether a profile exists.
-            tvUserRole.setText("Role: " + user.getRole());
-            // ================================================
 
-            // The item is still clickable to view details
+            tvUserNameChip.setText("Role: " + user.getRole());
+
+
             itemView.setOnClickListener(v -> listener.onItemClick(user));
         }
     }

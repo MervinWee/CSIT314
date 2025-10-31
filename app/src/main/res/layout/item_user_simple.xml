@@ -1,4 +1,4 @@
-<!-- File: app/src/main/res/layout/item_user.xml -->
+<!-- File: app/src/main/res/layout/item_user_simple.xml -->
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -44,8 +44,9 @@
             app:layout_constraintTop_toTopOf="parent"
             tools:text="user.email@example.com" />
 
+        <!-- This TextView is specifically for the role -->
         <TextView
-            android:id="@+id/tvUserName"
+            android:id="@+id/tvUserRole"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
@@ -58,7 +59,7 @@
             android:textSize="12sp"
             app:layout_constraintStart_toStartOf="@id/tvUserEmail"
             app:layout_constraintTop_toBottomOf="@id/tvUserEmail"
-            tools:text="Name: Donny Girl" />
+            tools:text="Role: CSR" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

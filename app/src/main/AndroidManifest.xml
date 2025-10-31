@@ -51,6 +51,14 @@
         <activity android:name=".CsrDashboardActivity"
             android:exported="false" />
 
+        <activity android:name=".UserManagementActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".UserAccountsActivity"
+            android:exported="false" />
+
+
         <activity android:name=".HistoryActivity"
             android:exported="false"/>
 

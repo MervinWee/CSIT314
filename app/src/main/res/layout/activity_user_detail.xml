@@ -21,7 +21,10 @@
             android:src="@drawable/ic_arrow_back"
             android:contentDescription="Back" />
 
+
+
         <TextView
+            android:id="@+id/tvToolbarTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="User Profile Details"
@@ -29,6 +32,7 @@
             android:textStyle="bold"
             android:layout_centerInParent="true"
             android:textColor="@android:color/black" />
+
 
         <!-- NEW: Edit/Save Toggle Button -->
         <Button

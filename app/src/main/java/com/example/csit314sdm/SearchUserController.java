@@ -13,7 +13,6 @@ public class SearchUserController {
 
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
 
-    // Use LiveData to automatically update the UI when data changes.
     private final MutableLiveData<List<User>> usersLiveData = new MutableLiveData<>();
     private final MutableLiveData<String> errorLiveData = new MutableLiveData<>();
 
@@ -26,23 +25,27 @@ public class SearchUserController {
     }
 
     public void searchUsers(String searchText, String role) {
+        // Start with the base query on the "users" collection.
         Query query = db.collection("users");
 
-        // 1. Filter by role if a specific role is selected
+        // --- FIX #2: Apply Role Filter --- 
+        // If a specific role is selected (i.e., not "All"), add a filter.
         if (role != null && !role.equalsIgnoreCase("All")) {
             query = query.whereEqualTo("userType", role);
         }
 
-        // 2. Filter by search text (email)
-        // Firestore is limited with text search. For a basic search,
-        // we can check for values greater than or equal to the search text
-        // and less than the search text + a Unicode character.
+        // --- FIX #1: Always Sort by Email ---
+        // This ensures the list is always in alphabetical order.
+        query = query.orderBy("email");
+
+        // --- Apply Search Text Filter ---
+        // If the user has typed something, add a range filter to act as a "starts with" search.
         if (searchText != null && !searchText.isEmpty()) {
-            query = query.orderBy("email")
-                    .whereGreaterThanOrEqualTo("email", searchText)
-                    .whereLessThanOrEqualTo("email", searchText + "\uf8ff");
+            query = query.whereGreaterThanOrEqualTo("email", searchText)
+                         .whereLessThanOrEqualTo("email", searchText + "\uf8ff");
         }
 
+        // Execute the final query.
         query.get().addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
                 QuerySnapshot documents = task.getResult();
@@ -53,6 +56,7 @@ public class SearchUserController {
                     usersLiveData.setValue(new ArrayList<>()); // Post empty list for "No results"
                 }
             } else {
+                // If the query fails, post the error. This is often due to a missing Firestore index.
                 errorLiveData.setValue("Error fetching users: " + task.getException().getMessage());
             }
         });

@@ -70,16 +70,17 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
     }
 
     private void populateUI(HelpRequest request) {
-        tvRequestType.setText(request.getCategory());
+        // Use public getter methods
+        tvRequestType.setText(request.getRequestType());
         tvStatus.setText(request.getStatus());
         tvDescription.setText(request.getDescription());
         tvLocation.setText(request.getLocation());
-        // tvPreferredTime.setText(request.getPreferredTime()); // This method doesn't exist
-        tvUrgency.setText(request.getUrgency());
+        tvPreferredTime.setText(request.getPreferredTime());
+        tvUrgency.setText(request.getUrgencyLevel());
 
-        if (request.getCreatedAt() != null) {
+        if (request.getCreationTimestamp() != null) {
             SimpleDateFormat sdf = new SimpleDateFormat("dd MMMM yyyy 'at' hh:mm a", Locale.getDefault());
-            tvPostedDate.setText("Posted on: " + sdf.format(request.getCreatedAt()));
+            tvPostedDate.setText("Posted on: " + sdf.format(request.getCreationTimestamp()));
         } else {
             tvPostedDate.setText("Date not available");
         }

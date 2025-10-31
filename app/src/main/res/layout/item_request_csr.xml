@@ -1,0 +1,60 @@
+<!-- File: app/src/main/res/layout/item_request_csr.xml -->
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginStart="16dp"
+    android:layout_marginEnd="16dp"
+    android:layout_marginTop="8dp"
+    android:layout_marginBottom="8dp"
+    app:cardElevation="4dp"
+    app:cardCornerRadius="8dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- TextView for the Request Title -->
+        <TextView
+            android:id="@+id/tvRequestTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="?attr/textAppearanceHeadline6"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            tools:text="Request Title" />
+
+        <!-- TextView for the Request Description -->
+        <TextView
+            android:id="@+id/tvRequestDescription"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:textAppearance="?attr/textAppearanceBody2"
+            tools:text="This is a sample description of the help request. It can be a couple of lines long but will be truncated if it is too long." />
+
+        <!-- TextView for the Request Location -->
+        <TextView
+            android:id="@+id/tvRequestLocation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:drawableStart="@drawable/ic_location_on"
+            android:drawablePadding="4dp"
+            android:gravity="center_vertical"
+            android:textAppearance="?attr/textAppearanceCaption"
+            android:textStyle="italic"
+            tools:text="Location: Central" />
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

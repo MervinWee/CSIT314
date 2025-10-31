@@ -1,4 +1,4 @@
-// File: app/src/main/java/com/example/csit314sdm/UserAdapter.java
+// File: app/src/main/java/com/example/csit314sdm/SimpleUserAdapter.java
 package com.example.csit314sdm;
 
 import android.view.LayoutInflater;
@@ -10,9 +10,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.util.ArrayList;
 import java.util.List;
 
-// --- FIX: Removed the "implements Filterable" and all related filtering logic ---
-// The adapter is now a "dumb" adapter. Its only job is to display the list it is given.
-public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder> {
+public class SimpleUserAdapter extends RecyclerView.Adapter<SimpleUserAdapter.UserViewHolder> {
 
     private List<User> userList = new ArrayList<>();
     private final OnItemClickListener listener;
@@ -21,20 +19,20 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         void onItemClick(User user);
     }
 
-    public UserAdapter(OnItemClickListener listener) {
+    public SimpleUserAdapter(OnItemClickListener listener) {
         this.listener = listener;
     }
 
-    // This method now simply accepts a list and displays it.
     public void setUsers(List<User> users) {
-        this.userList = new ArrayList<>(users);
-        notifyDataSetChanged(); // Refresh the view with the new list.
+        this.userList = users;
+        notifyDataSetChanged();
     }
 
     @NonNull
     @Override
     public UserViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_user_card, parent, false);
+        // Use the new simple layout file
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_user_simple, parent, false);
         return new UserViewHolder(view);
     }
 
@@ -49,22 +47,20 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
     }
 
     static class UserViewHolder extends RecyclerView.ViewHolder {
-        private final TextView tvUserName, tvUserEmail;
+        private final TextView tvUserEmail;
+        private final TextView tvUserRole;
 
         public UserViewHolder(@NonNull View itemView) {
             super(itemView);
-            tvUserName = itemView.findViewById(R.id.tvUserName);
+            // Find the views from the new simple layout
             tvUserEmail = itemView.findViewById(R.id.tvUserEmail);
+            tvUserRole = itemView.findViewById(R.id.tvUserRole);
         }
 
         public void bind(final User user, final OnItemClickListener listener) {
             tvUserEmail.setText(user.getEmail());
-            String fullName = user.getFullName();
-            if (fullName == null || fullName.trim().isEmpty()) {
-                tvUserName.setText("Name: Not available");
-            } else {
-                tvUserName.setText("Name: " + fullName);
-            }
+            tvUserRole.setText("Role: " + user.getRole());
+
             itemView.setOnClickListener(v -> listener.onItemClick(user));
         }
     }
