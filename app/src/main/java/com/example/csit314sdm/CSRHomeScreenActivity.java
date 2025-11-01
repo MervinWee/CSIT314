@@ -91,6 +91,7 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
         adapter = new HelpRequestAdapter(request -> {
             Intent intent = new Intent(CSRHomeScreenActivity.this, HelpRequestDetailActivity.class);
             intent.putExtra(HelpRequestDetailActivity.EXTRA_REQUEST_ID, request.getId());
+            intent.putExtra("user_role", "CSR");
             startActivity(intent);
         }, this);
         adapter.setOnSaveClickListener(this);

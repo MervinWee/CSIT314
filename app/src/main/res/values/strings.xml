@@ -1,12 +1,12 @@
 <resources>
-<string name="app_name">CSIT314(SDM)</string>
+    <string name="app_name">CSIT314(SDM)</string>
 
-<!-- This array provides the options for the role spinner in CreateUserAccountActivity -->
-<string-array name="user_roles">
-    <item>PIN</item>
-    <item>Admin</item>
-    <item>CSR</item>
-</string-array>
+    <!-- This array provides the options for the role spinner in CreateUserAccountActivity -->
+    <string-array name="user_roles">
+        <item>PIN</item>
+        <item>Admin</item>
+        <item>CSR</item>
+    </string-array>
     <string-array name="request_types">
         <item>Medical Transport</item>
         <item>Grocery Shopping Help</item>
@@ -14,10 +14,16 @@
         <item>Other</item>
     </string-array>
 
-    <string-array name="urgency_levels">
-        <item>Low</item>
-        <item>Medium</item>
-        <item>High</item>
-    </string-array>
+    <string name="pin_home_notifications_description">Notifications</string>
+    <string name="pin_home_profile_description">Profile</string>
+    <string name="pin_home_welcome_default">Hello, User!</string>
+    <string name="pin_home_create_new_request">Create New Request</string>
+    <string name="pin_home_active_requests">Active Requests\n(%d)</string>
+    <string name="pin_home_shortlisted_interests">Shortlisted Interests\n(%d)</string>
+    <string name="pin_home_completed_matches">Completed\nMatches</string>
+    <string name="pin_home_my_active_requests_title">My Active Requests</string>
+    <string name="pin_home_logout">Logout</string>
+    <string name="drawer_open">Open navigation drawer</string>
+    <string name="drawer_close">Close navigation drawer</string>
 
 </resources>

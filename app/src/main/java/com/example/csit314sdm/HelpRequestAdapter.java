@@ -16,13 +16,15 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.ArrayList;
-import java.util.List;
+import java.util.List; // This is the correct import for a Java List
 
 public class HelpRequestAdapter extends RecyclerView.Adapter<HelpRequestAdapter.RequestViewHolder> {
 
+    // Using the standard Java List
     private List<HelpRequest> requestList = new ArrayList<>();
     private final OnItemClickListener listener;
     private OnSaveClickListener saveClickListener;
+    // Using the standard Java String
     private String currentUserId;
     private Context context;
 
@@ -44,6 +46,7 @@ public class HelpRequestAdapter extends RecyclerView.Adapter<HelpRequestAdapter.
         this.saveClickListener = listener;
     }
 
+    // Using the standard Java List
     public void setRequests(List<HelpRequest> requests) {
         this.requestList = requests;
         notifyDataSetChanged();
@@ -81,26 +84,28 @@ public class HelpRequestAdapter extends RecyclerView.Adapter<HelpRequestAdapter.
             btnSave = itemView.findViewById(R.id.btnSave);
         }
 
+        // Using the standard Java String
         public void bind(final HelpRequest request, final OnItemClickListener listener, final OnSaveClickListener saveClickListener, String currentUserId, Context context) {
             tvCategory.setText(request.getCategory());
             tvOrg.setText(request.getOrganization());
 
-            if (request.getShortlistedDate() != null) {
+            if (request.getCreationTimestamp() != null) {
                 long now = System.currentTimeMillis();
-                CharSequence relativeTime = DateUtils.getRelativeTimeSpanString(request.getShortlistedDate().getTime(), now, DateUtils.DAY_IN_MILLIS);
+                CharSequence relativeTime = DateUtils.getRelativeTimeSpanString(request.getCreationTimestamp().getTime(), now, DateUtils.DAY_IN_MILLIS);
                 tvDate.setText("Shortlisted " + relativeTime);
             }
 
-            if (request.getUrgency() != null && !request.getUrgency().isEmpty()) {
-                String urgency = request.getUrgency().trim();
+            if (request.getUrgencyLevel() != null && !request.getUrgencyLevel().isEmpty()) {
+                // This is now a standard Java String
+                String urgency = request.getUrgencyLevel().trim();
                 tvUrgency.setText(urgency);
                 tvUrgency.setVisibility(View.VISIBLE);
 
-                if ("High Urgency".equals(urgency)) {
+                if ("High Urgency".equalsIgnoreCase(urgency) || "High".equalsIgnoreCase(urgency)) {
                     tvUrgency.setBackground(ContextCompat.getDrawable(context, R.drawable.chip_background_red));
-                } else if ("Moderate Urgency".equals(urgency)) {
+                } else if ("Moderate Urgency".equalsIgnoreCase(urgency) || "Medium".equalsIgnoreCase(urgency)) {
                     tvUrgency.setBackground(ContextCompat.getDrawable(context, R.drawable.chip_background_yellow));
-                } else if ("Low Urgency".equals(urgency)) {
+                } else if ("Low Urgency".equalsIgnoreCase(urgency) || "Low".equalsIgnoreCase(urgency)) {
                     tvUrgency.setBackground(ContextCompat.getDrawable(context, R.drawable.chip_background_green));
                 } else {
                     tvUrgency.setBackground(ContextCompat.getDrawable(context, R.drawable.chip_background));
@@ -109,7 +114,9 @@ public class HelpRequestAdapter extends RecyclerView.Adapter<HelpRequestAdapter.
                 tvUrgency.setVisibility(View.GONE);
             }
 
-            final boolean isSaved = request.getSavedBy() != null && request.getSavedBy().contains(currentUserId);
+            // This line correctly uses the updated getSavedByCsrId() method from HelpRequest.java
+            final boolean isSaved = request.getSavedByCsrId() != null && request.getSavedByCsrId().contains(currentUserId);
+
             btnSave.setImageResource(isSaved ? R.drawable.ic_star_filled : R.drawable.ic_star);
 
             btnViewDetails.setOnClickListener(v -> listener.onItemClick(request));

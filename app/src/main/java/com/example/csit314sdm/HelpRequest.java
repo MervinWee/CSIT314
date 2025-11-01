@@ -2,31 +2,35 @@ package com.example.csit314sdm;
 
 import com.google.firebase.firestore.ServerTimestamp;
 import java.util.Date;
-import java.util.List;
+import java.util.List; // This is the correct import for a Java List
 
+// ENTITY: Represents a single help request.
 public class HelpRequest {
 
+    // FIX: Reverted all fields to standard Java types
     private String id;
     private String title;
     private String description;
     private String location;
+    private String submittedBy;
     private String pinId;
     private String requestType;
     private String preferredTime;
     private String urgencyLevel;
     private String status;
-
     private String category;
     private String organization;
     private Date shortlistedDate;
-    private List<String> savedBy;
+    private long viewCount = 0;
+    private List<String> savedByCsrId;
 
     @ServerTimestamp
     private Date creationTimestamp;
 
-
+    // Default constructor is required for Firestore's toObject() mapping.
     public HelpRequest() {}
 
+    // --- Getters and Setters for all fields (using standard Java types) ---
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
@@ -39,6 +43,9 @@ public class HelpRequest {
 
     public String getLocation() { return location; }
     public void setLocation(String location) { this.location = location; }
+
+    public String getSubmittedBy() { return submittedBy; }
+    public void setSubmittedBy(String submittedBy) { this.submittedBy = submittedBy; }
 
     public String getPinId() { return pinId; }
     public void setPinId(String pinId) { this.pinId = pinId; }
@@ -58,8 +65,6 @@ public class HelpRequest {
     public Date getCreationTimestamp() { return creationTimestamp; }
     public void setCreationTimestamp(Date creationTimestamp) { this.creationTimestamp = creationTimestamp; }
 
-    // --- NEW GETTERS AND SETTERS to fix the adapter errors ---
-
     public String getCategory() { return category; }
     public void setCategory(String category) { this.category = category; }
 
@@ -69,10 +74,13 @@ public class HelpRequest {
     public Date getShortlistedDate() { return shortlistedDate; }
     public void setShortlistedDate(Date shortlistedDate) { this.shortlistedDate = shortlistedDate; }
 
-    public List<String> getSavedBy() { return savedBy; }
-    public void setSavedBy(List<String> savedBy) { this.savedBy = savedBy; }
-
-
     public String getUrgency() { return urgencyLevel; }
 
+    public Date getCreatedAt() { return creationTimestamp; }
+
+    public long getViewCount() { return viewCount; }
+    public void setViewCount(long viewCount) { this.viewCount = viewCount; }
+
+    public List<String> getSavedByCsrId() { return savedByCsrId; }
+    public void setSavedByCsrId(List<String> savedByCsrId) { this.savedByCsrId = savedByCsrId; }
 }

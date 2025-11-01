@@ -12,6 +12,9 @@ public class User {
     private String dob;
     private String role;
     private String accountStatus;
+    private String address;
+    private String shortId;
+
 
     // Public, no-argument constructor is REQUIRED
     public User() {}
@@ -38,4 +41,11 @@ public class User {
 
     public String getAccountStatus() { return accountStatus; }
     public void setAccountStatus(String accountStatus) { this.accountStatus = accountStatus; }
+
+    public String getAddress() { return address; }
+    public void setAddress(String address) { this.address = address; }
+
+    public String getShortId() { return shortId; }
+    public void setShortId(String shortId) { this.shortId = shortId; }
+
 }

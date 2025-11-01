@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto" xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".PinProfileActivity">
+
+    <!-- Top App Bar -->
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/topAppBar_profile"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            app:navigationIcon="@drawable/ic_arrow_back"
+            app:title="My Profile" />
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <!-- Main Content -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <!-- User ID Row -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginBottom="16dp">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="User ID" android:textAppearance="?attr/textAppearanceCaption"/>
+                <TextView android:id="@+id/tvProfileUserId" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textAppearance="?attr/textAppearanceBody1" tools:text="1234"/>
+            </LinearLayout>
+
+            <!-- Full Name Row -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginBottom="16dp">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Full Name" android:textAppearance="?attr/textAppearanceCaption"/>
+                <TextView android:id="@+id/tvProfileFullName" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textAppearance="?attr/textAppearanceBody1" tools:text="Alex Tan"/>
+            </LinearLayout>
+
+            <!-- Date of Birth Row -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginBottom="16dp">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Date of Birth" android:textAppearance="?attr/textAppearanceCaption"/>
+                <TextView android:id="@+id/tvProfileDob" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textAppearance="?attr/textAppearanceBody1" tools:text="01-Jan-1990"/>
+            </LinearLayout>
+
+            <!-- Email Address Row -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginBottom="16dp">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Email Address" android:textAppearance="?attr/textAppearanceCaption"/>
+                <TextView android:id="@+id/tvProfileEmail" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textAppearance="?attr/textAppearanceBody1" tools:text="alex.tan@example.com"/>
+            </LinearLayout>
+
+            <!-- Address Row -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginBottom="16dp">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Address" android:textAppearance="?attr/textAppearanceCaption"/>
+                <TextView android:id="@+id/tvProfileAddress" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textAppearance="?attr/textAppearanceBody1" tools:text="123 Orchard Road, Singapore"/>
+            </LinearLayout>
+
+            <!-- =================================================================== -->
+            <!-- FIX: The Password section is now updated with a "Change" button   -->
+            <!-- =================================================================== -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentStart="true"
+                    android:layout_centerVertical="true"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Password"
+                        android:textAppearance="?attr/textAppearanceCaption"/>
+
+                    <TextView
+                        android:id="@+id/tvProfilePassword"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="••••••••"
+                        android:textAppearance="?attr/textAppearanceBody1"/>
+                </LinearLayout>
+
+                <Button
+                    android:id="@+id/btnChangePassword"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:text="Change" />
+
+            </RelativeLayout>
+            <!-- =================================================================== -->
+
+            <!-- Phone Number Row -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginBottom="16dp">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Phone Number" android:textAppearance="?attr/textAppearanceCaption"/>
+                <TextView android:id="@+id/tvProfilePhoneNumber" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textAppearance="?attr/textAppearanceBody1" tools:text="+65 9123 4567"/>
+            </LinearLayout>
+
+            <!-- Edit Profile Button -->
+            <Button
+                android:id="@+id/btnEditProfile"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="32dp"
+                android:text="Edit Profile" />
+
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

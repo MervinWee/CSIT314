@@ -1,64 +1,94 @@
 // SimpleRequestAdapter.java
 package com.example.csit314sdm;
 
-import android.view.LayoutInflater;    import android.view.View;
-import android.view.ViewGroup;
+import android.content.Context;
+import android.view.LayoutInflater;
+import android.view.View;import android.view.ViewGroup;
 import android.widget.TextView;
+
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
+
 import java.util.List;
 
-// --- FIX: Create the SimpleRequestAdapter class ---
-public class SimpleRequestAdapter extends RecyclerView.Adapter<SimpleRequestAdapter.RequestViewHolder> {
+/**
+ * Adapter for the simple list of recent requests on the PIN Homepage.
+ * This adapter uses the 'item_request_card_simple.xml' layout.
+ */
+public class SimpleRequestAdapter extends RecyclerView.Adapter<SimpleRequestAdapter.SimpleViewHolder> {
 
-    private List<HelpRequest> requestList;
+    private final List<HelpRequest> requestList;
+    private final Context context;
+    private final OnItemClickListener clickListener;
 
-    // Constructor to initialize the list of requests
-    public SimpleRequestAdapter(List<HelpRequest> requestList) {
-        this.requestList = requestList;
+    public interface OnItemClickListener {
+        void onItemClick(HelpRequest request);
     }
 
-    // This method is called when the RecyclerView needs a new ViewHolder.
+    public SimpleRequestAdapter(List<HelpRequest> requestList, Context context, OnItemClickListener listener) {
+        this.requestList = requestList;
+        this.context = context;
+        this.clickListener = listener;
+    }
+
     @NonNull
     @Override
-    public RequestViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        // Inflate a simple layout for each item.
-        // NOTE: You must create a layout file named 'simple_request_item.xml'
-        View view = LayoutInflater.from(parent.getContext()).inflate(android.R.layout.simple_list_item_1, parent, false);
-        return new RequestViewHolder(view);
+    public SimpleViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        // Inflate the simple card layout we will create next.
+        View view = LayoutInflater.from(context).inflate(R.layout.item_request_card_simple, parent, false);
+        return new SimpleViewHolder(view);
     }
 
-    // This method binds the data from your HelpRequest object to the views in the ViewHolder.
     @Override
-    public void onBindViewHolder(@NonNull RequestViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull SimpleViewHolder holder, int position) {
         HelpRequest request = requestList.get(position);
-        // Assuming HelpRequest has a 'getTitle()' method or similar.
-        // Change 'request.getTitle()' to whatever method returns the string you want to display.
-        holder.titleTextView.setText(request.getTitle());
+        holder.bind(request, clickListener); // Use the bind helper method
+
+        // --- Logic for the Status Bubble ---
+        if (request.getStatus() != null) {
+            holder.status.setText(request.getStatus());
+
+            // Change the color of the bubble based on the status text.
+            switch (request.getStatus()) {
+                case "Open":
+                    holder.status.setBackground(ContextCompat.getDrawable(context, R.drawable.status_bubble_open)); // Green
+                    break;
+                case "Taken":
+                case "Shortlisted":
+                    holder.status.setBackground(ContextCompat.getDrawable(context, R.drawable.status_bubble_taken)); // Blue
+                    break;
+                case "Completed":
+                    holder.status.setBackground(ContextCompat.getDrawable(context, R.drawable.status_bubble_completed)); // Grey
+                    break;
+                default:
+                    holder.status.setBackground(ContextCompat.getDrawable(context, R.drawable.status_bubble_default)); // Default color
+                    break;
+            }
+        }
     }
 
-    // Returns the total number of items in the list.
     @Override
     public int getItemCount() {
         return requestList.size();
     }
 
-    // Method to update the list of requests and refresh the RecyclerView
-    public void setRequests(List<HelpRequest> newRequestList) {
-        this.requestList = newRequestList;
-        notifyDataSetChanged(); // Notifies the adapter that the data has changed
-    }
+    // This ViewHolder finds the views from the simple card layout.
+    static class SimpleViewHolder extends RecyclerView.ViewHolder {
+        TextView title;
+        TextView status;
 
-    // The ViewHolder class holds the views for a single item in the list.
-    public static class RequestViewHolder extends RecyclerView.ViewHolder {
-        TextView titleTextView;
-
-        public RequestViewHolder(@NonNull View itemView) {
+        public SimpleViewHolder(@NonNull View itemView) {
             super(itemView);
-            // Initialize the TextView from the layout.
-            // Using the default ID from 'android.R.layout.simple_list_item_1'.
-            titleTextView = itemView.findViewById(android.R.id.text1);
+            // These IDs will come from the 'item_request_card_simple.xml' layout file.
+            title = itemView.findViewById(R.id.item_request_title);
+            status = itemView.findViewById(R.id.item_request_status);
+        }
+
+        // Helper method to bind data and set the click listener for the whole card
+        public void bind(final HelpRequest request, final OnItemClickListener listener) {
+            title.setText(request.getCategory());
+            itemView.setOnClickListener(v -> listener.onItemClick(request));
         }
     }
 }
-    

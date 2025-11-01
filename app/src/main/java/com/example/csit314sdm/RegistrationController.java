@@ -13,6 +13,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random; // <-- FIX: Import for Random
 import java.util.concurrent.Executor;
 
 public class RegistrationController {
@@ -20,7 +21,6 @@ public class RegistrationController {
     private final FirebaseFirestore db;
 
     public interface RegistrationCallback {
-        // FIX 1: Rename parameter for clarity
         void onRegistrationSuccess(String role);
         void onRegistrationFailure(String errorMessage);
     }
@@ -29,7 +29,6 @@ public class RegistrationController {
         db = FirebaseFirestore.getInstance(FirebaseApp.getInstance());
     }
 
-    // FIX 2: Rename parameter for clarity
     public void registerUser(String email, String password, String role, final RegistrationCallback callback) {
         if (!isInputValid(email, password, callback)) {
             return;
@@ -55,6 +54,7 @@ public class RegistrationController {
                         } else {
                             callback.onRegistrationFailure("Secondary auth: " + task.getException().getMessage());
                         }
+                        // Clean up the secondary app instance
                         secondaryApp.delete();
                     });
 
@@ -65,28 +65,47 @@ public class RegistrationController {
 
 
     private void saveUserDataToFirestore(FirebaseUser firebaseUser, String role, final RegistrationCallback callback) {
-        String uid = firebaseUser.getUid();
-        String email = firebaseUser.getEmail();
-        Map<String, Object> newUserMap = new HashMap<>();
-        newUserMap.put("uid", uid);
-        newUserMap.put("email", email);
+        // --- FIX: The logic to generate a unique ID is now integrated here ---
+        generateUniqueShortId(new UniqueIdCallback() {
+            @Override
+            public void onUniqueIdFound(String shortId) {
+                // This code runs only after a unique shortId has been confirmed.
+                String uid = firebaseUser.getUid();
+                String email = firebaseUser.getEmail();
 
+                Map<String, Object> newUserMap = new HashMap<>();
+                newUserMap.put("uid", uid);
+                newUserMap.put("email", email);
+                newUserMap.put("role", role);
+                newUserMap.put("createdAt", FieldValue.serverTimestamp());
+                newUserMap.put("accountStatus", "Active");
 
-        newUserMap.put("role", role);
+                // --- FIX: Add the new unique shortId to the user data ---
+                newUserMap.put("shortId", shortId);
+                // Initialize other fields from your User.java model to prevent null errors later
+                newUserMap.put("fullName", "");
+                newUserMap.put("dob", "");
+                newUserMap.put("address", "");
+                newUserMap.put("phoneNumber", "");
 
-        newUserMap.put("createdAt", FieldValue.serverTimestamp());
-        newUserMap.put("accountStatus", "Active");
+                db.collection("users").document(uid)
+                        .set(newUserMap)
+                        .addOnCompleteListener(task -> {
+                            if (task.isSuccessful()) {
+                                // Pass back the 'role' variable on success
+                                callback.onRegistrationSuccess(role);
+                            } else {
+                                callback.onRegistrationFailure("Account created, but failed to save user data: " + task.getException().getMessage());
+                            }
+                        });
+            }
 
-        db.collection("users").document(uid)
-                .set(newUserMap)
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        // Pass back the 'role' variable on success
-                        callback.onRegistrationSuccess(role);
-                    } else {
-                        callback.onRegistrationFailure("Account created, but failed to save user data: " + task.getException().getMessage());
-                    }
-                });
+            @Override
+            public void onIdGenerationFailed(String errorMessage) {
+                // If we couldn't generate an ID, fail the whole registration.
+                callback.onRegistrationFailure(errorMessage);
+            }
+        });
     }
 
     private boolean isInputValid(String email, String password, RegistrationCallback callback) {
@@ -95,5 +114,38 @@ public class RegistrationController {
             return false;
         }
         return true;
+    }
+
+    // --- FIX: New helper method and interface for generating the unique ID ---
+    /**
+     * Recursively generates a 4-digit ID and checks for uniqueness in the database.
+     */
+    private void generateUniqueShortId(final UniqueIdCallback callback) {
+        // Generate a random number between 1000 and 9999
+        int randomId = new Random().nextInt(9000) + 1000;
+        String shortId = String.valueOf(randomId);
+
+        // Check if a user document with this shortId already exists
+        db.collection("users").whereEqualTo("shortId", shortId).get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        if (task.getResult().isEmpty()) {
+                            // The ID is unique! Pass it back via the callback.
+                            callback.onUniqueIdFound(shortId);
+                        } else {
+                            // The ID is already taken. Try again by calling the method recursively.
+                            generateUniqueShortId(callback);
+                        }
+                    } else {
+                        // An error occurred while checking the database.
+                        callback.onIdGenerationFailed("Database error while checking for unique ID.");
+                    }
+                });
+    }
+
+    // A callback for the asynchronous ID generation process.
+    private interface UniqueIdCallback {
+        void onUniqueIdFound(String shortId);
+        void onIdGenerationFailed(String errorMessage);
     }
 }

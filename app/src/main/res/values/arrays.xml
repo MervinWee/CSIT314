@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="urgency_levels"><item>Low</item>
+        <item>Medium</item>
+        <item>High</item>
+    </string-array>
+
+    <string-array name="status_filter_options">
+        <item>All</item>
+        <item>Open</item>
+        <item>In-progress</item>
+        <item>Completed</item>
+        <item>Cancelled</item>
+    </string-array>
+
+        <string-array name="category_filter_options">
+            <item>All</item>
+            <item>Others</item>
+            <item>Transportation</item>
+            <item>Groceries</item>
+            <item>Medical</item>
+        </string-array>
+</resources>

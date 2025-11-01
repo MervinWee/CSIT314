@@ -3,6 +3,7 @@ package com.example.csit314sdm;
 import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
@@ -20,14 +21,19 @@ import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
+// BOUNDARY: This screen displays the Match History for a CSR's company.
 public class HistoryActivity extends AppCompatActivity {
+
+    private static final String TAG = "HistoryActivity"; // TAG for logging
 
     // UI Elements
     private TextInputEditText etDateFrom, etDateTo;
@@ -40,6 +46,7 @@ public class HistoryActivity extends AppCompatActivity {
     // Logic and Data
     private HelpRequestController controller;
     private HelpRequestAdapter adapter;
+    private List<HelpRequest> historyList = new ArrayList<>();
     private Calendar fromDateCalendar = Calendar.getInstance();
     private Calendar toDateCalendar = Calendar.getInstance();
     private Date fromDate, toDate;
@@ -63,10 +70,11 @@ public class HistoryActivity extends AppCompatActivity {
         setupSpinners();
         setupDatePickers();
 
-        btnApplyFilters.setOnClickListener(v -> fetchHistory());
+        // The "Apply" button will now trigger the full fetch sequence
+        btnApplyFilters.setOnClickListener(v -> fetchCsrCompanyIdAndLoadHistory());
 
-        // Perform an initial fetch when the screen loads
-        fetchHistory();
+        // Perform an initial fetch when the screen loads (with no date/category filters)
+        fetchCsrCompanyIdAndLoadHistory();
     }
 
     // Handles the click on the back arrow in the toolbar
@@ -76,37 +84,68 @@ public class HistoryActivity extends AppCompatActivity {
         return true;
     }
 
-    private void fetchHistory() {
-        setLoadingState(true);
-
-        // 1. Get the currently logged-in user
+    /**
+     * --- NEW METHOD ---
+     * This is now the main entry point. It first fetches the CSR's companyId from their
+     * profile, and only then proceeds to load the history.
+     */
+    private void fetchCsrCompanyIdAndLoadHistory() {
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser == null) {
-            setLoadingState(false);
             Toast.makeText(this, "No user is logged in.", Toast.LENGTH_LONG).show();
-            tvNoHistoryResults.setText("Please log in to view history.");
-            tvNoHistoryResults.setVisibility(View.VISIBLE);
             return;
         }
 
-        // 2. Get the user's UID to use as the companyId
-        String companyId = currentUser.getUid();
-        String category = spinnerCategory.getText().toString();
-        // fromDate and toDate are already set by the DatePickerDialogs
+        setLoadingState(true);
 
-        // 3. Call the controller with the dynamic ID and filters
+        // Get the companyId from the logged-in CSR's user document in Firestore
+        FirebaseFirestore.getInstance().collection("users").document(currentUser.getUid()).get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        String companyId = documentSnapshot.getString("companyId");
+                        if (companyId != null && !companyId.isEmpty()) {
+                            // Once we have the companyId, proceed to fetch the actual history data
+                            fetchHistory(companyId);
+                        } else {
+                            setLoadingState(false);
+                            Toast.makeText(HistoryActivity.this, "Could not find company ID for this user.", Toast.LENGTH_LONG).show();
+                        }
+                    } else {
+                        setLoadingState(false);
+                        Toast.makeText(HistoryActivity.this, "User profile not found.", Toast.LENGTH_LONG).show();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    setLoadingState(false);
+                    Toast.makeText(HistoryActivity.this, "Failed to fetch user profile.", Toast.LENGTH_LONG).show();
+                    Log.e(TAG, "Error fetching user profile for companyId", e);
+                });
+    }
+
+    /**
+     * --- UPDATED METHOD ---
+     * This method is now called by fetchCsrCompanyIdAndLoadHistory and takes the companyId as a parameter.
+     */
+    private void fetchHistory(String companyId) {
+        String category = spinnerCategory.getText().toString();
+        // 'fromDate' and 'toDate' are already set by the DatePickerDialogs
+
+        // Call the CSR-specific controller method with the correct companyId
         controller.getCompletedHistory(companyId, fromDate, toDate, category, new HelpRequestController.HelpRequestsLoadCallback() {
             @Override
             public void onRequestsLoaded(List<HelpRequest> requests) {
                 runOnUiThread(() -> {
                     setLoadingState(false);
-                    if (requests.isEmpty()) {
+                    historyList.clear();
+                    historyList.addAll(requests);
+
+                    if (historyList.isEmpty()) {
                         tvNoHistoryResults.setVisibility(View.VISIBLE);
                         recyclerViewHistory.setVisibility(View.GONE);
                     } else {
                         tvNoHistoryResults.setVisibility(View.GONE);
                         recyclerViewHistory.setVisibility(View.VISIBLE);
-                        adapter.setRequests(requests); // Update the adapter with results
+                        adapter.setRequests(historyList);
                     }
                 });
             }
@@ -115,9 +154,10 @@ public class HistoryActivity extends AppCompatActivity {
             public void onDataLoadFailed(String errorMessage) {
                 runOnUiThread(() -> {
                     setLoadingState(false);
-                    tvNoHistoryResults.setText("Error loading data.");
+                    tvNoHistoryResults.setText("Error loading data. Check logs for index errors.");
                     tvNoHistoryResults.setVisibility(View.VISIBLE);
                     Toast.makeText(HistoryActivity.this, errorMessage, Toast.LENGTH_LONG).show();
+                    Log.e(TAG, "Error from getCompletedHistory: " + errorMessage);
                 });
             }
         });
@@ -133,7 +173,7 @@ public class HistoryActivity extends AppCompatActivity {
         }
     }
 
-    // --- Helper Methods for UI Initialization ---
+    // --- Helper Methods for UI Initialization (No Changes Here) ---
 
     private void initializeViews() {
         etDateFrom = findViewById(R.id.etDateFrom);
@@ -147,17 +187,13 @@ public class HistoryActivity extends AppCompatActivity {
 
     private void setupRecyclerView() {
         recyclerViewHistory.setLayoutManager(new LinearLayoutManager(this));
-
-        // Create the adapter by passing BOTH the click listener and the context
         adapter = new HelpRequestAdapter(request -> {
             Intent intent = new Intent(HistoryActivity.this, HelpRequestDetailActivity.class);
             intent.putExtra(HelpRequestDetailActivity.EXTRA_REQUEST_ID, request.getId());
             startActivity(intent);
-        }, HistoryActivity.this); // <-- Add 'HistoryActivity.this' as the second argument
-
+        }, this);
         recyclerViewHistory.setAdapter(adapter);
     }
-
 
     private void setupSpinners() {
         String[] categories = {"All", "Medical Transport", "Grocery Shopping Help", "Prescription Pickup", "Other"};

@@ -1,4 +1,3 @@
-// FINAL, CORRECTED Home Screen using the SimpleRequestAdapter.
 package com.example.csit314sdm;
 
 import android.content.Intent;
@@ -6,79 +5,253 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
+import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.cardview.widget.CardView;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.csit314sdm.SimpleRequestAdapter; 
-
 import com.google.android.material.appbar.MaterialToolbar;
+import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
+
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class PINHomeScreenActivity extends AppCompatActivity {
 
     private static final String TAG = "PINHomeScreen";
+
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
+    private DrawerLayout drawerLayout;
+    private NavigationView navigationView;
+    private ActionBarDrawerToggle drawerToggle;
     private MaterialToolbar topAppBar;
-    private TextView tvWelcomeMessage, tvActiveRequests, tvShortlisted;
+
+    private TextView tvWelcomeMessage, tvActiveRequests, tvCompleted;
     private RecyclerView recyclerViewActiveRequests;
-    private Button btnLogout;
+    private Button btnLogout, btnCreateNewRequest;
+    private ImageButton btnNotifications, btnProfile;
+
+    private CardView cardActiveRequests, cardCompleted;
 
     private SimpleRequestAdapter requestAdapter;
     private List<HelpRequest> helpRequestList;
+    private ListenerRegistration requestListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_pinhome_screen);
+
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
+
         initializeUI();
         setupListeners();
+        setupNavigationDrawer();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        loadDynamicData();
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        if (currentUser == null) {
+            logoutUser();
+            return;
+        }
+        loadUserData(currentUser.getUid());
+        loadAllRequestDataWithListener(currentUser.getUid());
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (requestListener != null) {
+            requestListener.remove();
+        }
     }
 
     private void initializeUI() {
+        drawerLayout = findViewById(R.id.drawer_layout);
+        navigationView = findViewById(R.id.navigation_view);
         topAppBar = findViewById(R.id.topAppBar);
+        btnNotifications = findViewById(R.id.btnNotifications);
+        btnProfile = findViewById(R.id.btnProfile);
         tvWelcomeMessage = findViewById(R.id.tvWelcomeMessage);
+        btnCreateNewRequest = findViewById(R.id.btnCreateNewRequest);
+        cardActiveRequests = findViewById(R.id.cardActiveRequests);
+        cardCompleted = findViewById(R.id.cardCompleted);
         tvActiveRequests = findViewById(R.id.tvActiveRequests);
-        tvShortlisted = findViewById(R.id.tvShortlisted);
+        tvCompleted = findViewById(R.id.tvCompleted);
         recyclerViewActiveRequests = findViewById(R.id.recyclerViewActiveRequests);
         btnLogout = findViewById(R.id.btnLogout);
 
         recyclerViewActiveRequests.setLayoutManager(new LinearLayoutManager(this));
         helpRequestList = new ArrayList<>();
-
-        requestAdapter = new SimpleRequestAdapter(helpRequestList);
+        requestAdapter = new SimpleRequestAdapter(helpRequestList, this, request -> {
+            Intent intent = new Intent(this, HelpRequestDetailActivity.class);
+            intent.putExtra(HelpRequestDetailActivity.EXTRA_REQUEST_ID, request.getId());
+            intent.putExtra("user_role", "PIN");
+            startActivity(intent);
+        });
         recyclerViewActiveRequests.setAdapter(requestAdapter);
+        recyclerViewActiveRequests.setNestedScrollingEnabled(false);
     }
 
     private void setupListeners() {
+        btnNotifications.setOnClickListener(v -> Toast.makeText(this, "Notifications clicked", Toast.LENGTH_SHORT).show());
+        btnProfile.setOnClickListener(v -> startActivity(new Intent(this, PinProfileActivity.class)));
+        btnCreateNewRequest.setOnClickListener(v -> startActivity(new Intent(this, CreateRequestActivity.class)));
+
+        // The "Active Requests" card opens the pre-filtered list of active items.
+        cardActiveRequests.setOnClickListener(v -> {
+            Intent intent = new Intent(this, MyRequestsActivity.class);
+            intent.putExtra("STATUS_FILTER", "Active"); // Pass the "Active" instruction
+            startActivity(intent);
+        });
+
+        // The "History" card now opens the new, dedicated MatchHistoryActivity.
+        cardCompleted.setOnClickListener(v -> {
+            Intent intent = new Intent(this, MatchHistoryActivity.class);
+            startActivity(intent);
+        });
+
         btnLogout.setOnClickListener(view -> logoutUser());
-        topAppBar.setNavigationOnClickListener(v -> Toast.makeText(this, "Menu clicked", Toast.LENGTH_SHORT).show());
-        // These lines assume you have buttons with these IDs in your layout.
-        // findViewById(R.id.btnCreateNewRequest).setOnClickListener(v -> startActivity(new Intent(this, CreateHelpRequestPage.class)));
-        // findViewById(R.id.cardActiveRequests).setOnClickListener(v -> startActivity(new Intent(this, MyRequestsActivity.class)));
     }
 
-    private void loadDynamicData() { FirebaseUser currentUser = mAuth.getCurrentUser(); if (currentUser == null) { logoutUser(); return; } loadUserData(currentUser.getUid()); loadRequestData(currentUser.getUid()); }
-    private void loadUserData(String userId) { db.collection("users").document(userId).get() .addOnSuccessListener(documentSnapshot -> { if (documentSnapshot.exists()) { User user = documentSnapshot.toObject(User.class); if (user != null && user.getFullName() != null && !user.getFullName().isEmpty()) { tvWelcomeMessage.setText("Hello, " + user.getFullName().split(" ")[0] + "!"); } else { tvWelcomeMessage.setText("Hello!"); } } }) .addOnFailureListener(e -> Log.e(TAG, "Error fetching user data", e)); }
-    private void loadRequestData(String userId) { db.collection("requests").whereEqualTo("pinId", userId).whereEqualTo("status", "Open").get() .addOnSuccessListener(queryDocumentSnapshots -> tvActiveRequests.setText("Active Requests\n(" + queryDocumentSnapshots.size() + ")")) .addOnFailureListener(e -> Log.e(TAG, "Error fetching active request COUNT", e)); db.collection("requests").whereEqualTo("pinId", userId).whereEqualTo("status", "Shortlisted").get() .addOnSuccessListener(queryDocumentSnapshots -> tvShortlisted.setText("Shortlisted Interests\n(" + queryDocumentSnapshots.size() + ")")); db.collection("requests").whereEqualTo("pinId", userId).whereEqualTo("status", "Open") .orderBy("creationTimestamp", Query.Direction.DESCENDING).limit(3) .get() .addOnSuccessListener(queryDocumentSnapshots -> { helpRequestList.clear(); for (DocumentSnapshot snapshot : queryDocumentSnapshots) { HelpRequest request = snapshot.toObject(HelpRequest.class); if (request != null) { request.setId(snapshot.getId()); helpRequestList.add(request); } } requestAdapter.setRequests(helpRequestList); }) .addOnFailureListener(e -> Log.e(TAG, "Error fetching active requests LIST", e)); }
-    private void logoutUser() { mAuth.signOut(); Intent intent = new Intent(this, loginPage.class); intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK); startActivity(intent); finish(); }
+    private void setupNavigationDrawer() {
+        drawerToggle = new ActionBarDrawerToggle(this, drawerLayout, topAppBar, R.string.drawer_open, R.string.drawer_close);
+        drawerLayout.addDrawerListener(drawerToggle);
+        drawerToggle.syncState();
+
+        navigationView.setNavigationItemSelectedListener(item -> {
+            int id = item.getItemId();
+            if (id == R.id.nav_home) {
+                Toast.makeText(this, "Already on Home screen", Toast.LENGTH_SHORT).show();
+            } else if (id == R.id.nav_my_requests || id == R.id.nav_filter_requests) {
+                startActivity(new Intent(this, MyRequestsActivity.class));
+            } else if (id == R.id.nav_profile) {
+                startActivity(new Intent(this, PinProfileActivity.class));
+            } else if (id == R.id.nav_settings) {
+                Toast.makeText(this, "Settings page not implemented yet", Toast.LENGTH_SHORT).show();
+            } else if (id == R.id.nav_logout) {
+                logoutUser();
+            }
+            drawerLayout.closeDrawer(GravityCompat.START);
+            return true;
+        });
+
+        View headerView = navigationView.getHeaderView(0);
+        TextView navHeaderName = headerView.findViewById(R.id.nav_header_name);
+        TextView navHeaderEmail = headerView.findViewById(R.id.nav_header_email);
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        if (currentUser != null) {
+            if (currentUser.getEmail() != null) {
+                navHeaderEmail.setText(currentUser.getEmail());
+            }
+            db.collection("users").document(currentUser.getUid()).get()
+                    .addOnSuccessListener(documentSnapshot -> {
+                        if (documentSnapshot.exists()) {
+                            User user = documentSnapshot.toObject(User.class);
+                            if (user != null && user.getFullName() != null) {
+                                navHeaderName.setText(user.getFullName());
+                            }
+                        }
+                    });
+        }
+    }
+
+    private void loadUserData(String userId) {
+        db.collection("users").document(userId).get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        User user = documentSnapshot.toObject(User.class);
+                        if (user != null && user.getFullName() != null && !user.getFullName().isEmpty()) {
+                            tvWelcomeMessage.setText("Hello, " + user.getFullName().split(" ")[0] + "!");
+                        } else {
+                            tvWelcomeMessage.setText("Hello!");
+                        }
+                    }
+                })
+                .addOnFailureListener(e -> Log.e(TAG, "Error fetching user data", e));
+    }
+
+    private void loadAllRequestDataWithListener(String userId) {
+        requestListener = db.collection("help_requests").whereEqualTo("submittedBy", userId)
+                .addSnapshotListener((queryDocumentSnapshots, error) -> {
+                    if (error != null) {
+                        Log.e(TAG, "Listen failed.", error);
+                        return;
+                    }
+                    if (queryDocumentSnapshots == null) return;
+
+                    int activeCount = 0;
+                    int completedCount = 0; // This is the "History" count
+                    List<HelpRequest> openRequests = new ArrayList<>();
+
+                    for (DocumentSnapshot snapshot : queryDocumentSnapshots) {
+                        HelpRequest request = snapshot.toObject(HelpRequest.class);
+                        if (request != null) {
+                            request.setId(snapshot.getId());
+                            switch (request.getStatus()) {
+                                case "Open":
+                                case "In-progress":
+                                    activeCount++;
+                                    openRequests.add(request);
+                                    break;
+                                case "Completed":
+                                case "Cancelled":
+                                    completedCount++;
+                                    break;
+                            }
+                        }
+                    }
+
+                    tvActiveRequests.setText("Active Requests\n(" + activeCount + ")");
+                    tvCompleted.setText("History\n(" + completedCount + ")");
+
+                    Collections.sort(openRequests, (r1, r2) -> {
+                        if (r1.getCreationTimestamp() == null || r2.getCreationTimestamp() == null) return 0;
+                        return r2.getCreationTimestamp().compareTo(r1.getCreationTimestamp());
+                    });
+
+                    int limit = Math.min(3, openRequests.size());
+                    helpRequestList.clear();
+                    for(int i = 0; i < limit; i++) {
+                        helpRequestList.add(openRequests.get(i));
+                    }
+                    requestAdapter.notifyDataSetChanged();
+                });
+    }
+
+    private void logoutUser() {
+        mAuth.signOut();
+        Intent intent = new Intent(this, loginPage.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+            drawerLayout.closeDrawer(GravityCompat.START);
+        } else {
+            super.onBackPressed();
+        }
+    }
 }

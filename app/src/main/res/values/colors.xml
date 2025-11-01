@@ -2,4 +2,11 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+<!-- Urgency Colors -->
+    <color name="urgency_low_bg">#E0F2F1</color>
+    <color name="urgency_low_text">#00796B</color>
+    <color name="urgency_medium_bg">#FFF9C4</color>
+    <color name="urgency_medium_text">#FBC02D</color>
+    <color name="urgency_high_bg">#FFEBEE</color>
+    <color name="urgency_high_text">#D32F2F</color>
 </resources>

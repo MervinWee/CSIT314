@@ -10,7 +10,29 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.CSIT314SDM">
+        android:theme="@style/Theme.CSIT314SDM"
+        tools:targetApi="31">
+        <activity
+            android:name=".MatchHistoryActivity"
+            android:exported="false" />
+        <activity
+            android:name=".EditHelpRequestActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ChangePasswordActivity"
+            android:exported="false" />
+        <activity
+            android:name=".EditPinProfileActivity"
+            android:exported="false" />
+        <activity
+            android:name=".PinProfileActivity"
+            android:exported="false" />
+        <activity
+            android:name=".CreateRequestActivity"
+            android:exported="false" />
+        <activity
+            android:name=".MyRequestsActivity"
+            android:exported="false" />
         <activity
             android:name=".CreateUserProfileActivity"
             android:exported="false" />
@@ -35,60 +57,51 @@
         <activity
             android:name=".AdminCreateUserActivity"
             android:exported="false" />
-
-        <activity android:name=".ViewAllUsersActivity"
+        <activity
+            android:name=".ViewAllUsersActivity"
             android:exported="false" />
-
-        <activity android:name=".UserDetailActivity"
+        <activity
+            android:name=".UserDetailActivity"
             android:exported="false" />
-
-        <activity android:name=".ViewSavedRequestsActivity"
+        <activity
+            android:name=".ViewSavedRequestsActivity"
             android:exported="false" />
-
-        <activity android:name=".HomepageAsPinActivity"
-            android:exported="false"/>
-
-        <activity android:name=".CsrDashboardActivity"
+        <activity
+            android:name=".CsrDashboardActivity"
             android:exported="false" />
-
-        <activity android:name=".UserManagementActivity"
+        <activity
+            android:name=".UserManagementActivity"
             android:exported="false" />
-
         <activity
             android:name=".UserAccountsActivity"
             android:exported="false" />
-
-
-        <activity android:name=".HistoryActivity"
-            android:exported="false"/>
-
-        <activity android:name=".CategoryManagementActivity"
-            android:exported="false"/>
-
-        <activity android:name=".PlatformDashboardActivity"
-            android:exported="false"/>
-
+        <activity
+            android:name=".HistoryActivity"
+            android:exported="false" />
+        <activity
+            android:name=".CategoryManagementActivity"
+            android:exported="false" />
+        <activity
+            android:name=".PlatformDashboardActivity"
+            android:exported="false" />
         <activity
             android:name=".CSRSettingsActivity"
-            android:exported="false" />
-
-        <!-- Add this line inside your <application> tag -->
+            android:exported="false" /> <!-- Add this line inside your <application> tag -->
         <activity
             android:name=".HelpRequestDetailActivity"
             android:exported="false" />
-
-        <activity android:name=".DailyReportActivity"
+        <activity
+            android:name=".DailyReportActivity"
             android:exported="false" />
-
-        <activity android:name=".WeeklyReportActivity"
+        <activity
+            android:name=".WeeklyReportActivity"
             android:exported="false" />
-
-        <activity android:name=".MonthlyReportActivity"
+        <activity
+            android:name=".MonthlyReportActivity"
             android:exported="false" />
-
-        <activity android:name=".ManageCategoriesActivity"
+        <activity
+            android:name=".ManageCategoriesActivity"
             android:exported="false" />
-
         <activity
             android:name=".loginPage"
             android:exported="true">
