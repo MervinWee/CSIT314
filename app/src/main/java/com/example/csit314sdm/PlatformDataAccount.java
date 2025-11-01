@@ -221,7 +221,7 @@ public class PlatformDataAccount {
 
             List<User> usersToUpdate = new ArrayList<>();
             for (User user : task.getResult().toObjects(User.class)) {
-                if (user.getCreationDate() == 0L) { // Check if creationDate is not set
+                if (user.getCreationDate() == null) { // FIX: Changed check from == 0L to == null
                     usersToUpdate.add(user);
                 }
             }
@@ -232,7 +232,7 @@ public class PlatformDataAccount {
             }
 
             WriteBatch batch = db.batch();
-            long migrationTime = System.currentTimeMillis();
+            Date migrationTime = new Date(); // Use a Date object for Firestore Timestamp
 
             for (User user : usersToUpdate) {
                 batch.update(usersRef.document(user.getUid()), "creationDate", migrationTime);

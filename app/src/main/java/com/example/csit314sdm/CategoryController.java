@@ -22,14 +22,14 @@ public class CategoryController {
     // Method to create a new category
     public void createCategory(Category category, final CategoryOperationCallback callback) {
         // First, check if a category with the same name already exists
-        db.collection("categories").whereEqualTo("name", category.getName()).get()
+        db.collection("HelpCategories").whereEqualTo("name", category.getName()).get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     if (!queryDocumentSnapshots.isEmpty()) {
                         // A category with this name already exists
                         callback.onFailure("A category with this name already exists.");
                     } else {
                         // Name is unique, proceed with creation
-                        db.collection("categories").add(category)
+                        db.collection("HelpCategories").add(category)
                                 .addOnSuccessListener(documentReference -> callback.onSuccess("Category created successfully."))
                                 .addOnFailureListener(e -> callback.onFailure("Failed to create category: " + e.getMessage()));
                     }
@@ -39,7 +39,7 @@ public class CategoryController {
 
     // Method to fetch all categories
     public void getAllCategories(final CategoryFetchCallback callback) {
-        db.collection("categories").orderBy("name", Query.Direction.ASCENDING).get()
+        db.collection("HelpCategories").orderBy("name", Query.Direction.ASCENDING).get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     List<Category> categoryList = new ArrayList<>();
                     for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {
@@ -66,7 +66,7 @@ public class CategoryController {
             return;
         }
 
-        db.collection("categories").document(category.getId())
+        db.collection("HelpCategories").document(category.getId())
                 .set(category) // Using .set() will overwrite the document with the new data
                 .addOnSuccessListener(aVoid -> {
                     callback.onSuccess("Category updated successfully.");
