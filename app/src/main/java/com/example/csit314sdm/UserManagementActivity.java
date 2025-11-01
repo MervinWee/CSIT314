@@ -3,6 +3,7 @@ package com.example.csit314sdm;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
@@ -20,6 +21,8 @@ public class UserManagementActivity extends AppCompatActivity {
     private ProgressBar progressBar;
     private SearchView searchView;
     private ChipGroup chipGroupRoleFilter;
+    private Button btnMigrateUsers;
+    private PlatformDataAccount platformDataAccount;
 
     // Variables to hold the current filter state
     private String currentSearchText = "";
@@ -38,16 +41,37 @@ public class UserManagementActivity extends AppCompatActivity {
         toolbar.setNavigationOnClickListener(v -> finish());
 
         controller = new UserManagementController();
+        platformDataAccount = new PlatformDataAccount();
         progressBar = findViewById(R.id.progressBar);
         searchView = findViewById(R.id.searchView);
         chipGroupRoleFilter = findViewById(R.id.chipGroupRoleFilter);
+        btnMigrateUsers = findViewById(R.id.btnMigrateUsers);
 
         setupRecyclerView();
         setupSearch();
         setupRoleFilter();
+
+        btnMigrateUsers.setOnClickListener(v -> migrateUsers());
         
         // Initial load
         performSearch();
+    }
+
+    private void migrateUsers() {
+        progressBar.setVisibility(View.VISIBLE);
+        platformDataAccount.migrateUserCreationDate(new PlatformDataAccount.MigrationCallback() {
+            @Override
+            public void onSuccess(String message) {
+                progressBar.setVisibility(View.GONE);
+                Toast.makeText(UserManagementActivity.this, message, Toast.LENGTH_LONG).show();
+            }
+
+            @Override
+            public void onError(String message) {
+                progressBar.setVisibility(View.GONE);
+                Toast.makeText(UserManagementActivity.this, "Migration failed: " + message, Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     private void setupRecyclerView() {

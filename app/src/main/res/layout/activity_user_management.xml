@@ -27,13 +27,21 @@
             app:iconifiedByDefault="false" />
 
     </com.google.android.material.appbar.AppBarLayout>
+    
+    <Button
+        android:id="@+id/btnMigrateUsers"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/appBarLayout"
+        android:layout_centerHorizontal="true"
+        android:text="Migrate Users" />
 
     <!-- This ChipGroup is REQUIRED for the design you want -->
     <com.google.android.material.chip.ChipGroup
         android:id="@+id/chipGroupRoleFilter"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@id/appBarLayout"
+        android:layout_below="@id/btnMigrateUsers"
         android:paddingHorizontal="16dp"
         app:singleSelection="true">
 

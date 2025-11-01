@@ -99,7 +99,7 @@ public class CSRSettingsActivity extends AppCompatActivity {
 
         btnLogout.setOnClickListener(v -> {
             // Handle logout
-            Intent intent = new Intent(CSRSettingsActivity.this, LoginController.class);
+            Intent intent = new Intent(CSRSettingsActivity.this, loginPage.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
         });

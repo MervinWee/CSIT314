@@ -40,7 +40,7 @@ public class PlatformDashboardActivity extends AppCompatActivity {
 
         btnPlatformLogout.setOnClickListener(v -> {
             FirebaseAuth.getInstance().signOut();
-            Intent intent = new Intent(PlatformDashboardActivity.this, LoginController.class);
+            Intent intent = new Intent(PlatformDashboardActivity.this, loginPage.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
         });

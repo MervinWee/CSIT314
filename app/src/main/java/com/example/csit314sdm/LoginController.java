@@ -6,14 +6,12 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.DocumentSnapshot;
 
-// CONTROL: Handles all business logic for the login process.
 public class LoginController {
 
     private final FirebaseAuth mAuth;
     private final FirebaseFirestore db;
 
-    // Interface to communicate results back to the Boundary (loginPage).
-    // I've renamed the parameter for clarity, but the interface itself is unchanged.
+
     public interface LoginCallback {
         void onLoginSuccess(String userRole);
         void onLoginFailure(String errorMessage);
@@ -24,23 +22,16 @@ public class LoginController {
         this.db = FirebaseFirestore.getInstance();
     }
 
-    /**
-     * Checks if a user is already signed in. If so, fetches their data.
-     */
+
     public void checkForExistingSession(final LoginCallback callback) {
         FirebaseUser currentUser = mAuth.getCurrentUser();
         if (currentUser != null) {
-            // User is already logged in, so fetch their role from Firestore.
             fetchUserRole(currentUser.getUid(), callback);
         }
-        // If no user is logged in, do nothing. The UI will just wait for input.
     }
 
-    /**
-     * Attempts to sign in a user with email and password.
-     */
+
     public void loginUser(String email, String password, final LoginCallback callback) {
-        // --- Business Logic: Validation ---
         if (TextUtils.isEmpty(email)) {
             callback.onLoginFailure("Email is required.");
             return;
@@ -50,7 +41,6 @@ public class LoginController {
             return;
         }
 
-        // --- Orchestration: Interact with Firebase Auth ---
         mAuth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {

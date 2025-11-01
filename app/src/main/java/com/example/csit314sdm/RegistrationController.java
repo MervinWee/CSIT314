@@ -77,7 +77,7 @@ public class RegistrationController {
                 newUserMap.put("uid", uid);
                 newUserMap.put("email", email);
                 newUserMap.put("role", role);
-                newUserMap.put("createdAt", FieldValue.serverTimestamp());
+                newUserMap.put("creationDate", FieldValue.serverTimestamp()); // <-- FIX: Changed 'createdAt' to 'creationDate'
                 newUserMap.put("accountStatus", "Active");
 
                 // --- FIX: Add the new unique shortId to the user data ---

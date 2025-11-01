@@ -14,6 +14,7 @@ public class User {
     private String accountStatus;
     private String address;
     private String shortId;
+    private long creationDate;
 
 
     // Public, no-argument constructor is REQUIRED
@@ -47,5 +48,8 @@ public class User {
 
     public String getShortId() { return shortId; }
     public void setShortId(String shortId) { this.shortId = shortId; }
+    
+    public long getCreationDate() { return creationDate; }
+    public void setCreationDate(long creationDate) { this.creationDate = creationDate; }
 
 }

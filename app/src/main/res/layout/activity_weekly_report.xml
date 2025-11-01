@@ -126,7 +126,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Unique Active CSR Companies"
+                    android:text="Unique Active CSRs"
                     android:textAppearance="@style/TextAppearance.Material3.BodyLarge"/>
 
                 <TextView
@@ -155,7 +155,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Total Complete Matches"
+                    android:text="Total Active Requests"
                     android:textAppearance="@style/TextAppearance.Material3.BodyLarge"/>
 
                 <TextView
