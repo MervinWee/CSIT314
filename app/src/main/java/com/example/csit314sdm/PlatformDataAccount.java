@@ -264,8 +264,65 @@ public class PlatformDataAccount {
         return cal.getTimeInMillis();
     }
 
-    public void listenForCategoryChanges(final CategoryListCallback callback) { /* ... */ }
-    public void createCategory(String name, String description, final FirebaseCallback callback) { /* ... */ }
-    public void updateCategory(Category category, String newName, String newDescription, final FirebaseCallback callback) { /* ... */ }
-    public void deleteCategory(Category category, final FirebaseCallback callback) { /* ... */ }
+    public void listenForCategoryChanges(final CategoryListCallback callback) {
+        categoriesRef.orderBy("name") // Optional: order categories by name
+            .addSnapshotListener((queryDocumentSnapshots, e) -> {
+                if (e != null) {
+                    Log.e(TAG, "Listen failed.", e);
+                    callback.onError(e.getMessage());
+                    return;
+                }
+
+                if (queryDocumentSnapshots != null) {
+                    List<Category> categories = new ArrayList<>();
+                    for (DocumentSnapshot doc : queryDocumentSnapshots.getDocuments()) {
+                        Category category = doc.toObject(Category.class);
+                        if (category != null) {
+                            category.setId(doc.getId()); // Make sure to set the document ID
+                            categories.add(category);
+                        }
+                    }
+                    callback.onDataLoaded(categories);
+                }
+            });
+    }
+
+    public void createCategory(String name, String description, final FirebaseCallback callback) {
+        if (name == null || name.trim().isEmpty()) {
+            callback.onError("Category name cannot be empty.");
+            return;
+        }
+
+        Map<String, Object> newCategory = new HashMap<>();
+        newCategory.put("name", name);
+        newCategory.put("description", description);
+
+        categoriesRef.add(newCategory)
+            .addOnSuccessListener(documentReference -> callback.onSuccess())
+            .addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
+
+    public void updateCategory(Category category, String newName, String newDescription, final FirebaseCallback callback) {
+        if (category == null || category.getId() == null || category.getId().isEmpty()) {
+            callback.onError("Invalid category provided for update.");
+            return;
+        }
+        Map<String, Object> updatedData = new HashMap<>();
+        updatedData.put("name", newName);
+        updatedData.put("description", newDescription);
+
+        categoriesRef.document(category.getId()).update(updatedData)
+            .addOnSuccessListener(aVoid -> callback.onSuccess())
+            .addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
+
+    public void deleteCategory(Category category, final FirebaseCallback callback) {
+        if (category == null || category.getId() == null || category.getId().isEmpty()) {
+            callback.onError("Invalid category provided for deletion.");
+            return;
+        }
+        categoriesRef.document(category.getId()).delete()
+            .addOnSuccessListener(aVoid -> callback.onSuccess())
+            .addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
 }

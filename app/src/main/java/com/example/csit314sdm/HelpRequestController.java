@@ -38,6 +38,11 @@ public class HelpRequestController {
         void onDeleteSuccess();
         void onDeleteFailure(String errorMessage);
     }
+    // ADDED: Callback for general updates
+    public interface UpdateCallback {
+        void onUpdateSuccess();
+        void onUpdateFailure(String errorMessage);
+    }
 
     public HelpRequestController() {
         db = FirebaseFirestore.getInstance();
@@ -76,6 +81,18 @@ public class HelpRequestController {
                     }
                 })
                 .addOnFailureListener(e -> callback.onDataLoadFailed(e.getMessage()));
+    }
+
+    // ADDED: Method to update a request's status
+    public void updateRequestStatus(String requestId, String newStatus, final UpdateCallback callback) {
+        if (requestId == null || requestId.isEmpty()) {
+            callback.onUpdateFailure("Invalid Request ID.");
+            return;
+        }
+        db.collection("help_requests").document(requestId)
+                .update("status", newStatus)
+                .addOnSuccessListener(aVoid -> callback.onUpdateSuccess())
+                .addOnFailureListener(e -> callback.onUpdateFailure(e.getMessage()));
     }
 
     // --- Methods primarily for PIN user ---

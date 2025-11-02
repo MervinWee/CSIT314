@@ -23,7 +23,7 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
 
     private ProgressBar progressBar;
     private TextView tvRequestType, tvStatus, tvDescription, tvLocation, tvPreferredTime, tvUrgency, tvPostedDate, tvDetailViewCount, tvDetailShortlistCount;
-    private Button btnCancelRequest;
+    private Button btnCancelRequest, btnCompleteRequest; // MODIFIED: Added complete button
     private HelpRequestController detailController;
 
     private MaterialToolbar topAppBar;
@@ -80,6 +80,10 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
 
         btnCancelRequest = findViewById(R.id.btnCancelRequest);
         btnCancelRequest.setOnClickListener(v -> showCancelConfirmationDialog());
+
+        // ADDED: Initialize and set listener for the complete button
+        btnCompleteRequest = findViewById(R.id.btnCompleteRequest);
+        btnCompleteRequest.setOnClickListener(v -> showCompleteConfirmationDialog());
     }
 
     private void loadRequestDetails(String requestId, String userRole) {
@@ -129,21 +133,6 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
         } else {
             tvPostedDate.setText("Date not available");
         }
-
-        boolean isPinUser = "PIN".equals(userRole);
-
-        if (isPinUser) {
-            if ("Open".equals(request.getStatus())) {
-                btnCancelRequest.setVisibility(View.VISIBLE);
-                topAppBar.getMenu().findItem(R.id.action_edit_request).setVisible(true);
-            } else {
-                btnCancelRequest.setVisibility(View.GONE);
-                topAppBar.getMenu().findItem(R.id.action_edit_request).setVisible(false);
-            }
-        } else { // CSR user
-            btnCancelRequest.setVisibility(View.GONE);
-            topAppBar.getMenu().findItem(R.id.action_edit_request).setVisible(false);
-        }
     }
 
     private void handleEditClick() {
@@ -182,6 +171,40 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
 
             @Override
             public void onDeleteFailure(String errorMessage) {
+                runOnUiThread(() -> {
+                    Toast.makeText(HelpRequestDetailActivity.this, "Error: " + errorMessage, Toast.LENGTH_LONG).show();
+                });
+            }
+        });
+    }
+
+    // ADDED: Method to show confirmation dialog for completing a request
+    private void showCompleteConfirmationDialog() {
+        new AlertDialog.Builder(this)
+            .setTitle("Complete Request")
+            .setMessage("Are you sure you want to mark this request as completed?")
+            .setPositiveButton("Yes, Complete It", (dialog, which) -> {
+                performCompleteRequest();
+            })
+            .setNegativeButton("No", null)
+            .setIcon(android.R.drawable.ic_dialog_info)
+            .show();
+    }
+
+    // ADDED: Method to perform the complete action by calling the controller
+    private void performCompleteRequest() {
+        Toast.makeText(this, "Completing request...", Toast.LENGTH_SHORT).show();
+        detailController.updateRequestStatus(currentRequestId, "Completed", new HelpRequestController.UpdateCallback() {
+            @Override
+            public void onUpdateSuccess() {
+                runOnUiThread(() -> {
+                    Toast.makeText(HelpRequestDetailActivity.this, "Request successfully marked as complete.", Toast.LENGTH_LONG).show();
+                    loadRequestDetails(currentRequestId, userRole); // Reload data to reflect changes
+                });
+            }
+
+            @Override
+            public void onUpdateFailure(String errorMessage) {
                 runOnUiThread(() -> {
                     Toast.makeText(HelpRequestDetailActivity.this, "Error: " + errorMessage, Toast.LENGTH_LONG).show();
                 });
