@@ -133,6 +133,33 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
         } else {
             tvPostedDate.setText("Date not available");
         }
+
+        // --- Button Visibility Logic ---
+        String status = request.getStatus();
+        boolean isPinUser = "PIN".equals(userRole);
+        boolean isCsrUser = "CSR".equals(userRole);
+
+        // Default state: hide all optional actions
+        btnCancelRequest.setVisibility(View.GONE);
+        btnCompleteRequest.setVisibility(View.GONE);
+        topAppBar.getMenu().findItem(R.id.action_edit_request).setVisible(false);
+
+        // Logic for PIN user
+        if (isPinUser) {
+            if ("Open".equals(status)) {
+                btnCancelRequest.setVisibility(View.VISIBLE);
+                btnCompleteRequest.setVisibility(View.VISIBLE);
+                topAppBar.getMenu().findItem(R.id.action_edit_request).setVisible(true);
+            } else if ("In-progress".equals(status)) {
+                btnCompleteRequest.setVisibility(View.VISIBLE);
+            }
+        } 
+        // Logic for CSR user
+        else if (isCsrUser) {
+            if ("Open".equals(status) || "In-progress".equals(status)) {
+                btnCompleteRequest.setVisibility(View.VISIBLE);
+            }
+        }
     }
 
     private void handleEditClick() {
