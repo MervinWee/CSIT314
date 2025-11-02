@@ -17,7 +17,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.util.ArrayList;
 import java.util.List;
 
-// BCE: This is the BOUNDARY class.
 public class ManageCategoriesActivity extends AppCompatActivity {
 
     private RecyclerView rvCategories;
@@ -32,7 +31,6 @@ public class ManageCategoriesActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_manage_categories);
 
-        // This initialization is crucial and must be done before the object is used.
         platformDataAccount = new PlatformDataAccount();
 
         // Initialize Views
@@ -72,9 +70,16 @@ public class ManageCategoriesActivity extends AppCompatActivity {
         btnBack.setOnClickListener(v -> finish());
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (platformDataAccount != null) {
+            platformDataAccount.detachCategoryListener();
+        }
+    }
+
     private void setupRecyclerView() {
         rvCategories.setLayoutManager(new LinearLayoutManager(this));
-        // Note: The adapter and its click listener are simplified
         categoryAdapter = new CategoryAdapter(this::onCategorySelected);
         rvCategories.setAdapter(categoryAdapter);
     }
@@ -96,7 +101,6 @@ public class ManageCategoriesActivity extends AppCompatActivity {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(isEditing ? "Edit Category" : "Create New Category");
 
-        // Set up the input fields
         final EditText nameInput = new EditText(this);
         nameInput.setHint("Category Name");
         if (isEditing) nameInput.setText(existingCategory.getName());
@@ -121,7 +125,7 @@ public class ManageCategoriesActivity extends AppCompatActivity {
             }
 
             PlatformDataAccount.FirebaseCallback callback = new PlatformDataAccount.FirebaseCallback() {
-                @Override public void onSuccess() { Toast.makeText(ManageCategoriesActivity.this, "Success!", Toast.LENGTH_SHORT).show(); }
+                @Override public void onSuccess(String message) { Toast.makeText(ManageCategoriesActivity.this, message, Toast.LENGTH_SHORT).show(); } // Corrected
                 @Override public void onError(String message) { Toast.makeText(ManageCategoriesActivity.this, "Error: " + message, Toast.LENGTH_SHORT).show(); }
             };
 
@@ -140,9 +144,8 @@ public class ManageCategoriesActivity extends AppCompatActivity {
                 .setTitle("Delete Category")
                 .setMessage("Are you sure you want to delete '" + categoryToDelete.getName() + "'?")
                 .setPositiveButton("Delete", (dialog, which) -> {
-                    // Correctly call deleteCategory with the Category object
                     platformDataAccount.deleteCategory(categoryToDelete, new PlatformDataAccount.FirebaseCallback() {
-                        @Override public void onSuccess() { Toast.makeText(ManageCategoriesActivity.this, "Category deleted.", Toast.LENGTH_SHORT).show(); }
+                        @Override public void onSuccess(String message) { Toast.makeText(ManageCategoriesActivity.this, message, Toast.LENGTH_SHORT).show(); } // Corrected
                         @Override public void onError(String message) { Toast.makeText(ManageCategoriesActivity.this, "Error: " + message, Toast.LENGTH_SHORT).show(); }
                     });
                 })
