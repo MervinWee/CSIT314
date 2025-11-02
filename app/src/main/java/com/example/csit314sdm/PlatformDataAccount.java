@@ -8,6 +8,7 @@ import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.WriteBatch;
@@ -25,22 +26,25 @@ import java.util.Map;
 public class PlatformDataAccount {
 
     private final CollectionReference usersRef, requestsRef, categoriesRef;
-    private static final String TAG = "PlatformDataAccount"; // Added for logging
+    private static final String TAG = "PlatformDataAccount";
+    private ListenerRegistration categoryListenerRegistration;
 
     // Callbacks
     public interface DailyReportCallback { void onReportDataLoaded(int newUserCount, int newRequestCount, int completedMatchesCount); void onError(String message); }
     public interface WeeklyReportCallback { void onReportDataLoaded(int uniquePins, int uniqueCsrs, int totalMatches); void onError(String message); }
     public interface MonthlyReportCallback { void onReportDataLoaded(String topCompany, String mostRequestedService); void onError(String message); }
-    public interface FirebaseCallback { void onSuccess(); void onError(String message); }
+    public interface FirebaseCallback { void onSuccess(String message); void onError(String message); } // Corrected
     public interface CategoryListCallback { void onDataLoaded(List<Category> categories); void onError(String message); }
     public interface MigrationCallback { void onSuccess(String message); void onError(String message); }
 
     public PlatformDataAccount() {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         usersRef = db.collection("users");
-        requestsRef = db.collection("help_requests"); // Assumes 'help_requests' collection
+        requestsRef = db.collection("help_requests");
         categoriesRef = db.collection("HelpCategories");
     }
+
+    // --- Report Generation Methods (Restored) ---
 
     public void generateDailyReport(Date date, final DailyReportCallback callback) {
         Calendar cal = Calendar.getInstance();
@@ -48,42 +52,18 @@ public class PlatformDataAccount {
         Date startDate = new Date(getStartOfDay(cal));
         Date endDate = new Date(getEndOfDay(cal));
 
-        Task<QuerySnapshot> usersTask = usersRef
-                .whereGreaterThanOrEqualTo("creationDate", startDate)
-                .whereLessThanOrEqualTo("creationDate", endDate)
-                .get();
+        Task<QuerySnapshot> usersTask = usersRef.whereGreaterThanOrEqualTo("creationDate", startDate).whereLessThanOrEqualTo("creationDate", endDate).get();
+        Task<QuerySnapshot> requestsTask = requestsRef.whereGreaterThanOrEqualTo("creationTimestamp", startDate).whereLessThanOrEqualTo("creationTimestamp", endDate).get();
+        Task<QuerySnapshot> matchesTask = requestsRef.whereIn("status", Arrays.asList("Completed", "completed")).whereGreaterThanOrEqualTo("creationTimestamp", startDate).whereLessThanOrEqualTo("creationTimestamp", endDate).get();
 
-        Task<QuerySnapshot> requestsTask = requestsRef
-                .whereGreaterThanOrEqualTo("creationTimestamp", startDate)
-                .whereLessThanOrEqualTo("creationTimestamp", endDate)
-                .get();
-
-        Task<QuerySnapshot> matchesTask = requestsRef
-                .whereIn("status", Arrays.asList("Completed", "completed"))
-                .whereGreaterThanOrEqualTo("creationTimestamp", startDate)
-                .whereLessThanOrEqualTo("creationTimestamp", endDate)
-                .get();
-
-        // Combine all tasks
         Tasks.whenAllSuccess(usersTask, requestsTask, matchesTask).addOnSuccessListener(results -> {
-            QuerySnapshot usersSnapshot = (QuerySnapshot) results.get(0);
-            QuerySnapshot requestsSnapshot = (QuerySnapshot) results.get(1);
-            QuerySnapshot matchesSnapshot = (QuerySnapshot) results.get(2);
-
-            int newUserCount = usersSnapshot.size();
-            int newRequestCount = requestsSnapshot.size();
-            int completedMatchesCount = matchesSnapshot.size();
-            callback.onReportDataLoaded(newUserCount, newRequestCount, completedMatchesCount);
+            int newUserCount = ((QuerySnapshot) results.get(0)).size();
+            int newRequestCount = ((QuerySnapshot) results.get(1)).size();
+            int completedMatchesCount = ((QuerySnapshot) results.get(2)).size();
+            if (callback != null) callback.onReportDataLoaded(newUserCount, newRequestCount, completedMatchesCount);
         }).addOnFailureListener(e -> {
             Log.e(TAG, "Daily report generation failed", e);
-            String errorMsg = e.getMessage();
-            if (errorMsg.contains("PERMISSION_DENIED")) {
-                callback.onError("Permission Denied. Check user role and Firestore rules.");
-            } else if (errorMsg.contains("requires an index")) {
-                callback.onError("Query failed. A Firestore index is required. Check Logcat for the link.");
-            } else {
-                callback.onError("Query failed: " + errorMsg);
-            }
+            if (callback != null) callback.onError("Query failed: " + e.getMessage());
         });
     }
 
@@ -96,118 +76,68 @@ public class PlatformDataAccount {
         endCal.setTime(endDate);
         Date adjustedEndDate = new Date(getEndOfDay(endCal));
 
-        // A single, efficient query for all requests created in the specified time frame.
-        requestsRef
-                .whereGreaterThanOrEqualTo("creationTimestamp", adjustedStartDate)
-                .whereLessThanOrEqualTo("creationTimestamp", adjustedEndDate)
-                .get()
+        requestsRef.whereGreaterThanOrEqualTo("creationTimestamp", adjustedStartDate).whereLessThanOrEqualTo("creationTimestamp", adjustedEndDate).get()
                 .addOnSuccessListener(querySnapshot -> {
                     if (querySnapshot == null || querySnapshot.isEmpty()) {
-                        // If there are no requests at all in the date range, we can stop here.
-                        callback.onReportDataLoaded(0, 0, 0);
+                        if (callback != null) callback.onReportDataLoaded(0, 0, 0);
                         return;
                     }
-
-                    // 1. Total Active Requests: All requests created in the period.
                     int totalActiveRequests = querySnapshot.size();
-
                     HashSet<String> uniquePinIds = new HashSet<>();
-                    HashSet<String> uniqueCsrUserIds = new HashSet<>(); // The key change
-
+                    HashSet<String> uniqueCsrUserIds = new HashSet<>();
                     for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
-                        // 2. Unique Active PINs: Users who created a request.
                         String pinId = doc.getString("submittedBy");
-                        if (pinId != null && !pinId.isEmpty()) {
-                            uniquePinIds.add(pinId);
-                        }
-
-                        // 3. Unique Active CSRs: Users who shortlisted any request in the period.
+                        if (pinId != null && !pinId.isEmpty()) uniquePinIds.add(pinId);
                         Object savedByData = doc.get("savedByCsrId");
                         if (savedByData instanceof List) {
-                            @SuppressWarnings("unchecked") // Suppress warning, as we've checked the type
+                            @SuppressWarnings("unchecked")
                             List<String> csrIdList = (List<String>) savedByData;
                             uniqueCsrUserIds.addAll(csrIdList);
                         }
                     }
-
-                    int uniquePinCount = uniquePinIds.size();
-                    int uniqueCsrCount = uniqueCsrUserIds.size();
-
-                    // The callback's parameters are (uniquePins, uniqueCsrs, totalMatches)
-                    callback.onReportDataLoaded(uniquePinCount, uniqueCsrCount, totalActiveRequests);
-
+                    if (callback != null) callback.onReportDataLoaded(uniquePinIds.size(), uniqueCsrUserIds.size(), totalActiveRequests);
                 }).addOnFailureListener(e -> {
                     Log.e(TAG, "Weekly report generation failed", e);
-                    String errorMsg = e.getMessage();
-                    if (errorMsg.contains("PERMISSION_DENIED")) {
-                        callback.onError("Permission Denied. Check user role and Firestore rules.");
-                    } else if (errorMsg.contains("requires an index")) {
-                        callback.onError("Query failed. A Firestore index is required. Check Logcat for the link.");
-                    } else {
-                        callback.onError("Query failed: " + errorMsg);
-                    }
+                    if (callback != null) callback.onError("Query failed: " + e.getMessage());
                 });
     }
 
     public void generateMonthlyReport(int year, int month, final MonthlyReportCallback callback) {
         Calendar cal = Calendar.getInstance();
         cal.set(Calendar.YEAR, year);
-        cal.set(Calendar.MONTH, month - 1); // Calendar month is 0-indexed
-
+        cal.set(Calendar.MONTH, month - 1);
         cal.set(Calendar.DAY_OF_MONTH, 1);
         Date startDate = new Date(getStartOfDay(cal));
-
         cal.set(Calendar.DAY_OF_MONTH, cal.getActualMaximum(Calendar.DAY_OF_MONTH));
         Date endDate = new Date(getEndOfDay(cal));
 
-        // Task for all requests in the month (to find most requested service)
-        Task<QuerySnapshot> allRequestsTask = requestsRef
-                .whereGreaterThanOrEqualTo("creationTimestamp", startDate)
-                .whereLessThanOrEqualTo("creationTimestamp", endDate)
-                .get();
-
-        // Task for completed requests in the month (to find top company)
-        Task<QuerySnapshot> completedRequestsTask = requestsRef
-                .whereIn("status", Arrays.asList("Completed", "completed"))
-                .whereGreaterThanOrEqualTo("creationTimestamp", startDate)
-                .whereLessThanOrEqualTo("creationTimestamp", endDate)
-                .get();
+        Task<QuerySnapshot> allRequestsTask = requestsRef.whereGreaterThanOrEqualTo("creationTimestamp", startDate).whereLessThanOrEqualTo("creationTimestamp", endDate).get();
+        Task<QuerySnapshot> completedRequestsTask = requestsRef.whereIn("status", Arrays.asList("Completed", "completed")).whereGreaterThanOrEqualTo("creationTimestamp", startDate).whereLessThanOrEqualTo("creationTimestamp", endDate).get();
 
         Tasks.whenAllSuccess(allRequestsTask, completedRequestsTask).addOnSuccessListener(results -> {
             QuerySnapshot allRequestsSnapshot = (QuerySnapshot) results.get(0);
             QuerySnapshot completedRequestsSnapshot = (QuerySnapshot) results.get(1);
 
-            // 1. Find Most Requested Service from all requests
             Map<String, Integer> categoryCounts = new HashMap<>();
             for (DocumentSnapshot doc : allRequestsSnapshot.getDocuments()) {
                 String category = doc.getString("category");
-                if (category != null && !category.isEmpty()) {
-                    categoryCounts.put(category, categoryCounts.getOrDefault(category, 0) + 1);
-                }
+                if (category != null && !category.isEmpty()) categoryCounts.put(category, categoryCounts.getOrDefault(category, 0) + 1);
             }
             String mostRequestedService = "N/A";
-            if (!categoryCounts.isEmpty()) {
-                 mostRequestedService = Collections.max(categoryCounts.entrySet(), Map.Entry.comparingByValue()).getKey();
-            }
+            if (!categoryCounts.isEmpty()) mostRequestedService = Collections.max(categoryCounts.entrySet(), Map.Entry.comparingByValue()).getKey();
 
-            // 2. Find Top Company from completed requests
             Map<String, Integer> companyCounts = new HashMap<>();
             for (DocumentSnapshot doc : completedRequestsSnapshot.getDocuments()) {
                 String companyId = doc.getString("companyId");
-                if (companyId != null && !companyId.isEmpty()) {
-                    companyCounts.put(companyId, companyCounts.getOrDefault(companyId, 0) + 1);
-                }
+                if (companyId != null && !companyId.isEmpty()) companyCounts.put(companyId, companyCounts.getOrDefault(companyId, 0) + 1);
             }
             String topCompany = "N/A";
-            if (!companyCounts.isEmpty()) {
-                topCompany = Collections.max(companyCounts.entrySet(), Map.Entry.comparingByValue()).getKey();
-            }
+            if (!companyCounts.isEmpty()) topCompany = Collections.max(companyCounts.entrySet(), Map.Entry.comparingByValue()).getKey();
 
-            callback.onReportDataLoaded(topCompany, mostRequestedService);
-
+            if (callback != null) callback.onReportDataLoaded(topCompany, mostRequestedService);
         }).addOnFailureListener(e -> {
             Log.e(TAG, "Monthly report generation failed", e);
-            callback.onError("Query failed: " + e.getMessage());
+            if (callback != null) callback.onError("Query failed: " + e.getMessage());
         });
     }
 
@@ -215,36 +145,111 @@ public class PlatformDataAccount {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         usersRef.get().addOnCompleteListener(task -> {
             if (!task.isSuccessful()) {
-                callback.onError("Failed to fetch users: " + task.getException().getMessage());
+                if (callback != null) callback.onError("Failed to fetch users: " + task.getException().getMessage());
                 return;
             }
-
             List<User> usersToUpdate = new ArrayList<>();
             for (User user : task.getResult().toObjects(User.class)) {
-                if (user.getCreationDate() == null) { // FIX: Changed check from == 0L to == null
-                    usersToUpdate.add(user);
-                }
+                if (user.getCreationDate() == null) usersToUpdate.add(user);
             }
-
             if (usersToUpdate.isEmpty()) {
-                callback.onSuccess("Migration check complete. No users needed updating.");
+                if (callback != null) callback.onSuccess("Migration check complete. No users needed updating.");
                 return;
             }
-
             WriteBatch batch = db.batch();
-            Date migrationTime = new Date(); // Use a Date object for Firestore Timestamp
-
+            Date migrationTime = new Date();
             for (User user : usersToUpdate) {
                 batch.update(usersRef.document(user.getUid()), "creationDate", migrationTime);
             }
-
             batch.commit().addOnCompleteListener(batchTask -> {
                 if (batchTask.isSuccessful()) {
-                    callback.onSuccess("Migration complete. " + usersToUpdate.size() + " users were updated.");
+                    if (callback != null) callback.onSuccess("Migration complete. " + usersToUpdate.size() + " users were updated.");
                 } else {
-                    callback.onError("Migration failed during batch update: " + batchTask.getException().getMessage());
+                    if (callback != null) callback.onError("Migration failed during batch update: " + batchTask.getException().getMessage());
                 }
             });
+        });
+    }
+
+    public void listenForCategoryChanges(final CategoryListCallback callback) {
+        if (categoryListenerRegistration != null) categoryListenerRegistration.remove();
+        categoryListenerRegistration = categoriesRef.orderBy("name").addSnapshotListener((snapshots, e) -> {
+            if (e != null) {
+                Log.e(TAG, "Category listen failed.", e);
+                if (callback != null) callback.onError(e.getMessage());
+                return;
+            }
+            if (snapshots != null) {
+                List<Category> categories = new ArrayList<>();
+                for (DocumentSnapshot doc : snapshots.getDocuments()) {
+                    Category category = doc.toObject(Category.class);
+                    if (category != null) {
+                        category.setId(doc.getId());
+                        categories.add(category);
+                    }
+                }
+                if (callback != null) callback.onDataLoaded(categories);
+            }
+        });
+    }
+
+    public void detachCategoryListener() {
+        if (categoryListenerRegistration != null) {
+            categoryListenerRegistration.remove();
+            categoryListenerRegistration = null;
+            Log.d(TAG, "Category listener detached.");
+        }
+    }
+
+    public void cleanupAllListeners() {
+        // Call the specific detach method for the category listener.
+        detachCategoryListener();
+
+
+        Log.d(TAG, "All platform listeners have been cleaned up.");
+    }
+
+
+    public void createCategory(String name, String description, final FirebaseCallback callback) {
+        categoriesRef.whereEqualTo("name", name).get().addOnSuccessListener(queryDocumentSnapshots -> {
+            if (!queryDocumentSnapshots.isEmpty()) {
+                if (callback != null) callback.onError("A category with this name already exists.");
+            } else {
+                Category newCategory = new Category(name, description);
+                categoriesRef.add(newCategory).addOnSuccessListener(documentReference -> {
+                    if (callback != null) callback.onSuccess("Category created successfully.");
+                }).addOnFailureListener(e -> {
+                    if (callback != null) callback.onError("Failed to create category: " + e.getMessage());
+                });
+            }
+        }).addOnFailureListener(e -> {
+            if (callback != null) callback.onError("Failed to check for existing category: " + e.getMessage());
+        });
+    }
+
+    public void updateCategory(Category category, String newName, String newDescription, final FirebaseCallback callback) {
+        if (category.getId() == null || category.getId().isEmpty()) {
+            if (callback != null) callback.onError("Category ID is missing. Cannot update.");
+            return;
+        }
+        Category updatedCategory = new Category(newName, newDescription);
+        updatedCategory.setId(category.getId());
+        categoriesRef.document(category.getId()).set(updatedCategory).addOnSuccessListener(aVoid -> {
+            if (callback != null) callback.onSuccess("Category updated successfully.");
+        }).addOnFailureListener(e -> {
+            if (callback != null) callback.onError("Failed to update category: " + e.getMessage());
+        });
+    }
+
+    public void deleteCategory(Category category, final FirebaseCallback callback) {
+        if (category.getId() == null || category.getId().isEmpty()) {
+            if (callback != null) callback.onError("Category ID is missing. Cannot delete.");
+            return;
+        }
+        categoriesRef.document(category.getId()).delete().addOnSuccessListener(aVoid -> {
+            if (callback != null) callback.onSuccess("Category deleted successfully.");
+        }).addOnFailureListener(e -> {
+            if (callback != null) callback.onError("Failed to delete category: " + e.getMessage());
         });
     }
 
@@ -262,67 +267,5 @@ public class PlatformDataAccount {
         cal.set(Calendar.SECOND, 59);
         cal.set(Calendar.MILLISECOND, 999);
         return cal.getTimeInMillis();
-    }
-
-    public void listenForCategoryChanges(final CategoryListCallback callback) {
-        categoriesRef.orderBy("name") // Optional: order categories by name
-            .addSnapshotListener((queryDocumentSnapshots, e) -> {
-                if (e != null) {
-                    Log.e(TAG, "Listen failed.", e);
-                    callback.onError(e.getMessage());
-                    return;
-                }
-
-                if (queryDocumentSnapshots != null) {
-                    List<Category> categories = new ArrayList<>();
-                    for (DocumentSnapshot doc : queryDocumentSnapshots.getDocuments()) {
-                        Category category = doc.toObject(Category.class);
-                        if (category != null) {
-                            category.setId(doc.getId()); // Make sure to set the document ID
-                            categories.add(category);
-                        }
-                    }
-                    callback.onDataLoaded(categories);
-                }
-            });
-    }
-
-    public void createCategory(String name, String description, final FirebaseCallback callback) {
-        if (name == null || name.trim().isEmpty()) {
-            callback.onError("Category name cannot be empty.");
-            return;
-        }
-
-        Map<String, Object> newCategory = new HashMap<>();
-        newCategory.put("name", name);
-        newCategory.put("description", description);
-
-        categoriesRef.add(newCategory)
-            .addOnSuccessListener(documentReference -> callback.onSuccess())
-            .addOnFailureListener(e -> callback.onError(e.getMessage()));
-    }
-
-    public void updateCategory(Category category, String newName, String newDescription, final FirebaseCallback callback) {
-        if (category == null || category.getId() == null || category.getId().isEmpty()) {
-            callback.onError("Invalid category provided for update.");
-            return;
-        }
-        Map<String, Object> updatedData = new HashMap<>();
-        updatedData.put("name", newName);
-        updatedData.put("description", newDescription);
-
-        categoriesRef.document(category.getId()).update(updatedData)
-            .addOnSuccessListener(aVoid -> callback.onSuccess())
-            .addOnFailureListener(e -> callback.onError(e.getMessage()));
-    }
-
-    public void deleteCategory(Category category, final FirebaseCallback callback) {
-        if (category == null || category.getId() == null || category.getId().isEmpty()) {
-            callback.onError("Invalid category provided for deletion.");
-            return;
-        }
-        categoriesRef.document(category.getId()).delete()
-            .addOnSuccessListener(aVoid -> callback.onSuccess())
-            .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 }
