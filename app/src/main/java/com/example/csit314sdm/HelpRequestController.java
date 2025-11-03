@@ -187,33 +187,56 @@ public class HelpRequestController {
                 .addOnFailureListener(e -> callback.onUpdateFailure(e.getMessage()));
     }
 
+    public void releaseRequestByCsr(String requestId, final UpdateCallback callback) {
+        if (requestId == null || requestId.isEmpty()) {
+            callback.onUpdateFailure("Invalid Request ID.");
+            return;
+        }
+
+        Map<String, Object> updates = new HashMap<>();
+        // Set the status back to "Open" so it appears in the active list again
+        updates.put("status", "Open");
+        // Remove the companyId and acceptedByCsrId fields from the document
+        updates.put("companyId", FieldValue.delete());
+
+        // NOTE: Your 'acceptRequest' method doesn't store the CSR's ID, only the company ID.
+        // If you add a field like 'acceptedByCsrId', you should delete it here too:
+        // updates.put("acceptedByCsrId", FieldValue.delete());
+
+        db.collection("help_requests").document(requestId)
+                .update(updates)
+                .addOnSuccessListener(aVoid -> callback.onUpdateSuccess())
+                .addOnFailureListener(e -> callback.onUpdateFailure("Failed to release request: " + e.getMessage()));
+    }
+
     public void getActiveHelpRequests(String currentCsrId, final HelpRequestsLoadCallback callback) {
         db.collection("help_requests")
-                .whereIn("status", Arrays.asList("Open", "In-progress"))
+                // *** FIX: Only query for "Open" requests that are not yet accepted. ***
+                .whereEqualTo("status", "Open")
                 .orderBy("creationTimestamp", Query.Direction.DESCENDING)
                 .get()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
-                        List<HelpRequest> filteredList = new ArrayList<>();
+                        List<HelpRequest> openRequests = new ArrayList<>();
                         List<Task<DocumentSnapshot>> userProfileTasks = new ArrayList<>();
 
                         for (QueryDocumentSnapshot document : task.getResult()) {
                             HelpRequest request = document.toObject(HelpRequest.class);
                             request.setId(document.getId());
+                            openRequests.add(request); // Add the open request to the list
 
-                            if (request.getSavedByCsrId() == null || !request.getSavedByCsrId().contains(currentCsrId)) {
-                                filteredList.add(request);
-                                if (request.getSubmittedBy() != null && !request.getSubmittedBy().isEmpty()) {
-                                    userProfileTasks.add(db.collection("users").document(request.getSubmittedBy()).get());
-                                }
+                            // Prepare to fetch the PIN user's profile
+                            if (request.getSubmittedBy() != null && !request.getSubmittedBy().isEmpty()) {
+                                userProfileTasks.add(db.collection("users").document(request.getSubmittedBy()).get());
                             }
                         }
 
                         if (userProfileTasks.isEmpty()) {
-                            callback.onRequestsLoaded(filteredList);
+                            callback.onRequestsLoaded(openRequests);
                             return;
                         }
 
+                        // Fetch all PIN profiles in parallel for efficiency
                         Tasks.whenAllSuccess(userProfileTasks).addOnSuccessListener(results -> {
                             Map<String, String> pinNames = new HashMap<>();
                             for (Object snapshot : results) {
@@ -223,15 +246,17 @@ public class HelpRequestController {
                                 }
                             }
 
-                            for (HelpRequest request : filteredList) {
+                            // Assign the fetched PIN names to each request
+                            for (HelpRequest request : openRequests) {
                                 if (request.getSubmittedBy() != null) {
                                     request.setPinName(pinNames.getOrDefault(request.getSubmittedBy(), "Unknown User"));
                                 }
                             }
-                            callback.onRequestsLoaded(filteredList);
+                            callback.onRequestsLoaded(openRequests);
                         }).addOnFailureListener(e -> {
                             Log.e("HelpRequestController", "Failed to fetch all PIN profiles for active requests.", e);
-                            callback.onRequestsLoaded(filteredList);
+                            // Still return the requests, even if profile names failed
+                            callback.onRequestsLoaded(openRequests);
                         });
 
                     } else {
@@ -239,6 +264,7 @@ public class HelpRequestController {
                     }
                 });
     }
+
 
     public void getSavedHelpRequests(String csrId, final HelpRequestsLoadCallback callback) {
         if (csrId == null || csrId.isEmpty()) {

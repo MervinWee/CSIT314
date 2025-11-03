@@ -28,8 +28,8 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
 
     private ProgressBar progressBar;
     private TextView tvRequestType, tvStatus, tvDescription, tvLocation, tvPreferredTime, tvUrgency, tvPostedDate, tvDetailViewCount, tvDetailShortlistCount, tvDetailPinName, tvDetailPinId;
+    // REMOVED btnCsrCancelRequest from declarations
     private Button btnCancelRequest, btnCompleteRequest, btnAcceptRequest;
-
     private HelpRequestController detailController;
     private UserProfileController userProfileController;
 
@@ -86,21 +86,20 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
         tvPostedDate = findViewById(R.id.tvDetailPostedDate);
         tvDetailViewCount = findViewById(R.id.tvDetailViewCount);
         tvDetailShortlistCount = findViewById(R.id.tvDetailShortlistCount);
-
-        // --- START: THIS IS THE CORRECTED CODE BLOCK ---
-        // FIX: Use the exact IDs from the XML layout file.
         tvDetailPinName = findViewById(R.id.tvDetailPinName);
         tvDetailPinId = findViewById(R.id.tvDetailPinId);
-        // --- END: CORRECTION COMPLETE ---
 
+        // --- START: MODIFIED INITIALIZATION ---
+        // This button now handles BOTH PIN cancel and CSR release actions.
         btnCancelRequest = findViewById(R.id.btnCancelRequest);
-        btnCancelRequest.setOnClickListener(v -> showCancelConfirmationDialog());
+        btnCancelRequest.setOnClickListener(v -> handleCancelClick()); // Use a new handler method
 
         btnCompleteRequest = findViewById(R.id.btnCompleteRequest);
         btnCompleteRequest.setOnClickListener(v -> showCompleteConfirmationDialog());
 
         btnAcceptRequest = findViewById(R.id.btnAcceptRequest);
         btnAcceptRequest.setOnClickListener(v -> showAcceptConfirmationDialog());
+        // --- END: MODIFIED INITIALIZATION ---
     }
 
     private void loadRequestDetails(String requestId, String userRole) {
@@ -132,13 +131,10 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
         tvLocation.setText(request.getLocation());
         tvPreferredTime.setText(request.getPreferredTime());
         tvUrgency.setText(request.getUrgencyLevel());
-
-        // Use the data enriched by the controller
         tvDetailPinName.setText(request.getPinName());
         tvDetailPinId.setText(request.getPinShortId());
 
         NumberFormat numberFormat = NumberFormat.getNumberInstance(Locale.US);
-
         tvDetailViewCount.setText(numberFormat.format(request.getViewCount()));
         int shortlistCount = request.getSavedByCsrId() != null ? request.getSavedByCsrId().size() : 0;
         tvDetailShortlistCount.setText(String.format("%s companies", numberFormat.format(shortlistCount)));
@@ -150,27 +146,52 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
             tvPostedDate.setText("Date not available");
         }
 
-        boolean isPinUser = "PIN".equals(userRole);
-        boolean isCsrUser = "CSR".equals(userRole);
-
+        // --- START: UPDATED BUTTON VISIBILITY LOGIC ---
+        // Hide all buttons by default
         btnCancelRequest.setVisibility(View.GONE);
         btnCompleteRequest.setVisibility(View.GONE);
         btnAcceptRequest.setVisibility(View.GONE);
         topAppBar.getMenu().findItem(R.id.action_edit_request).setVisible(false);
 
+        boolean isPinUser = "PIN".equals(userRole);
+        boolean isCsrUser = "CSR".equals(userRole);
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        String currentUserId = (currentUser != null) ? currentUser.getUid() : "";
+
         if (isPinUser) {
+            // Logic for the Person-in-Need (PIN)
             if ("Open".equals(request.getStatus())) {
-                btnCancelRequest.setVisibility(View.VISIBLE);
+                btnCancelRequest.setVisibility(View.VISIBLE); // PIN can cancel their own open request
                 topAppBar.getMenu().findItem(R.id.action_edit_request).setVisible(true);
             }
         } else if (isCsrUser) {
+            // Logic for the Customer Service Representative (CSR)
             if ("Open".equals(request.getStatus())) {
+                // Any CSR can accept an "Open" request
                 btnAcceptRequest.setVisibility(View.VISIBLE);
             } else if ("In-progress".equals(request.getStatus())) {
-                btnCompleteRequest.setVisibility(View.VISIBLE);
+                // For an "In-progress" request, check if it was accepted by the current CSR's company
+                userProfileController.getUserById(currentUserId, new UserProfileController.UserLoadCallback() {
+                    @Override
+                    public void onUserLoaded(User user) {
+                        runOnUiThread(() -> {
+                            if (user.getCompanyId() != null && user.getCompanyId().equals(request.getCompanyId())) {
+                                // This CSR's company accepted it, so show them the action buttons.
+                                btnCompleteRequest.setVisibility(View.VISIBLE);
+                                btnCancelRequest.setVisibility(View.VISIBLE); // Show the multi-purpose cancel button
+                            }
+                        });
+                    }
+                    @Override
+                    public void onDataLoadFailed(String errorMessage) {
+                        // Could not load profile, do nothing. Buttons remain hidden.
+                    }
+                });
             }
         }
+        // --- END: UPDATED BUTTON VISIBILITY LOGIC ---
     }
+
 
     private void handleEditClick() {
         if (currentRequest == null) { return; }
@@ -183,17 +204,33 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
         }
     }
 
-    private void showCancelConfirmationDialog() {
+    // --- START: MODIFIED CANCEL/RELEASE ACTION METHODS ---
+
+    /**
+     * This new handler method checks the user's role and decides which cancel action to perform.
+     */
+    private void handleCancelClick() {
+        if ("PIN".equals(userRole)) {
+            // If the user is a PIN, show the permanent delete confirmation.
+            showPinCancelConfirmationDialog();
+        } else if ("CSR".equals(userRole)) {
+            // If the user is a CSR, show the release confirmation.
+            showCsrReleaseConfirmationDialog();
+        }
+    }
+
+    // Action for the PIN to permanently cancel
+    private void showPinCancelConfirmationDialog() {
         new AlertDialog.Builder(this)
                 .setTitle("Cancel Request")
                 .setMessage("Are you sure you want to permanently cancel this help request?")
-                .setPositiveButton("Yes, Cancel It", (dialog, which) -> performDeleteRequest())
+                .setPositiveButton("Yes, Cancel It", (dialog, which) -> performPinCancelRequest())
                 .setNegativeButton("No", null)
                 .setIcon(android.R.drawable.ic_dialog_alert)
                 .show();
     }
 
-    private void performDeleteRequest() {
+    private void performPinCancelRequest() {
         progressBar.setVisibility(View.VISIBLE);
         detailController.cancelRequest(currentRequestId, new HelpRequestController.DeleteCallback() {
             @Override
@@ -215,6 +252,41 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
         });
     }
 
+    // Action for the CSR to release the request back to the active list
+    private void showCsrReleaseConfirmationDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle("Release Request")
+                .setMessage("Are you sure you want to release this request? It will become available for other CSRs again.")
+                .setPositiveButton("Yes, Release It", (dialog, which) -> performCsrReleaseRequest())
+                .setNegativeButton("No", null)
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .show();
+    }
+
+    private void performCsrReleaseRequest() {
+        progressBar.setVisibility(View.VISIBLE);
+        detailController.releaseRequestByCsr(currentRequestId, new HelpRequestController.UpdateCallback() {
+            @Override
+            public void onUpdateSuccess() {
+                runOnUiThread(() -> {
+                    progressBar.setVisibility(View.GONE);
+                    Toast.makeText(HelpRequestDetailActivity.this, "Request released successfully.", Toast.LENGTH_LONG).show();
+                    finish(); // Close the activity and go back to the list
+                });
+            }
+
+            @Override
+            public void onUpdateFailure(String errorMessage) {
+                runOnUiThread(() -> {
+                    progressBar.setVisibility(View.GONE);
+                    Toast.makeText(HelpRequestDetailActivity.this, "Error: " + errorMessage, Toast.LENGTH_LONG).show();
+                });
+            }
+        });
+    }
+    // --- END: MODIFIED CANCEL/RELEASE ACTION METHODS ---
+
+    // --- Methods for Complete and Accept remain the same ---
     private void showCompleteConfirmationDialog() {
         new AlertDialog.Builder(this)
                 .setTitle("Complete Request")
