@@ -30,7 +30,7 @@ public class MyRequestsActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private PinMyRequestsAdapter adapter;
     private List<HelpRequest> requestList;
-    private ViewRequestsController viewController;
+    private HelpRequestController controller; // Changed from ViewRequestsController
     private ProgressBar progressBar;
     private TextView tvNoRequests;
     private MaterialToolbar topAppBar;
@@ -48,7 +48,7 @@ public class MyRequestsActivity extends AppCompatActivity {
         progressBar = findViewById(R.id.progressBar_my_requests);
         tvNoRequests = findViewById(R.id.tv_no_requests);
 
-        viewController = new ViewRequestsController();
+        controller = new HelpRequestController(); // Changed from ViewRequestsController
 
         topAppBar.setNavigationOnClickListener(v -> finish());
         topAppBar.setOnMenuItemClickListener(item -> {
@@ -114,7 +114,7 @@ public class MyRequestsActivity extends AppCompatActivity {
             firestoreListener.remove();
         }
 
-        Query query = viewController.getFilteredHelpRequestsQuery(currentStatusFilter);
+        Query query = controller.getFilteredHelpRequestsQuery(currentStatusFilter); // Changed from viewController
         if (query == null) { /* ... handle no user ... */ return; }
 
         firestoreListener = query.addSnapshotListener((snapshots, e) -> {

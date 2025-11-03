@@ -8,6 +8,7 @@ import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -35,6 +36,7 @@ public class MatchHistoryActivity extends AppCompatActivity {
     private PinMyRequestsAdapter adapter;
     private List<HelpRequest> historyList = new ArrayList<>();
     private TextView tvNoHistory;
+    private ProgressBar progressBar;
 
     private Spinner categorySpinner;
     private EditText etFromDate, etToDate;
@@ -42,7 +44,7 @@ public class MatchHistoryActivity extends AppCompatActivity {
 
     private HelpRequestController controller;
     private Date fromDate, toDate;
-    private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy G", Locale.getDefault());
+    private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,6 +64,7 @@ public class MatchHistoryActivity extends AppCompatActivity {
         topAppBar.setNavigationOnClickListener(v -> finish());
 
         tvNoHistory = findViewById(R.id.tv_no_history);
+        progressBar = findViewById(R.id.progressBar);
         recyclerView = findViewById(R.id.recycler_view_history);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
@@ -110,21 +113,26 @@ public class MatchHistoryActivity extends AppCompatActivity {
     }
 
     private void loadMatchHistory(String category, Date fromDate, Date toDate) {
+        progressBar.setVisibility(View.VISIBLE);
         tvNoHistory.setVisibility(View.GONE);
+        recyclerView.setVisibility(View.GONE);
 
         Query query = controller.getMatchHistoryQuery(category, fromDate, toDate);
 
         if (query == null) {
-            Toast.makeText(this, "You must be logged in.", Toast.LENGTH_SHORT).show();
+            progressBar.setVisibility(View.GONE);
+            Toast.makeText(this, "You must be logged in to view history.", Toast.LENGTH_SHORT).show();
+            finish();
             return;
         }
 
         query.get().addOnCompleteListener(task -> {
+            progressBar.setVisibility(View.GONE);
             if (task.isSuccessful()) {
                 historyList.clear();
                 for (QueryDocumentSnapshot document : task.getResult()) {
                     HelpRequest request = document.toObject(HelpRequest.class);
-                    request.setId(document.getId()); // FIX: Manually set the document ID
+                    request.setId(document.getId());
                     historyList.add(request);
                 }
                 adapter.notifyDataSetChanged();
@@ -132,9 +140,13 @@ public class MatchHistoryActivity extends AppCompatActivity {
                 if (historyList.isEmpty()) {
                     tvNoHistory.setText("No history found for the selected filters.");
                     tvNoHistory.setVisibility(View.VISIBLE);
+                } else {
+                    recyclerView.setVisibility(View.VISIBLE);
                 }
 
             } else {
+                tvNoHistory.setText("Failed to load history.");
+                tvNoHistory.setVisibility(View.VISIBLE);
                 Toast.makeText(this, "Failed to load history. Check logs for index errors.", Toast.LENGTH_LONG).show();
                 Log.e(TAG, "Error loading history: ", task.getException());
             }

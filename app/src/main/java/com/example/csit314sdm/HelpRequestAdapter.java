@@ -16,15 +16,13 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.ArrayList;
-import java.util.List; // This is the correct import for a Java List
+import java.util.List;
 
 public class HelpRequestAdapter extends RecyclerView.Adapter<HelpRequestAdapter.RequestViewHolder> {
 
-    // Using the standard Java List
     private List<HelpRequest> requestList = new ArrayList<>();
     private final OnItemClickListener listener;
     private OnSaveClickListener saveClickListener;
-    // Using the standard Java String
     private String currentUserId;
     private Context context;
 
@@ -36,17 +34,15 @@ public class HelpRequestAdapter extends RecyclerView.Adapter<HelpRequestAdapter.
         void onSaveClick(HelpRequest request, boolean isSaved);
     }
 
-    public HelpRequestAdapter(OnItemClickListener listener, Context context) {
+    public HelpRequestAdapter(OnItemClickListener listener) {
         this.listener = listener;
         this.currentUserId = FirebaseAuth.getInstance().getUid();
-        this.context = context;
     }
 
     public void setOnSaveClickListener(OnSaveClickListener listener) {
         this.saveClickListener = listener;
     }
 
-    // Using the standard Java List
     public void setRequests(List<HelpRequest> requests) {
         this.requestList = requests;
         notifyDataSetChanged();
@@ -55,7 +51,8 @@ public class HelpRequestAdapter extends RecyclerView.Adapter<HelpRequestAdapter.
     @NonNull
     @Override
     public RequestViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_help_request, parent, false);
+        this.context = parent.getContext();
+        View view = LayoutInflater.from(this.context).inflate(R.layout.item_help_request, parent, false);
         return new RequestViewHolder(view);
     }
 
@@ -70,7 +67,7 @@ public class HelpRequestAdapter extends RecyclerView.Adapter<HelpRequestAdapter.
     }
 
     static class RequestViewHolder extends RecyclerView.ViewHolder {
-        private final TextView tvCategory, tvOrg, tvDate, tvUrgency;
+        private final TextView tvCategory, tvOrg, tvDate, tvUrgency, tvPinName, tvPinId;
         private final Button btnViewDetails;
         private final ImageButton btnSave;
 
@@ -82,21 +79,37 @@ public class HelpRequestAdapter extends RecyclerView.Adapter<HelpRequestAdapter.
             tvUrgency = itemView.findViewById(R.id.tvUrgency);
             btnViewDetails = itemView.findViewById(R.id.btnViewDetails);
             btnSave = itemView.findViewById(R.id.btnSave);
+            tvPinName = itemView.findViewById(R.id.tvPinName);
+            tvPinId = itemView.findViewById(R.id.tvPinId);
         }
 
-        // Using the standard Java String
         public void bind(final HelpRequest request, final OnItemClickListener listener, final OnSaveClickListener saveClickListener, String currentUserId, Context context) {
             tvCategory.setText(request.getCategory());
             tvOrg.setText(request.getOrganization());
 
+            // --- FIX: This now correctly shows the PIN Name and PIN Short ID ---
+            if (request.getPinName() != null) {
+                tvPinName.setText("PIN Name: " + request.getPinName());
+                tvPinName.setVisibility(View.VISIBLE);
+            } else {
+                tvPinName.setVisibility(View.GONE);
+            }
+
+            if (request.getPinShortId() != null) {
+                tvPinId.setText("PIN ID: " + request.getPinShortId());
+                tvPinId.setVisibility(View.VISIBLE);
+            } else {
+                tvPinId.setVisibility(View.GONE);
+            }
+            // --- END: CORRECTION COMPLETE ---
+
             if (request.getCreationTimestamp() != null) {
                 long now = System.currentTimeMillis();
                 CharSequence relativeTime = DateUtils.getRelativeTimeSpanString(request.getCreationTimestamp().getTime(), now, DateUtils.DAY_IN_MILLIS);
-                tvDate.setText("Shortlisted " + relativeTime);
+                tvDate.setText("Posted " + relativeTime);
             }
 
             if (request.getUrgencyLevel() != null && !request.getUrgencyLevel().isEmpty()) {
-                // This is now a standard Java String
                 String urgency = request.getUrgencyLevel().trim();
                 tvUrgency.setText(urgency);
                 tvUrgency.setVisibility(View.VISIBLE);
@@ -114,7 +127,6 @@ public class HelpRequestAdapter extends RecyclerView.Adapter<HelpRequestAdapter.
                 tvUrgency.setVisibility(View.GONE);
             }
 
-            // This line correctly uses the updated getSavedByCsrId() method from HelpRequest.java
             final boolean isSaved = request.getSavedByCsrId() != null && request.getSavedByCsrId().contains(currentUserId);
 
             btnSave.setImageResource(isSaved ? R.drawable.ic_star_filled : R.drawable.ic_star);

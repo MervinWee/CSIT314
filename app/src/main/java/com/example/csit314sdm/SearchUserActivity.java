@@ -34,13 +34,14 @@ public class SearchUserActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_search_user);
 
+        // Assuming SearchUserController uses LiveData, which is a good pattern
         searchController = new SearchUserController();
 
         initializeUI();
         setupObservers();
 
         // Perform an initial search to show all users
-        searchController.searchUsers("", selectedRole);
+        performSearch();
     }
 
     private void initializeUI() {
@@ -52,7 +53,8 @@ public class SearchUserActivity extends AppCompatActivity {
 
         UserAdapter.OnItemClickListener clickListener = user -> {
             Intent intent = new Intent(SearchUserActivity.this, UserDetailActivity.class);
-            intent.putExtra("USER_ID", user.getUid());
+            // *** FIX: Changed user.getUid() to user.getId() ***
+            intent.putExtra("USER_ID", user.getId());
             startActivity(intent);
         };
 
@@ -63,13 +65,13 @@ public class SearchUserActivity extends AppCompatActivity {
 
         btnBack.setOnClickListener(v -> finish());
 
-        // --- FIX: Replaced the keyboard listener with a TextWatcher for instant search ---
         etSearchQuery.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // Search as the user types
                 performSearch();
             }
 
@@ -80,8 +82,10 @@ public class SearchUserActivity extends AppCompatActivity {
         chipGroupRoleFilter.setOnCheckedStateChangeListener((group, checkedIds) -> {
             if (checkedIds.isEmpty()) {
                 selectedRole = "All";
+                // Ensure the "All" chip is checked if nothing is, to provide clear user feedback
+                group.check(R.id.chipAll);
             } else {
-                int selectedChipId = checkedIds.get(0);
+                int selectedChipId = checkedIds.get(0); // get(0) is safe because isEmpty() is false
                 if (selectedChipId == R.id.chipAll) {
                     selectedRole = "All";
                 } else if (selectedChipId == R.id.chipAdmin) {
@@ -97,12 +101,14 @@ public class SearchUserActivity extends AppCompatActivity {
     }
 
     private void setupObservers() {
+        // This assumes your SearchUserController uses LiveData to communicate with the UI
         searchController.getUsersLiveData().observe(this, users -> {
             if (users != null && !users.isEmpty()) {
                 userAdapter.setUsers(users);
                 recyclerViewUsers.setVisibility(View.VISIBLE);
                 tvNoResults.setVisibility(View.GONE);
             } else {
+                // If the list is null or empty, clear the adapter and show "No results"
                 userAdapter.setUsers(new ArrayList<>());
                 recyclerViewUsers.setVisibility(View.GONE);
                 tvNoResults.setVisibility(View.VISIBLE);
@@ -110,14 +116,14 @@ public class SearchUserActivity extends AppCompatActivity {
         });
 
         searchController.getErrorLiveData().observe(this, error -> {
-            if (error != null) {
+            if (error != null && !error.isEmpty()) {
                 Toast.makeText(this, error, Toast.LENGTH_LONG).show();
             }
         });
     }
 
     private void performSearch() {
-        String query = etSearchQuery.getText().toString().trim();
+        String query = etSearchQuery.getText() != null ? etSearchQuery.getText().toString().trim() : "";
         searchController.searchUsers(query, selectedRole);
     }
 }

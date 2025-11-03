@@ -10,13 +10,14 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 
 import com.google.android.material.switchmaterial.SwitchMaterial;
+import com.google.firebase.auth.FirebaseAuth;
 
-public class CSRSettingsActivity extends AppCompatActivity {
+public class PINSettingsActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_csr_settings);
+        setContentView(R.layout.activity_pin_settings);
 
         ImageButton btnBack = findViewById(R.id.btn_back);
         SwitchMaterial switchNotifications = findViewById(R.id.switch_notifications);
@@ -41,7 +42,8 @@ public class CSRSettingsActivity extends AppCompatActivity {
 
         btnLogout.setOnClickListener(v -> {
             // Handle logout
-            Intent intent = new Intent(CSRSettingsActivity.this, loginPage.class);
+            FirebaseAuth.getInstance().signOut();
+            Intent intent = new Intent(PINSettingsActivity.this, loginPage.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
         });

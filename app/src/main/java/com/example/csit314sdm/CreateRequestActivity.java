@@ -13,6 +13,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.appbar.MaterialToolbar;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentReference;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -81,10 +82,12 @@ public class CreateRequestActivity extends AppCompatActivity {
             return;
         }
 
+        String pinId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+
         // --- Instantiate Controller and Pass Data ---
         CreateRequestController createController = new CreateRequestController();
         Task<DocumentReference> creationTask = createController.createNewRequest(
-                requestType, description, location, preferredTime, phoneNumber, notes, urgencyLevel);
+                requestType, description, location, preferredTime, phoneNumber, notes, urgencyLevel, pinId);
 
         // --- Handle the Result ---
         if (creationTask == null) {

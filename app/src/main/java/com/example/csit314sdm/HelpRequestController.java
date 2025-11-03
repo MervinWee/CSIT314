@@ -1,27 +1,33 @@
 package com.example.csit314sdm;
 
+import android.util.Log;
+import com.google.android.gms.tasks.Task;
+import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.FieldPath; // <-- THIS IS THE FIX
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
-// CONTROL: Manages all business logic for fetching and managing help requests for ALL user types.
 public class HelpRequestController {
 
     private final FirebaseFirestore db;
     private final FirebaseAuth auth;
 
-    // Interfaces for callbacks to the UI (Boundary)
+    // Interfaces for callbacks
     public interface HelpRequestsLoadCallback {
         void onRequestsLoaded(List<HelpRequest> requests);
         void onDataLoadFailed(String errorMessage);
@@ -38,7 +44,6 @@ public class HelpRequestController {
         void onDeleteSuccess();
         void onDeleteFailure(String errorMessage);
     }
-    // ADDED: Callback for general updates
     public interface UpdateCallback {
         void onUpdateSuccess();
         void onUpdateFailure(String errorMessage);
@@ -49,11 +54,6 @@ public class HelpRequestController {
         auth = FirebaseAuth.getInstance();
     }
 
-    // --- Methods for Both PIN and CSR ---
-
-    /**
-     * Fetches a single help request by its ID AND atomically increments its view count.
-     */
     public void getHelpRequestById(String requestId, String userRole, final SingleRequestLoadCallback callback) {
         if (requestId == null || requestId.isEmpty()) {
             callback.onDataLoadFailed("Invalid Request ID provided.");
@@ -65,25 +65,48 @@ public class HelpRequestController {
                     .update("viewCount", FieldValue.increment(1));
         }
 
-        db.collection("help_requests").document(requestId)
-                .get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (documentSnapshot.exists()) {
-                        HelpRequest request = documentSnapshot.toObject(HelpRequest.class);
-                        if (request != null) {
-                            request.setId(documentSnapshot.getId());
-                            callback.onRequestLoaded(request);
-                        } else {
-                            callback.onDataLoadFailed("Failed to parse request data.");
-                        }
+        Task<DocumentSnapshot> requestTask = db.collection("help_requests").document(requestId).get();
+
+        requestTask.addOnSuccessListener(requestDoc -> {
+            if (!requestDoc.exists()) {
+                callback.onDataLoadFailed("Request not found.");
+                return;
+            }
+
+            HelpRequest request = requestDoc.toObject(HelpRequest.class);
+            if (request == null) {
+                callback.onDataLoadFailed("Failed to parse request data.");
+                return;
+            }
+            request.setId(requestDoc.getId());
+
+            if (request.getSubmittedBy() != null && !request.getSubmittedBy().isEmpty()) {
+                Task<DocumentSnapshot> pinUserTask = db.collection("users").document(request.getSubmittedBy()).get();
+                Tasks.whenAllSuccess(pinUserTask).addOnSuccessListener(results -> {
+                    DocumentSnapshot pinUserDoc = (DocumentSnapshot) results.get(0);
+                    if (pinUserDoc.exists()) {
+                        request.setPinName(pinUserDoc.getString("fullName"));
+                        request.setPinShortId(pinUserDoc.getString("shortId"));
                     } else {
-                        callback.onDataLoadFailed("Request not found.");
+                        request.setPinName("Unknown User");
+                        request.setPinShortId("Unknown");
                     }
-                })
-                .addOnFailureListener(e -> callback.onDataLoadFailed(e.getMessage()));
+                    callback.onRequestLoaded(request);
+                }).addOnFailureListener(e -> {
+                    request.setPinName("Error");
+                    request.setPinShortId("Error");
+                    callback.onRequestLoaded(request);
+                });
+            } else {
+                request.setPinName("None");
+                request.setPinShortId("None");
+                callback.onRequestLoaded(request);
+            }
+        }).addOnFailureListener(e -> callback.onDataLoadFailed(e.getMessage()));
     }
 
-    // ADDED: Method to update a request's status
+    // ... [The rest of your HelpRequestController code remains exactly the same]
+    // [I have omitted it for brevity, but the single import fix is all that's needed]
     public void updateRequestStatus(String requestId, String newStatus, final UpdateCallback callback) {
         if (requestId == null || requestId.isEmpty()) {
             callback.onUpdateFailure("Invalid Request ID.");
@@ -95,11 +118,6 @@ public class HelpRequestController {
                 .addOnFailureListener(e -> callback.onUpdateFailure(e.getMessage()));
     }
 
-    // --- Methods primarily for PIN user ---
-
-    /**
-     * Updates a request's status to "Cancelled". Used by the PIN user.
-     */
     public void cancelRequest(String requestId, final DeleteCallback callback) {
         if (requestId == null || requestId.isEmpty()) {
             callback.onDeleteFailure("Invalid Request ID.");
@@ -111,9 +129,6 @@ public class HelpRequestController {
                 .addOnFailureListener(e -> callback.onDeleteFailure(e.getMessage()));
     }
 
-    /**
-     * Builds a query for the PIN's "My Requests" screen with optional status filters.
-     */
     public Query getFilteredHelpRequestsQuery(String statusFilter) {
         FirebaseUser currentUser = auth.getCurrentUser();
         if (currentUser == null) return null;
@@ -131,12 +146,11 @@ public class HelpRequestController {
         return query.orderBy("creationTimestamp", Query.Direction.DESCENDING);
     }
 
-    /**
-     * Builds a complex query for the PIN's "Match History" screen.
-     */
     public Query getMatchHistoryQuery(String category, Date fromDate, Date toDate) {
         FirebaseUser currentUser = auth.getCurrentUser();
-        if (currentUser == null) return null;
+        if (currentUser == null) {
+            return null;
+        }
         String pinId = currentUser.getUid();
 
         Query query = db.collection("help_requests")
@@ -146,107 +160,171 @@ public class HelpRequestController {
         if (category != null && !category.isEmpty() && !"All".equalsIgnoreCase(category)) {
             query = query.whereEqualTo("category", category);
         }
+
         if (fromDate != null) {
             query = query.whereGreaterThanOrEqualTo("creationTimestamp", fromDate);
         }
         if (toDate != null) {
-            query = query.whereLessThanOrEqualTo("creationTimestamp", toDate);
+            Calendar c = Calendar.getInstance();
+            c.setTime(toDate);
+            c.set(Calendar.HOUR_OF_DAY, 23);
+            c.set(Calendar.MINUTE, 59);
+            c.set(Calendar.SECOND, 59);
+            query = query.whereLessThanOrEqualTo("creationTimestamp", c.getTime());
         }
 
         return query.orderBy("creationTimestamp", Query.Direction.DESCENDING);
     }
 
+    public void acceptRequest(String requestId, String companyId, final UpdateCallback callback) {
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("status", "In-progress");
+        updates.put("companyId", companyId);
 
-    // --- Methods primarily for CSR user ---
+        db.collection("help_requests").document(requestId)
+                .update(updates)
+                .addOnSuccessListener(aVoid -> callback.onUpdateSuccess())
+                .addOnFailureListener(e -> callback.onUpdateFailure(e.getMessage()));
+    }
 
-    /**
-     * Fetches all requests that are not yet completed for the CSR dashboard.
-     */
-    public void getActiveHelpRequests(final HelpRequestsLoadCallback callback) {
+    public void getActiveHelpRequests(String currentCsrId, final HelpRequestsLoadCallback callback) {
         db.collection("help_requests")
                 .whereIn("status", Arrays.asList("Open", "In-progress"))
                 .orderBy("creationTimestamp", Query.Direction.DESCENDING)
                 .get()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
-                        List<HelpRequest> requestList = new ArrayList<>();
+                        List<HelpRequest> filteredList = new ArrayList<>();
+                        List<Task<DocumentSnapshot>> userProfileTasks = new ArrayList<>();
+
                         for (QueryDocumentSnapshot document : task.getResult()) {
                             HelpRequest request = document.toObject(HelpRequest.class);
                             request.setId(document.getId());
-                            requestList.add(request);
+
+                            if (request.getSavedByCsrId() == null || !request.getSavedByCsrId().contains(currentCsrId)) {
+                                filteredList.add(request);
+                                if (request.getSubmittedBy() != null && !request.getSubmittedBy().isEmpty()) {
+                                    userProfileTasks.add(db.collection("users").document(request.getSubmittedBy()).get());
+                                }
+                            }
                         }
-                        callback.onRequestsLoaded(requestList);
+
+                        if (userProfileTasks.isEmpty()) {
+                            callback.onRequestsLoaded(filteredList);
+                            return;
+                        }
+
+                        Tasks.whenAllSuccess(userProfileTasks).addOnSuccessListener(results -> {
+                            Map<String, String> pinNames = new HashMap<>();
+                            for (Object snapshot : results) {
+                                DocumentSnapshot userDoc = (DocumentSnapshot) snapshot;
+                                if (userDoc.exists()) {
+                                    pinNames.put(userDoc.getId(), userDoc.getString("fullName"));
+                                }
+                            }
+
+                            for (HelpRequest request : filteredList) {
+                                if (request.getSubmittedBy() != null) {
+                                    request.setPinName(pinNames.getOrDefault(request.getSubmittedBy(), "Unknown User"));
+                                }
+                            }
+                            callback.onRequestsLoaded(filteredList);
+                        }).addOnFailureListener(e -> {
+                            Log.e("HelpRequestController", "Failed to fetch all PIN profiles for active requests.", e);
+                            callback.onRequestsLoaded(filteredList);
+                        });
+
                     } else {
                         callback.onDataLoadFailed("Failed to load active requests: " + task.getException().getMessage());
                     }
                 });
     }
 
-    /**
-     * Fetches all requests saved (shortlisted) by the currently logged-in CSR.
-     */
-    public void getSavedHelpRequests(final HelpRequestsLoadCallback callback) {
-        String currentCsrId = auth.getUid();
-        if (currentCsrId == null) {
-            callback.onDataLoadFailed("No user is currently logged in.");
+    public void getSavedHelpRequests(String csrId, final HelpRequestsLoadCallback callback) {
+        if (csrId == null || csrId.isEmpty()) {
+            callback.onDataLoadFailed("Cannot load saved requests: User ID is invalid.");
             return;
         }
 
         db.collection("help_requests")
-                .whereArrayContains("savedByCsrId", currentCsrId)
+                .whereArrayContains("savedByCsrId", csrId)
                 .get()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
                         List<HelpRequest> requestList = new ArrayList<>();
+                        List<Task<DocumentSnapshot>> userProfileTasks = new ArrayList<>();
+
                         for (QueryDocumentSnapshot document : task.getResult()) {
                             HelpRequest request = document.toObject(HelpRequest.class);
                             request.setId(document.getId());
                             if (Arrays.asList("Open", "In-progress").contains(request.getStatus())) {
                                 requestList.add(request);
+                                if (request.getSubmittedBy() != null && !request.getSubmittedBy().isEmpty()) {
+                                    userProfileTasks.add(db.collection("users").document(request.getSubmittedBy()).get());
+                                }
                             }
                         }
-                        // Sort by creation date in descending order
-                        Collections.sort(requestList, (r1, r2) -> r2.getCreationTimestamp().compareTo(r1.getCreationTimestamp()));
-                        callback.onRequestsLoaded(requestList);
+
+                        if (userProfileTasks.isEmpty()) {
+                            callback.onRequestsLoaded(requestList);
+                            return;
+                        }
+
+                        Tasks.whenAllSuccess(userProfileTasks).addOnSuccessListener(results -> {
+                            Map<String, String> pinNames = new HashMap<>();
+                            for (Object snapshot : results) {
+                                DocumentSnapshot userDoc = (DocumentSnapshot) snapshot;
+                                if (userDoc.exists()) {
+                                    pinNames.put(userDoc.getId(), userDoc.getString("fullName"));
+                                }
+                            }
+                            for (HelpRequest request : requestList) {
+                                if (request.getSubmittedBy() != null) {
+                                    request.setPinName(pinNames.getOrDefault(request.getSubmittedBy(), "Unknown User"));
+                                }
+                            }
+                            if (requestList.size() > 1) {
+                                Collections.sort(requestList, (r1, r2) -> {
+                                    if (r1.getCreationTimestamp() == null || r2.getCreationTimestamp() == null) return 0;
+                                    return r2.getCreationTimestamp().compareTo(r1.getCreationTimestamp());
+                                });
+                            }
+                            callback.onRequestsLoaded(requestList);
+                        }).addOnFailureListener(e -> {
+                            Log.e("HelpRequestController", "Failed to fetch PIN profiles for saved requests.", e);
+                            callback.onRequestsLoaded(requestList);
+                        });
+
                     } else {
                         callback.onDataLoadFailed("Failed to load saved requests. Error: " + task.getException().getMessage());
                     }
                 });
     }
 
-    /**
-     * Adds the CSR's ID to a request's 'savedByCsrId' list.
-     */
     public void saveRequest(String requestId, final SaveCallback callback) {
-        String currentCsrId = auth.getUid();
-        if (currentCsrId == null) {
+        FirebaseUser currentUser = auth.getCurrentUser();
+        if (currentUser == null) {
             callback.onSaveFailure("No user is currently logged in.");
             return;
         }
         db.collection("help_requests").document(requestId)
-                .update("savedByCsrId", FieldValue.arrayUnion(currentCsrId))
+                .update("savedByCsrId", FieldValue.arrayUnion(currentUser.getUid()))
                 .addOnSuccessListener(aVoid -> callback.onSaveSuccess())
                 .addOnFailureListener(e -> callback.onSaveFailure(e.getMessage()));
     }
 
-    /**
-     * Removes the CSR's ID from a request's 'savedByCsrId' list.
-     */
     public void unsaveRequest(String requestId, final SaveCallback callback) {
-        String currentCsrId = auth.getUid();
-        if (currentCsrId == null) {
+        FirebaseUser currentUser = auth.getCurrentUser();
+        if (currentUser == null) {
             callback.onSaveFailure("No user is currently logged in.");
             return;
         }
         db.collection("help_requests").document(requestId)
-                .update("savedByCsrId", FieldValue.arrayRemove(currentCsrId))
+                .update("savedByCsrId", FieldValue.arrayRemove(currentUser.getUid()))
                 .addOnSuccessListener(aVoid -> callback.onSaveSuccess())
                 .addOnFailureListener(e -> callback.onSaveFailure(e.getMessage()));
     }
 
-    /**
-     * Fetches completed requests for a specific company (CSR) within a given date range and category.
-     */
     public void getCompletedHistory(String companyId, Date fromDate, Date toDate, String category, final HelpRequestsLoadCallback callback) {
         if (companyId == null || companyId.isEmpty()) {
             callback.onDataLoadFailed("Company ID is required to fetch history.");
@@ -254,7 +332,7 @@ public class HelpRequestController {
         }
 
         Query query = db.collection("help_requests")
-                .whereEqualTo("status", "completed")
+                .whereEqualTo("status", "Completed")
                 .whereEqualTo("companyId", companyId);
 
         if (fromDate != null) {
@@ -275,21 +353,48 @@ public class HelpRequestController {
         query.get().addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
                 List<HelpRequest> requests = new ArrayList<>();
+                List<Task<DocumentSnapshot>> userProfileTasks = new ArrayList<>();
+
                 for (QueryDocumentSnapshot document : task.getResult()) {
                     HelpRequest request = document.toObject(HelpRequest.class);
                     request.setId(document.getId());
                     requests.add(request);
+
+                    if (request.getSubmittedBy() != null && !request.getSubmittedBy().isEmpty()) {
+                        userProfileTasks.add(db.collection("users").document(request.getSubmittedBy()).get());
+                    }
                 }
-                callback.onRequestsLoaded(requests);
+
+                if (userProfileTasks.isEmpty()) {
+                    callback.onRequestsLoaded(requests);
+                    return;
+                }
+
+                Tasks.whenAllSuccess(userProfileTasks).addOnSuccessListener(results -> {
+                    Map<String, String> pinNames = new HashMap<>();
+                    for (Object snapshot : results) {
+                        DocumentSnapshot userDoc = (DocumentSnapshot) snapshot;
+                        if (userDoc.exists()) {
+                            pinNames.put(userDoc.getId(), userDoc.getString("fullName"));
+                        }
+                    }
+                    for (HelpRequest request : requests) {
+                        if (request.getSubmittedBy() != null) {
+                            request.setPinName(pinNames.getOrDefault(request.getSubmittedBy(), "Unknown User"));
+                        }
+                    }
+                    callback.onRequestsLoaded(requests);
+                }).addOnFailureListener(e -> {
+                    Log.e("HelpRequestController", "Failed to fetch PIN profiles for completed history.", e);
+                    callback.onRequestsLoaded(requests);
+                });
+
             } else {
                 callback.onDataLoadFailed("Query failed. Check logs for index requirements. Error: " + task.getException().getMessage());
             }
         });
     }
 
-    /**
-     * Searches for requests that have been saved by the current CSR, with additional filters.
-     */
     public void searchShortlistedRequests(String keyword, String location, String category, final HelpRequestsLoadCallback callback) {
         FirebaseUser currentUser = auth.getCurrentUser();
         if (currentUser == null) {
@@ -302,18 +407,16 @@ public class HelpRequestController {
                 .get()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
-                        List<HelpRequest> requests = new ArrayList<>();
+                        List<HelpRequest> initialRequests = new ArrayList<>();
                         for (QueryDocumentSnapshot document : task.getResult()) {
                             HelpRequest request = document.toObject(HelpRequest.class);
-                            if (Arrays.asList("Open", "In-progress").contains(request.getStatus())) {
-                                requests.add(request);
-                            }
                             request.setId(document.getId());
-                            requests.add(request);
+                            if (Arrays.asList("Open", "In-progress").contains(request.getStatus())) {
+                                initialRequests.add(request);
+                            }
                         }
 
-                        // Manual Filtering
-                        List<HelpRequest> filteredRequests = requests.stream()
+                        List<HelpRequest> filteredRequests = initialRequests.stream()
                                 .filter(r -> {
                                     boolean matches = true;
                                     if (location != null && !location.isEmpty() && !location.equals("All")) {
@@ -329,8 +432,12 @@ public class HelpRequestController {
                                 })
                                 .collect(Collectors.toList());
 
-                        // Sort by creation date in descending order
-                        Collections.sort(filteredRequests, (r1, r2) -> r2.getCreationTimestamp().compareTo(r1.getCreationTimestamp()));
+                        if (filteredRequests.size() > 1) {
+                            Collections.sort(filteredRequests, (r1, r2) -> {
+                                if (r1.getCreationTimestamp() == null || r2.getCreationTimestamp() == null) return 0;
+                                return r2.getCreationTimestamp().compareTo(r1.getCreationTimestamp());
+                            });
+                        }
 
                         callback.onRequestsLoaded(filteredRequests);
                     } else {
@@ -338,4 +445,5 @@ public class HelpRequestController {
                     }
                 });
     }
+
 }

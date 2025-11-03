@@ -13,6 +13,8 @@ import android.widget.Spinner;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
+import java.util.Random; // Import the Random class
+
 public class AdminCreateUserActivity extends AppCompatActivity {
 
     private EditText etCreateUserEmail, etCreateUserPassword;
@@ -29,29 +31,23 @@ public class AdminCreateUserActivity extends AppCompatActivity {
         setContentView(R.layout.activity_admin_create_user);
 
         try {
-            // Initialize the controller and all UI elements
             registrationController = new RegistrationController();
             initializeUI();
 
-            // Set up the button click listeners
             btnAdminCreateUser.setOnClickListener(v -> handleCreateUser());
-
             btnBack.setOnClickListener(v -> {
-                Intent intent = new Intent(AdminCreateUserActivity.this, AdminDashboardActivity.class);
-                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                startActivity(intent);
+                // Go back to the dashboard without creating a new instance
+                finish();
             });
 
         } catch (Exception e) {
-            // This will catch any NullPointerException if an ID is still wrong in your XML
             Toast.makeText(this, "Error initializing the screen. Check layout IDs.", Toast.LENGTH_LONG).show();
             Log.e("AdminCreateUser", "Initialization failed", e);
-            finish(); // Close the broken screen
+            finish();
         }
     }
 
     private void initializeUI() {
-        // --- STEP 1: Find all the views using their IDs from the XML ---
         etCreateUserEmail = findViewById(R.id.etCreateUserEmail);
         etCreateUserPassword = findViewById(R.id.etCreateUserPassword);
         spinnerCreateUserRole = findViewById(R.id.spinnerCreateUserRole);
@@ -59,14 +55,11 @@ public class AdminCreateUserActivity extends AppCompatActivity {
         btnBack = findViewById(R.id.btnBack);
         progressBar = findViewById(R.id.progressBar);
 
-        // --- STEP 2: Make the Admin-specific views VISIBLE ---
-        // Your XML hides them by default, so the Java code must show them.
         findViewById(R.id.tvAdminRoleLabel).setVisibility(View.VISIBLE);
         spinnerCreateUserRole.setVisibility(View.VISIBLE);
         btnAdminCreateUser.setVisibility(View.VISIBLE);
 
-        // --- STEP 3: Hide any other views that should not be on this screen ---
-        // This ensures only the correct fields are visible.
+        // Hide UI elements not relevant to this admin screen
         findViewById(R.id.layoutFullName).setVisibility(View.GONE);
         findViewById(R.id.layoutPhoneNumber).setVisibility(View.GONE);
         findViewById(R.id.layoutDob).setVisibility(View.GONE);
@@ -74,8 +67,8 @@ public class AdminCreateUserActivity extends AppCompatActivity {
         findViewById(R.id.spinnerRole).setVisibility(View.GONE);
         findViewById(R.id.btnCreateAccount).setVisibility(View.GONE);
 
-        // --- STEP 4: Set up the items (the "content") for your Spinner ---
-        String[] userTypes = {"PIN", "CSR", "Admin"}; // These are the options that will appear
+        // Set up the spinner with user roles
+        String[] userTypes = {"PIN", "CSR", "Admin"};
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, userTypes);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerCreateUserRole.setAdapter(adapter);
@@ -95,11 +88,7 @@ public class AdminCreateUserActivity extends AppCompatActivity {
             progressBar.setVisibility(View.VISIBLE);
             btnAdminCreateUser.setEnabled(false);
 
-            if (registrationController == null) {
-                throw new IllegalStateException("RegistrationController is not initialized.");
-            }
-
-            registrationController.registerUser(email, password, userType, new RegistrationController.RegistrationCallback() {
+            RegistrationController.RegistrationCallback callback = new RegistrationController.RegistrationCallback() {
                 @Override
                 public void onRegistrationSuccess(String returnedUserType) {
                     progressBar.setVisibility(View.GONE);
@@ -115,12 +104,35 @@ public class AdminCreateUserActivity extends AppCompatActivity {
                     btnAdminCreateUser.setEnabled(true);
                     Toast.makeText(AdminCreateUserActivity.this, "Error: " + errorMessage, Toast.LENGTH_LONG).show();
                 }
-            });
+            };
+
+            // *** FIX: Check if the role is "CSR" and handle accordingly ***
+            if ("CSR".equals(userType)) {
+                String companyId = generateUniqueCompanyId();
+                // Call an overloaded registerUser method that accepts a companyId
+                registrationController.registerUser(email, password, userType, companyId, callback);
+            } else {
+                // For other roles (PIN, Admin), call the original method
+                registrationController.registerUser(email, password, userType, callback);
+            }
+
         } catch (Exception e) {
             progressBar.setVisibility(View.GONE);
             btnAdminCreateUser.setEnabled(true);
             Toast.makeText(this, "An unexpected error occurred during user creation.", Toast.LENGTH_LONG).show();
             Log.e("AdminCreateUser", "Error in handleCreateUser", e);
         }
+    }
+
+    /**
+     * Generates a random, 5-digit number as a String.
+     * In a real-world app, you'd check for uniqueness in the database.
+     * @return A 5-digit string (e.g., "54321").
+     */
+    private String generateUniqueCompanyId() {
+        Random random = new Random();
+        // Generates a number between 10000 and 99999
+        int fiveDigitNumber = 10000 + random.nextInt(90000);
+        return String.valueOf(fiveDigitNumber);
     }
 }

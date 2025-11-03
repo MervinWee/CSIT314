@@ -1,28 +1,41 @@
 package com.example.csit314sdm;
 
+import com.google.firebase.firestore.Exclude;
 import com.google.firebase.firestore.PropertyName;
 import java.util.Date;
 
 public class User {
 
-    private String uid;
+    // --- FIELD DECLARATIONS -- -
+    private String id; // This will store the unique document ID from Firestore.
     private String email;
     private String fullName;
     private String phoneNumber;
-    private String dob;
+    private String dob; // Stands for Date of Birth
     private String role;
     private String accountStatus;
     private String address;
     private String shortId;
-    private Date creationDate; // FIX: Changed from long to Date
+    private Date creationDate;
+    private String companyId;
 
-    // Public, no-argument constructor is REQUIRED
+    // Public, no-argument constructor is REQUIRED for Firestore deserialization
     public User() {}
 
-    // --- Getters and Setters with PropertyName annotations ---
+    // --- GETTERS AND SETTERS ---
 
-    public String getUid() { return uid; }
-    public void setUid(String uid) { this.uid = uid; }
+    // --- FIX: Added getId() and setId() for the document ID ---
+    /**
+     * The @Exclude annotation tells Firestore not to save this field back into the document,
+     * as the ID is metadata, not part of the data itself.
+     */
+    @Exclude
+    public String getId() { return id; }
+
+    public void setId(String id) { this.id = id; }
+
+
+    // --- Other Getters and Setters ---
 
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
@@ -32,14 +45,14 @@ public class User {
     @PropertyName("fullName")
     public void setFullName(String fullName) { this.fullName = fullName; }
 
-    @PropertyName("contactNumber") // FIX: Maps 'contactNumber' in DB to this field
+    @PropertyName("phoneNumber")
     public String getPhoneNumber() { return phoneNumber; }
-    @PropertyName("contactNumber")
+    @PropertyName("phoneNumber")
     public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
 
-    @PropertyName("dateOfBirth") // FIX: Maps 'dateOfBirth' in DB to this field
+    @PropertyName("dob")
     public String getDob() { return dob; }
-    @PropertyName("dateOfBirth")
+    @PropertyName("dob")
     public void setDob(String dob) { this.dob = dob; }
 
     public String getRole() { return role; }
@@ -54,16 +67,27 @@ public class User {
     public String getShortId() { return shortId; }
     public void setShortId(String shortId) { this.shortId = shortId; }
 
-    @PropertyName("creationDate") // FIX: Maps 'creationDate' or 'createdAt'
+    @PropertyName("creationDate")
     public Date getCreationDate() { return creationDate; }
     @PropertyName("creationDate")
     public void setCreationDate(Date creationDate) { this.creationDate = creationDate; }
 
-    // Getter for old 'createdAt' field to avoid crashes with old data
+    @PropertyName("companyId")
+    public String getCompanyId() { return companyId; }
+    @PropertyName("companyId")
+    public void setCompanyId(String companyId) { this.companyId = companyId; }
+
+    /**
+     * This is a fallback setter to handle old data that might have used 'createdAt'
+     * instead of 'creationDate'. It prevents the app from crashing if it encounters old documents.
+     */
     @PropertyName("createdAt")
     public void setCreatedAt(Date date) {
         if (this.creationDate == null) {
             this.creationDate = date;
         }
     }
+
+    // NOTE: The 'uid' field and its getter/setter have been removed to avoid confusion with 'id'.
+    // The 'id' field will now be used consistently to store the Firestore document ID.
 }

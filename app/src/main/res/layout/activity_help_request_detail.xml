@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     tools:context=".HelpRequestDetailActivity">
 
-    <!-- Top App Bar with the back button and edit menu -->
+    <!-- Top App Bar -->
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
@@ -20,7 +20,7 @@
             app:menu="@menu/detail_menu"  />
     </com.google.android.material.appbar.AppBarLayout>
 
-    <!-- Main Content Area that scrolls -->
+    <!-- Main Content -->
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -32,30 +32,25 @@
             android:orientation="vertical"
             android:padding="24dp">
 
-            <!-- Request Type -->
+            <!-- Request Title -->
             <TextView
                 android:id="@+id/tvDetailRequestType"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textSize="24sp"
                 android:textStyle="bold"
-                android:textColor="?android:attr/textColorPrimary"
                 tools:text="Medical Transport" />
 
-            <!-- Status -->
+            <!-- Status Badge -->
             <TextView
                 android:id="@+id/tvDetailStatus"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:background="#1976D2"
-                android:paddingStart="10dp"
-                android:paddingEnd="10dp"
-                android:paddingTop="4dp"
-                android:paddingBottom="4dp"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp"
                 android:textColor="@android:color/white"
-                android:textSize="12sp"
-                android:textStyle="bold"
                 tools:text="Open" />
 
             <View
@@ -66,20 +61,61 @@
                 android:background="#CCCCCC" />
 
             <!-- Description -->
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Description" android:textStyle="bold"/>
-            <TextView android:id="@+id/tvDetailDescription" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" tools:text="Need a ride to the hospital for a check-up."/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Description"
+                android:textStyle="bold"/>
+            <TextView
+                android:id="@+id/tvDetailDescription"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                tools:text="Need a ride to the hospital for a check-up."/>
+
+            <!-- *** The duplicate TextViews for PIN Name and ID that were here have been removed. *** -->
 
             <!-- Location -->
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:text="Location" android:textStyle="bold"/>
-            <TextView android:id="@+id/tvDetailLocation" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" tools:text="123 Main St, Anytown"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Location"
+                android:textStyle="bold"/>
+            <TextView
+                android:id="@+id/tvDetailLocation"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                tools:text="Singapore General Hospital (SGH)"/>
 
             <!-- Preferred Time -->
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:text="Preferred Time" android:textStyle="bold"/>
-            <TextView android:id="@+id/tvDetailPreferredTime" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" tools:text="Tomorrow around 2 PM"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Preferred Time"
+                android:textStyle="bold"/>
+            <TextView
+                android:id="@+id/tvDetailPreferredTime"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                tools:text="Wed, Nov 12, 2025 at 3:25 PM"/>
 
             <!-- Urgency -->
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:text="Urgency" android:textStyle="bold"/>
-            <TextView android:id="@+id/tvDetailUrgency" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" tools:text="High"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Urgency"
+                android:textStyle="bold"/>
+            <TextView
+                android:id="@+id/tvDetailUrgency"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                tools:text="Medium"/>
 
             <!-- View Count -->
             <LinearLayout
@@ -88,13 +124,11 @@
                 android:layout_marginTop="16dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
-
                 <ImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:src="@drawable/ic_eye"
                     app:tint="?android:attr/textColorSecondary" />
-
                 <TextView
                     android:id="@+id/tvDetailViewCount"
                     android:layout_width="wrap_content"
@@ -104,28 +138,76 @@
             </LinearLayout>
 
             <!-- Shortlist Count -->
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:text="Shortlisted by" android:textStyle="bold"/>
-            <TextView android:id="@+id/tvDetailShortlistCount" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" tools:text="3 companies"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Shortlisted by"
+                android:textStyle="bold"/>
+            <TextView
+                android:id="@+id/tvDetailShortlistCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                tools:text="3 companies"/>
 
             <!-- Posted Date -->
-            <TextView android:id="@+id/tvDetailPostedDate" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="24dp" android:textSize="12sp" tools:text="Posted on: 28 October 2025 at 07:11 PM"/>
+            <TextView
+                android:id="@+id/tvDetailPostedDate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:textSize="12sp"
+                tools:text="Posted on: 02 November 2025 at 06:26 PM GMT"/>
 
+            <!-- START: THIS IS THE CORRECTED AND UNIFIED BLOCK FOR PIN DETAILS -->
+            <TextView
+                android:id="@+id/tvDetailPinNameLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="PIN Name"
+                android:textStyle="bold"
+                android:visibility="gone"
+                tools:visibility="visible" />
+            <TextView
+                android:id="@+id/tvDetailPinName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:visibility="gone"
+                tools:text="John Doe"
+                tools:visibility="visible" />
 
-            <!-- =================================================================== -->
-            <!-- FIX: Added a "Cancel Request" button at the bottom of the layout  -->
-            <!-- It is hidden by default and shown via Java code if the request is 'Open'. -->
-            <!-- =================================================================== -->
+            <TextView
+                android:id="@+id/tvDetailPinIdLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="PIN ID"
+                android:textStyle="bold"
+                android:visibility="gone"
+                tools:visibility="visible" />
+            <TextView
+                android:id="@+id/tvDetailPinId"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:visibility="gone"
+                tools:text="1234"
+                tools:visibility="visible" />
+            <!-- END: CORRECTED BLOCK -->
+
+            <!-- Action Buttons -->
             <Button
-                android:id="@+id/btnCancelRequest"
-                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:id="@+id/btnAcceptRequest"
+                style="@style/Widget.Material3.Button"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="32dp"
-                android:text="Cancel This Request"
-                app:strokeColor="@android:color/holo_red_dark"
-                android:textColor="@android:color/holo_red_dark"
-                android:visibility="visible" />
-            <!-- =================================================================== -->
+                android:text="Accept Request"
+                android:visibility="gone"
+                tools:visibility="visible" />
 
             <Button
                 android:id="@+id/btnCompleteRequest"
@@ -134,12 +216,24 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:text="Mark as Complete"
-                android:visibility="visible" />
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <Button
+                android:id="@+id/btnCancelRequest"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Cancel This Request"
+                app:strokeColor="@android:color/holo_red_dark"
+                android:textColor="@android:color/holo_red_dark"
+                android:visibility="gone"
+                tools:visibility="visible" />
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <!-- The ProgressBar for loading -->
     <ProgressBar
         android:id="@+id/progressBar"
         android:layout_width="wrap_content"

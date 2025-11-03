@@ -2,7 +2,6 @@ package com.example.csit314sdm;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.ArrayAdapter;
@@ -12,9 +11,7 @@ import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
-import com.google.android.material.textfield.TextInputEditText;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
@@ -23,11 +20,12 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.navigation.NavigationView;
+import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
 public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequestAdapter.OnSaveClickListener {
 
@@ -43,14 +41,14 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
     private AutoCompleteTextView spinnerLocation, spinnerCategory;
     private Button btnSearch;
 
-    private CategoryController categoryController;
-
     // --- Controllers ---
     private HelpRequestController controller;
     private UserProfileController userProfileController;
+    private CategoryController categoryController;
     private HelpRequestAdapter adapter;
 
-    private boolean isShowingSaved = true; // Track if we are showing saved requests
+    private boolean isShowingSaved = true;
+    private String currentCsrId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,10 +59,17 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
         userProfileController = new UserProfileController();
         categoryController = new CategoryController();
 
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser != null) {
+            currentCsrId = currentUser.getUid();
+        } else {
+            handleLogout();
+            return;
+        }
+
         initializeUI();
         setupNavigationDrawer();
         setupListeners();
-
         loadUserDetails();
     }
 
@@ -88,12 +93,13 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
         btnSearch = findViewById(R.id.btnSearch);
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        // --- FIX: Initialize the adapter ONCE here ---
         adapter = new HelpRequestAdapter(request -> {
             Intent intent = new Intent(CSRHomeScreenActivity.this, HelpRequestDetailActivity.class);
             intent.putExtra(HelpRequestDetailActivity.EXTRA_REQUEST_ID, request.getId());
             intent.putExtra("user_role", "CSR");
             startActivity(intent);
-        }, this);
+        });
         adapter.setOnSaveClickListener(this);
         recyclerView.setAdapter(adapter);
     }
@@ -127,19 +133,10 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
             public void onFailure(String errorMessage) {
                 runOnUiThread(() -> {
                     Toast.makeText(CSRHomeScreenActivity.this, "Could not load categories: " + errorMessage, Toast.LENGTH_SHORT).show();
-                    List<String> fallbackCategories = new ArrayList<>();
-                    fallbackCategories.add("All");
-                    ArrayAdapter<String> categoryAdapter = new ArrayAdapter<>(
-                            CSRHomeScreenActivity.this,
-                            android.R.layout.simple_dropdown_item_1line,
-                            fallbackCategories
-                    );
-                    spinnerCategory.setAdapter(categoryAdapter);
                 });
             }
         });
     }
-
 
     private void setupListeners() {
         cardActiveRequests.setOnClickListener(v -> {
@@ -171,57 +168,30 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
         });
     }
 
-    private void performSearch() {
-        String keyword = etSearchKeyword.getText().toString().trim();
-        String location = spinnerLocation.getText().toString();
-        String category = spinnerCategory.getText().toString();
-
-        progressBar.setVisibility(View.VISIBLE);
-        recyclerView.setVisibility(View.GONE);
-        tvNoResults.setVisibility(View.GONE);
-
-        controller.searchShortlistedRequests(keyword, location, category, new HelpRequestController.HelpRequestsLoadCallback() {
-            @Override
-            public void onRequestsLoaded(List<HelpRequest> requests) {
-                runOnUiThread(() -> {
-                    progressBar.setVisibility(View.GONE);
-                    if (requests.isEmpty()) {
-                        tvNoResults.setText("No matching requests found.");
-                        tvNoResults.setVisibility(View.VISIBLE);
-                    } else {
-                        recyclerView.setVisibility(View.VISIBLE);
-                        adapter.setRequests(requests);
-                    }
-                });
-            }
-
-            @Override
-            public void onDataLoadFailed(String errorMessage) {
-                runOnUiThread(() -> {
-                    progressBar.setVisibility(View.GONE);
-                    tvNoResults.setText(errorMessage);
-                    tvNoResults.setVisibility(View.VISIBLE);
-                    Toast.makeText(CSRHomeScreenActivity.this, errorMessage, Toast.LENGTH_LONG).show();
-                });
-            }
-        });
-    }
-
     private void setupNavigationDrawer() {
         navigationView.setNavigationItemSelectedListener(item -> {
             int itemId = item.getItemId();
 
-            if (itemId == R.id.nav_logout) {
-                handleLogout();
+            if (itemId == R.id.nav_my_requests) {
+                tvListTitle.setText("My Requests");
+                isShowingSaved = true;
+                loadSavedRequests();
+            } else if (itemId == R.id.nav_my_matches) {
+                Intent intent = new Intent(CSRHomeScreenActivity.this, MyMatchesActivity.class);
+                startActivity(intent);
             } else if (itemId == R.id.nav_history) {
                 Intent intent = new Intent(CSRHomeScreenActivity.this, HistoryActivity.class);
+                startActivity(intent);
+            } else if (itemId == R.id.nav_my_profile) {
+                Intent intent = new Intent(CSRHomeScreenActivity.this, CsrProfileActivity.class);
                 startActivity(intent);
             } else if (itemId == R.id.nav_settings) {
                 Intent intent = new Intent(CSRHomeScreenActivity.this, CSRSettingsActivity.class);
                 startActivity(intent);
-            } else {
-                Toast.makeText(CSRHomeScreenActivity.this, "Clicked: " + item.getTitle(), Toast.LENGTH_SHORT).show();
+            } else if (itemId == R.id.nav_logout) {
+                handleLogout();
             }
+
             drawerLayout.closeDrawer(GravityCompat.START);
             return true;
         });
@@ -235,39 +205,54 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
         });
     }
 
+    private void performSearch() {
+        String keyword = etSearchKeyword.getText().toString().trim();
+        String location = spinnerLocation.getText().toString();
+        String category = spinnerCategory.getText().toString();
+
+        showLoading(true);
+
+        controller.searchShortlistedRequests(keyword, location, category, new HelpRequestController.HelpRequestsLoadCallback() {
+            @Override
+            public void onRequestsLoaded(List<HelpRequest> requests) {
+                runOnUiThread(() -> {
+                    showLoading(false);
+                    updateRecyclerView(requests, "No matching requests found.");
+                });
+            }
+
+            @Override
+            public void onDataLoadFailed(String errorMessage) {
+                runOnUiThread(() -> {
+                    showLoading(false);
+                    showError(errorMessage);
+                });
+            }
+        });
+    }
+
     private void setWelcomeMessage(User user) {
         String username = user.getFullName();
-        if (username != null && !username.isEmpty()) {
-            tvWelcome.setText("Hello, " + username + "!");
-        } else {
-            tvWelcome.setText("Hello! Your Request");
-        }
+        tvWelcome.setText("Hello, " + (username != null && !username.isEmpty() ? username : "User") + "!");
+
         View headerView = navigationView.getHeaderView(0);
         TextView navHeaderName = headerView.findViewById(R.id.nav_header_name);
         TextView navHeaderEmail = headerView.findViewById(R.id.nav_header_email);
 
-        if (username != null && !username.isEmpty()) {
-            navHeaderName.setText(username);
-        } else {
-            navHeaderName.setText("CSR Representative");
-        }
+        navHeaderName.setText(username != null && !username.isEmpty() ? username : "CSR Representative");
         navHeaderEmail.setText(user.getEmail());
     }
 
     private void handleLogout() {
         FirebaseAuth.getInstance().signOut();
         Intent intent = new Intent(CSRHomeScreenActivity.this, loginPage.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
-        Toast.makeText(this, "Logged out successfully", Toast.LENGTH_SHORT).show();
     }
 
     private void loadUserDetails() {
-        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
-        if (currentUser == null) return;
-
-        userProfileController.getUserById(currentUser.getUid(), new UserProfileController.UserLoadCallback() {
+        userProfileController.getUserById(currentCsrId, new UserProfileController.UserLoadCallback() {
             @Override
             public void onUserLoaded(User user) {
                 runOnUiThread(() -> {
@@ -276,6 +261,7 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
                     loadSavedRequests();
                 });
             }
+
             @Override
             public void onDataLoadFailed(String errorMessage) {
                 runOnUiThread(() -> {
@@ -288,107 +274,121 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
     }
 
     private void loadSavedRequests() {
-        progressBar.setVisibility(View.VISIBLE);
-        recyclerView.setVisibility(View.GONE);
-        tvNoResults.setVisibility(View.GONE);
-
-        controller.getSavedHelpRequests(new HelpRequestController.HelpRequestsLoadCallback() {
+        showLoading(true);
+        controller.getSavedHelpRequests(currentCsrId, new HelpRequestController.HelpRequestsLoadCallback() {
             @Override
             public void onRequestsLoaded(List<HelpRequest> requests) {
                 runOnUiThread(() -> {
-                    progressBar.setVisibility(View.GONE);
-                    if (requests.isEmpty()) {
-                        tvNoResults.setText("You have no shortlisted requests.");
-                        tvNoResults.setVisibility(View.VISIBLE);
-                    } else {
-                        recyclerView.setVisibility(View.VISIBLE);
-                        adapter.setRequests(requests);
-                    }
+                    showLoading(false);
+                    updateRecyclerView(requests, "You have no shortlisted requests.");
                 });
             }
+
             @Override
             public void onDataLoadFailed(String errorMessage) {
                 runOnUiThread(() -> {
-                    progressBar.setVisibility(View.GONE);
-                    tvNoResults.setText(errorMessage);
-                    tvNoResults.setVisibility(View.VISIBLE);
-                    Toast.makeText(CSRHomeScreenActivity.this, errorMessage, Toast.LENGTH_LONG).show();
+                    showLoading(false);
+                    showError(errorMessage);
                 });
             }
         });
     }
 
     private void loadActiveRequests() {
-        progressBar.setVisibility(View.VISIBLE);
-        recyclerView.setVisibility(View.GONE);
-        tvNoResults.setVisibility(View.GONE);
-
-        controller.getActiveHelpRequests(new HelpRequestController.HelpRequestsLoadCallback() {
+        showLoading(true);
+        controller.getActiveHelpRequests(currentCsrId, new HelpRequestController.HelpRequestsLoadCallback() {
             @Override
             public void onRequestsLoaded(List<HelpRequest> requests) {
                 runOnUiThread(() -> {
-                    progressBar.setVisibility(View.GONE);
-                    if (requests.isEmpty()) {
-                        tvNoResults.setText("There are no active requests at the moment.");
-                        tvNoResults.setVisibility(View.VISIBLE);
-                    } else {
-                        recyclerView.setVisibility(View.VISIBLE);
-                        adapter.setRequests(requests);
-                    }
+                    showLoading(false);
+                    updateRecyclerView(requests, "There are no new active requests at the moment.");
                 });
             }
 
             @Override
             public void onDataLoadFailed(String errorMessage) {
                 runOnUiThread(() -> {
-                    progressBar.setVisibility(View.GONE);
-                    tvNoResults.setText(errorMessage);
-                    tvNoResults.setVisibility(View.VISIBLE);
-                    Toast.makeText(CSRHomeScreenActivity.this, errorMessage, Toast.LENGTH_LONG).show();
+                    showLoading(false);
+                    showError(errorMessage);
                 });
             }
         });
     }
 
     private void loadCompletedRequests() {
-        progressBar.setVisibility(View.VISIBLE);
-        recyclerView.setVisibility(View.GONE);
-        tvNoResults.setVisibility(View.GONE);
+        showLoading(true);
 
-        controller.getCompletedHistory(FirebaseAuth.getInstance().getUid(), null, null, "All", new HelpRequestController.HelpRequestsLoadCallback() {
+        userProfileController.getUserById(currentCsrId, new UserProfileController.UserLoadCallback() {
             @Override
-            public void onRequestsLoaded(List<HelpRequest> requests) {
-                runOnUiThread(() -> {
-                    progressBar.setVisibility(View.GONE);
-                    if (requests.isEmpty()) {
-                        tvNoResults.setText("You have no completed requests.");
-                        tvNoResults.setVisibility(View.VISIBLE);
-                    } else {
-                        recyclerView.setVisibility(View.VISIBLE);
-                        adapter.setRequests(requests);
+            public void onUserLoaded(User user) {
+                String companyId = user.getCompanyId();
+                if (companyId == null || companyId.isEmpty()) {
+                    showError("Cannot fetch history: Your user profile is missing a Company ID.");
+                    return;
+                }
+
+                controller.getCompletedHistory(companyId, null, null, "All", new HelpRequestController.HelpRequestsLoadCallback() {
+                    @Override
+                    public void onRequestsLoaded(List<HelpRequest> requests) {
+                        runOnUiThread(() -> {
+                            showLoading(false);
+                            updateRecyclerView(requests, "You have no completed requests.");
+                        });
+                    }
+
+                    @Override
+                    public void onDataLoadFailed(String errorMessage) {
+                        runOnUiThread(() -> {
+                            showLoading(false);
+                            showError(errorMessage);
+                        });
                     }
                 });
             }
 
             @Override
             public void onDataLoadFailed(String errorMessage) {
-                runOnUiThread(() -> {
-                    progressBar.setVisibility(View.GONE);
-                    tvNoResults.setText(errorMessage);
-                    tvNoResults.setVisibility(View.VISIBLE);
-                    Toast.makeText(CSRHomeScreenActivity.this, errorMessage, Toast.LENGTH_LONG).show();
-                });
+                showError("Cannot fetch history: Could not load your user profile.");
             }
         });
     }
 
+    private void showLoading(boolean isLoading) {
+        progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+        if (isLoading) {
+            recyclerView.setVisibility(View.GONE);
+            tvNoResults.setVisibility(View.GONE);
+        }
+    }
+
+    private void showError(String message) {
+        tvNoResults.setText(message);
+        tvNoResults.setVisibility(View.VISIBLE);
+        recyclerView.setVisibility(View.GONE);
+        progressBar.setVisibility(View.GONE);
+        Toast.makeText(CSRHomeScreenActivity.this, message, Toast.LENGTH_LONG).show();
+    }
+
+    // --- FIX: This method no longer creates a new adapter every time ---
+    private void updateRecyclerView(List<HelpRequest> requests, String noResultsMessage) {
+        if (requests.isEmpty()) {
+            tvNoResults.setText(noResultsMessage);
+            tvNoResults.setVisibility(View.VISIBLE);
+            recyclerView.setVisibility(View.GONE);
+        } else {
+            tvNoResults.setVisibility(View.GONE);
+            recyclerView.setVisibility(View.VISIBLE);
+            adapter.setRequests(requests); // Just update the data
+        }
+    }
+
     @Override
     public void onSaveClick(HelpRequest request, boolean isSaved) {
-        if (isSaved) {
+        if (isSaved) { // User wants to UNSAVE
             controller.unsaveRequest(request.getId(), new HelpRequestController.SaveCallback() {
                 @Override
                 public void onSaveSuccess() {
-                    Toast.makeText(CSRHomeScreenActivity.this, "Unsaved successfully", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(CSRHomeScreenActivity.this, "Request unsaved", Toast.LENGTH_SHORT).show();
                     if (isShowingSaved) {
                         loadSavedRequests();
                     }
@@ -396,19 +396,19 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
 
                 @Override
                 public void onSaveFailure(String errorMessage) {
-                    Toast.makeText(CSRHomeScreenActivity.this, "Failed to unsave", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(CSRHomeScreenActivity.this, "Failed to unsave: " + errorMessage, Toast.LENGTH_SHORT).show();
                 }
             });
-        } else {
+        } else { // User wants to SAVE
             controller.saveRequest(request.getId(), new HelpRequestController.SaveCallback() {
                 @Override
                 public void onSaveSuccess() {
-                    Toast.makeText(CSRHomeScreenActivity.this, "Saved successfully", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(CSRHomeScreenActivity.this, "Request saved to shortlist", Toast.LENGTH_SHORT).show();
                 }
 
                 @Override
                 public void onSaveFailure(String errorMessage) {
-                    Toast.makeText(CSRHomeScreenActivity.this, "Failed to save", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(CSRHomeScreenActivity.this, "Failed to save: " + errorMessage, Toast.LENGTH_SHORT).show();
                 }
             });
         }

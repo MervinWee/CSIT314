@@ -12,6 +12,10 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.chip.ChipGroup;
+
+// *** FIX: Changed the import from the internal Firebase user to your custom User class ***
+import com.example.csit314sdm.User;
+
 import java.util.List;
 
 public class UserManagementActivity extends AppCompatActivity {
@@ -33,7 +37,6 @@ public class UserManagementActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_user_management);
 
-        // --- FIX: This line was missing, causing the error ---
         MaterialToolbar toolbar = findViewById(R.id.toolbar);
 
         String screenTitle = getIntent().getStringExtra("SCREEN_TITLE");
@@ -52,8 +55,8 @@ public class UserManagementActivity extends AppCompatActivity {
         setupRoleFilter();
 
         btnMigrateUsers.setOnClickListener(v -> migrateUsers());
-        
-        // Initial load
+
+        // Initial load of all users
         performSearch();
     }
 
@@ -79,7 +82,8 @@ public class UserManagementActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         adapter = new UserAdapter(user -> {
             Intent intent = new Intent(UserManagementActivity.this, UserDetailActivity.class);
-            intent.putExtra("USER_ID", user.getUid());
+            // This now refers to your custom User object, so getId() works.
+            intent.putExtra("USER_ID", user.getId());
             startActivity(intent);
         });
         recyclerView.setAdapter(adapter);
@@ -88,7 +92,10 @@ public class UserManagementActivity extends AppCompatActivity {
     private void setupSearch() {
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
-            public boolean onQueryTextSubmit(String query) { return false; }
+            public boolean onQueryTextSubmit(String query) {
+                // No action needed on submit, as search is live
+                return false;
+            }
 
             @Override
             public boolean onQueryTextChange(String newText) {
@@ -101,7 +108,10 @@ public class UserManagementActivity extends AppCompatActivity {
 
     private void setupRoleFilter() {
         chipGroupRoleFilter.setOnCheckedChangeListener((group, checkedId) -> {
-            if (checkedId == R.id.chipAll) {
+            // Default to "All" if no chip is selected.
+            if (checkedId == View.NO_ID) {
+                currentRole = "All";
+            } else if (checkedId == R.id.chipAll) {
                 currentRole = "All";
             } else if (checkedId == R.id.chipAdmin) {
                 currentRole = "User Admin";
@@ -116,10 +126,12 @@ public class UserManagementActivity extends AppCompatActivity {
 
     private void performSearch() {
         progressBar.setVisibility(View.VISIBLE);
+        // The generic <List<User>> now correctly refers to your custom User class
         controller.searchUsers(currentSearchText, currentRole, new UserManagementController.UserCallback<List<User>>() {
             @Override
             public void onSuccess(List<User> users) {
                 progressBar.setVisibility(View.GONE);
+                // The 'users' parameter is now the correct type, so this works.
                 adapter.setUsers(users);
             }
 
@@ -134,6 +146,8 @@ public class UserManagementActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        // Refresh the user list every time the activity is resumed,
+        // in case details were changed on the detail screen.
         performSearch();
     }
 }

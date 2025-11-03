@@ -19,18 +19,9 @@ public class CreateRequestController {
     private final FirebaseAuth auth = FirebaseAuth.getInstance(); // Firebase Authentication instance
 
     public Task<DocumentReference> createNewRequest(String requestType, String description, String location,
-                                                    String preferredTime, String phoneNumber, String notes, String urgencyLevel) {
+                                                    String preferredTime, String phoneNumber, String notes, String urgencyLevel, String pinId) {
 
         System.out.println("CONTROL: Processing new help request...");
-
-        FirebaseUser currentUser = auth.getCurrentUser();
-        if (currentUser == null) {
-            // This is a critical failure. If there's no user, we can't create a request for them.
-            System.err.println("CONTROL: Validation failed. User is not logged in. Cannot create request.");
-            return null; // The Activity will show an error message.
-        }
-        // Get the unique ID (UID) of the logged-in user.
-        String pinId = currentUser.getUid();
 
         // --- 2. Validate Required Inputs ---
         if (requestType.isEmpty() || description.isEmpty() || location.isEmpty()) {
@@ -43,6 +34,7 @@ public class CreateRequestController {
 
         // This links the request to the PIN.
         newRequestData.put("submittedBy", pinId);
+        newRequestData.put("pinId", pinId);
 
         // Add all the other data from the form
         newRequestData.put("category", requestType);

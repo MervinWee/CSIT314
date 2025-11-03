@@ -2,7 +2,9 @@ package com.example.csit314sdm;
 
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -16,7 +18,7 @@ public class UserManagementController {
         void onFailure(Exception e);
     }
 
-    // --- NEW: Search and Filter Method ---
+    // --- Search and Filter Method ---
     public void searchUsers(String searchText, String role, UserCallback<List<User>> callback) {
         Query query = db.collection(USERS_COLLECTION);
 
@@ -31,30 +33,37 @@ public class UserManagementController {
         // Apply search text filter for email
         if (searchText != null && !searchText.isEmpty()) {
             query = query.whereGreaterThanOrEqualTo("email", searchText)
-                     .whereLessThanOrEqualTo("email", searchText + "\uf8ff");
+                    .whereLessThanOrEqualTo("email", searchText + "\uf8ff");
         }
 
         query.get()
-            .addOnSuccessListener(queryDocumentSnapshots -> {
-                List<User> users = queryDocumentSnapshots.toObjects(User.class);
-                // Manually set the UID for each user, as toObjects doesn't do it automatically
-                for (int i = 0; i < users.size(); i++) {
-                    users.get(i).setUid(queryDocumentSnapshots.getDocuments().get(i).getId());
-                }
-                callback.onSuccess(users);
-            })
-            .addOnFailureListener(callback::onFailure);
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    // FIX: Manually iterate to set the correct ID
+                    List<User> users = new ArrayList<>();
+                    for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
+                        User user = document.toObject(User.class);
+                        // *** FIX: Changed setUid to setId ***
+                        user.setId(document.getId());
+                        users.add(user);
+                    }
+                    callback.onSuccess(users);
+                })
+                .addOnFailureListener(callback::onFailure);
     }
 
 
-    // --- Existing Methods (Unchanged) ---
+    // --- Existing Methods (Now Corrected) ---
 
     public void fetchAllUsers(UserCallback<List<User>> callback) {
-        db.collection(USERS_COLLECTION).get()
+        db.collection(USERS_COLLECTION).orderBy("email").get() // Added orderBy for consistency
                 .addOnSuccessListener(queryDocumentSnapshots -> {
-                    List<User> users = queryDocumentSnapshots.toObjects(User.class);
-                    for (int i = 0; i < users.size(); i++) {
-                        users.get(i).setUid(queryDocumentSnapshots.getDocuments().get(i).getId());
+                    // FIX: Manually iterate to set the correct ID
+                    List<User> users = new ArrayList<>();
+                    for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
+                        User user = document.toObject(User.class);
+                        // *** FIX: Changed setUid to setId ***
+                        user.setId(document.getId());
+                        users.add(user);
                     }
                     callback.onSuccess(users);
                 })
@@ -66,8 +75,13 @@ public class UserManagementController {
                 .addOnSuccessListener(documentSnapshot -> {
                     if (documentSnapshot.exists()) {
                         User user = documentSnapshot.toObject(User.class);
-                        user.setUid(documentSnapshot.getId());
-                        callback.onSuccess(user);
+                        if (user != null) {
+                            // *** FIX: Changed setUid to setId ***
+                            user.setId(documentSnapshot.getId());
+                            callback.onSuccess(user);
+                        } else {
+                            callback.onFailure(new Exception("Failed to parse user data."));
+                        }
                     } else {
                         callback.onFailure(new Exception("User not found."));
                     }
@@ -81,19 +95,19 @@ public class UserManagementController {
             return;
         }
         db.collection(USERS_COLLECTION).document(userId).update(updates)
-                .addOnSuccessListener(callback::onSuccess)
+                .addOnSuccessListener(aVoid -> callback.onSuccess(null)) // Pass null for Void
                 .addOnFailureListener(callback::onFailure);
     }
 
     public void suspendUserProfile(String userId, UserCallback<Void> callback) {
         db.collection(USERS_COLLECTION).document(userId).update("accountStatus", "Suspended")
-                .addOnSuccessListener(callback::onSuccess)
+                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
                 .addOnFailureListener(callback::onFailure);
     }
 
     public void reinstateUserProfile(String userId, UserCallback<Void> callback) {
         db.collection(USERS_COLLECTION).document(userId).update("accountStatus", "Active")
-                .addOnSuccessListener(callback::onSuccess)
+                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
                 .addOnFailureListener(callback::onFailure);
     }
 }

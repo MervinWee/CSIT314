@@ -8,13 +8,10 @@ import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-// --- FIX 1: Import Firestore classes instead of Realtime Database classes ---
-import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
@@ -30,7 +27,6 @@ public class ViewAllUsersActivity extends AppCompatActivity implements UserAdapt
     private UserAdapter userAdapter;
     private ProgressBar progressBar;
 
-    // --- FIX 2: Use Firestore references ---
     private FirebaseFirestore db;
     private CollectionReference usersCollection;
 
@@ -47,9 +43,9 @@ public class ViewAllUsersActivity extends AppCompatActivity implements UserAdapt
             btnBack.setOnClickListener(v -> finish());
         }
 
-        // --- FIX 3: Initialize Firestore ---
+        // Initialize Firestore
         db = FirebaseFirestore.getInstance();
-        usersCollection = db.collection("users"); // Get a reference to the "users" collection
+        usersCollection = db.collection("users");
 
         setupRecyclerView();
         loadAllUsers();
@@ -57,6 +53,7 @@ public class ViewAllUsersActivity extends AppCompatActivity implements UserAdapt
 
     private void setupRecyclerView() {
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        // Pass 'this' as the click listener because this activity implements UserAdapter.OnItemClickListener
         userAdapter = new UserAdapter(this);
         recyclerView.setAdapter(userAdapter);
     }
@@ -66,8 +63,8 @@ public class ViewAllUsersActivity extends AppCompatActivity implements UserAdapt
         progressBar.setVisibility(View.VISIBLE);
         recyclerView.setVisibility(View.GONE);
 
-        // --- FIX 4: Create and execute a Firestore query ---
-        usersCollection.get()
+        // Create and execute a Firestore query, ordering by email for a consistent list
+        usersCollection.orderBy("email").get()
                 .addOnCompleteListener(task -> {
                     progressBar.setVisibility(View.GONE); // Always hide the progress bar
                     recyclerView.setVisibility(View.VISIBLE);
@@ -79,15 +76,15 @@ public class ViewAllUsersActivity extends AppCompatActivity implements UserAdapt
                         for (QueryDocumentSnapshot document : task.getResult()) {
                             // Convert the document into a User object
                             User user = document.toObject(User.class);
-                            // The document ID is the UID
-                            user.setUid(document.getId());
+                            // *** FIX: Changed setUid to the correct setId method ***
+                            user.setId(document.getId());
                             userList.add(user);
                             Log.d(TAG, "onComplete: Parsed user: " + user.getEmail());
                         }
                         userAdapter.setUsers(userList);
                         Log.d(TAG, "onComplete: Finished processing " + userList.size() + " users.");
                     } else {
-                        // This will be called if your Firestore rules block access
+                        // This will be called if your Firestore rules block access or another error occurs
                         Log.e(TAG, "Error getting documents: ", task.getException());
                         Toast.makeText(ViewAllUsersActivity.this, "Failed to load users: " + task.getException().getMessage(), Toast.LENGTH_LONG).show();
                     }
@@ -96,10 +93,13 @@ public class ViewAllUsersActivity extends AppCompatActivity implements UserAdapt
 
     @Override
     public void onItemClick(User user) {
-        Log.d(TAG, "onItemClick: Clicked on user with UID: " + user.getUid());
-        // Go to the detail activity, passing the user's UID
+        // *** FIX: Changed getUid to the correct getId method ***
+        Log.d(TAG, "onItemClick: Clicked on user with ID: " + user.getId());
+
+        // Go to the detail activity, passing the user's ID
         Intent intent = new Intent(this, UserDetailActivity.class);
-        intent.putExtra("USER_ID", user.getUid());
+        // *** FIX: Changed getUid to the correct getId method ***
+        intent.putExtra("USER_ID", user.getId());
         startActivity(intent);
     }
 }

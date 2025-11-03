@@ -6,18 +6,18 @@ import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.appbar.MaterialToolbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
 import java.util.List;
 
-// BOUNDARY: Displays a list of saved help requests to the CSR.
-// --- FIX: Made class final as it's a simple implementation ---
-public final class ViewSavedRequestsActivity extends AppCompatActivity {
+public class AllRequestsActivity extends AppCompatActivity {
 
     private RecyclerView recyclerView;
     private HelpRequestAdapter adapter;
@@ -30,7 +30,7 @@ public final class ViewSavedRequestsActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_view_saved_requests);
+        setContentView(R.layout.activity_all_requests);
 
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser != null) {
@@ -43,35 +43,26 @@ public final class ViewSavedRequestsActivity extends AppCompatActivity {
 
         controller = new HelpRequestController();
         initializeUI();
-        loadSavedRequests();
+        loadAllActiveRequests();
     }
 
     private void initializeUI() {
-        recyclerView = findViewById(R.id.recyclerViewRequests);
+        MaterialToolbar topAppBar = findViewById(R.id.topAppBar);
+        topAppBar.setNavigationOnClickListener(v -> finish());
+
+        recyclerView = findViewById(R.id.recyclerViewAllRequests);
         progressBar = findViewById(R.id.progressBar);
         tvNoResults = findViewById(R.id.tvNoResults);
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-
-        // --- START: THIS IS THE CORRECTED CODE BLOCK ---
-        adapter = new HelpRequestAdapter(request -> {
-            // Go to the detail screen when an item is clicked
-            Intent intent = new Intent(ViewSavedRequestsActivity.this, HelpRequestDetailActivity.class);
-            intent.putExtra(HelpRequestDetailActivity.EXTRA_REQUEST_ID, request.getId());
-            intent.putExtra("user_role", "CSR");
-            startActivity(intent);
-        }); // <-- FIX: Pass only the click listener, as the constructor now only takes one argument.
-        // --- END: CORRECTION COMPLETE ---
-
-        recyclerView.setAdapter(adapter);
     }
 
-    private void loadSavedRequests() {
+    private void loadAllActiveRequests() {
         progressBar.setVisibility(View.VISIBLE);
         recyclerView.setVisibility(View.GONE);
         tvNoResults.setVisibility(View.GONE);
 
-        controller.getSavedHelpRequests(currentCsrId, new HelpRequestController.HelpRequestsLoadCallback() {
+        controller.getActiveHelpRequests(currentCsrId, new HelpRequestController.HelpRequestsLoadCallback() {
             @Override
             public void onRequestsLoaded(List<HelpRequest> requests) {
                 runOnUiThread(() -> {
@@ -80,7 +71,19 @@ public final class ViewSavedRequestsActivity extends AppCompatActivity {
                         tvNoResults.setVisibility(View.VISIBLE);
                     } else {
                         recyclerView.setVisibility(View.VISIBLE);
+
+                        // --- START: THIS IS THE CORRECTED CODE BLOCK ---
+                        // FIX: The adapter now only takes one argument (the click listener).
+                        adapter = new HelpRequestAdapter(request -> {
+                            Intent intent = new Intent(AllRequestsActivity.this, HelpRequestDetailActivity.class);
+                            intent.putExtra(HelpRequestDetailActivity.EXTRA_REQUEST_ID, request.getId());
+                            intent.putExtra("user_role", "CSR");
+                            startActivity(intent);
+                        });
+                        // --- END: CORRECTION COMPLETE ---
+
                         adapter.setRequests(requests);
+                        recyclerView.setAdapter(adapter);
                     }
                 });
             }
@@ -89,9 +92,9 @@ public final class ViewSavedRequestsActivity extends AppCompatActivity {
             public void onDataLoadFailed(String errorMessage) {
                 runOnUiThread(() -> {
                     progressBar.setVisibility(View.GONE);
-                    tvNoResults.setVisibility(View.VISIBLE);
                     tvNoResults.setText(errorMessage);
-                    Toast.makeText(ViewSavedRequestsActivity.this, errorMessage, Toast.LENGTH_LONG).show();
+                    tvNoResults.setVisibility(View.VISIBLE);
+                    Toast.makeText(AllRequestsActivity.this, errorMessage, Toast.LENGTH_LONG).show();
                 });
             }
         });

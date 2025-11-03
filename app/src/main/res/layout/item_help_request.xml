@@ -29,6 +29,26 @@
             app:layout_constraintTop_toTopOf="parent" />
 
         <TextView
+            android:id="@+id/tvPinName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="PIN Name: John Doe"
+            android:textSize="12sp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tvRequestCategory" />
+
+        <TextView
+            android:id="@+id/tvPinId"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="PIN ID: 12345"
+            android:textSize="12sp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tvPinName" />
+
+        <TextView
             android:id="@+id/tvRequestOrg"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -36,7 +56,7 @@
             android:text="Seed to Branch Company"
             android:textSize="12sp"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvRequestCategory" />
+            app:layout_constraintTop_toBottomOf="@+id/tvPinId" />
 
         <TextView
             android:id="@+id/tvShortlistedDate"
@@ -63,7 +83,7 @@
             android:textColor="@android:color/white"
             android:textSize="10sp"
             app:layout_constraintBottom_toBottomOf="@id/tvShortlistedDate"
-            app:layout_constraintStart_toEndOf="@id/tvShortlistedDate"
+            app:layout_constraintStart_toEndOf="@+id/tvShortlistedDate"
             tools:ignore="SmallSp" />
 
         <ImageButton

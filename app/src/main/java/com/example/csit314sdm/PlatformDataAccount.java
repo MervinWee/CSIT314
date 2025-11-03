@@ -1,15 +1,12 @@
 package com.example.csit314sdm;
 
 import android.util.Log;
-import androidx.annotation.NonNull;
-
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
-import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.WriteBatch;
 
@@ -33,7 +30,7 @@ public class PlatformDataAccount {
     public interface DailyReportCallback { void onReportDataLoaded(int newUserCount, int newRequestCount, int completedMatchesCount); void onError(String message); }
     public interface WeeklyReportCallback { void onReportDataLoaded(int uniquePins, int uniqueCsrs, int totalMatches); void onError(String message); }
     public interface MonthlyReportCallback { void onReportDataLoaded(String topCompany, String mostRequestedService); void onError(String message); }
-    public interface FirebaseCallback { void onSuccess(String message); void onError(String message); } // Corrected
+    public interface FirebaseCallback { void onSuccess(String message); void onError(String message); }
     public interface CategoryListCallback { void onDataLoaded(List<Category> categories); void onError(String message); }
     public interface MigrationCallback { void onSuccess(String message); void onError(String message); }
 
@@ -44,7 +41,7 @@ public class PlatformDataAccount {
         categoriesRef = db.collection("HelpCategories");
     }
 
-    // --- Report Generation Methods (Restored) ---
+    // --- Report Generation Methods ---
 
     public void generateDailyReport(Date date, final DailyReportCallback callback) {
         Calendar cal = Calendar.getInstance();
@@ -82,7 +79,6 @@ public class PlatformDataAccount {
                         if (callback != null) callback.onReportDataLoaded(0, 0, 0);
                         return;
                     }
-                    int totalActiveRequests = querySnapshot.size();
                     HashSet<String> uniquePinIds = new HashSet<>();
                     HashSet<String> uniqueCsrUserIds = new HashSet<>();
                     for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
@@ -95,7 +91,7 @@ public class PlatformDataAccount {
                             uniqueCsrUserIds.addAll(csrIdList);
                         }
                     }
-                    if (callback != null) callback.onReportDataLoaded(uniquePinIds.size(), uniqueCsrUserIds.size(), totalActiveRequests);
+                    if (callback != null) callback.onReportDataLoaded(uniquePinIds.size(), uniqueCsrUserIds.size(), querySnapshot.size());
                 }).addOnFailureListener(e -> {
                     Log.e(TAG, "Weekly report generation failed", e);
                     if (callback != null) callback.onError("Query failed: " + e.getMessage());
@@ -149,18 +145,31 @@ public class PlatformDataAccount {
                 return;
             }
             List<User> usersToUpdate = new ArrayList<>();
-            for (User user : task.getResult().toObjects(User.class)) {
-                if (user.getCreationDate() == null) usersToUpdate.add(user);
+            // This loop now needs to be different because toObjects does not give us document IDs.
+            for (DocumentSnapshot document : task.getResult().getDocuments()) {
+                User user = document.toObject(User.class);
+                if (user != null) {
+                    user.setId(document.getId()); // Manually set the ID
+                    if (user.getCreationDate() == null) {
+                        usersToUpdate.add(user);
+                    }
+                }
             }
+
             if (usersToUpdate.isEmpty()) {
                 if (callback != null) callback.onSuccess("Migration check complete. No users needed updating.");
                 return;
             }
+
             WriteBatch batch = db.batch();
             Date migrationTime = new Date();
             for (User user : usersToUpdate) {
-                batch.update(usersRef.document(user.getUid()), "creationDate", migrationTime);
+                // *** FIX: Changed from getUid() to getId() ***
+                if (user.getId() != null && !user.getId().isEmpty()) {
+                    batch.update(usersRef.document(user.getId()), "creationDate", migrationTime);
+                }
             }
+
             batch.commit().addOnCompleteListener(batchTask -> {
                 if (batchTask.isSuccessful()) {
                     if (callback != null) callback.onSuccess("Migration complete. " + usersToUpdate.size() + " users were updated.");
@@ -170,6 +179,7 @@ public class PlatformDataAccount {
             });
         });
     }
+
 
     public void listenForCategoryChanges(final CategoryListCallback callback) {
         if (categoryListenerRegistration != null) categoryListenerRegistration.remove();
@@ -202,13 +212,9 @@ public class PlatformDataAccount {
     }
 
     public void cleanupAllListeners() {
-        // Call the specific detach method for the category listener.
         detachCategoryListener();
-
-
         Log.d(TAG, "All platform listeners have been cleaned up.");
     }
-
 
     public void createCategory(String name, String description, final FirebaseCallback callback) {
         categoriesRef.whereEqualTo("name", name).get().addOnSuccessListener(queryDocumentSnapshots -> {

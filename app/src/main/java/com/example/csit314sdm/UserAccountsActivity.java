@@ -1,8 +1,9 @@
-// File: app/src/main/java/com/example/csit314sdm/UserAccountsActivity.java
 package com.example.csit314sdm;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.Toast;
@@ -10,6 +11,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.appbar.MaterialToolbar;
+import com.google.android.material.textfield.TextInputEditText;
+
+import java.util.ArrayList;
 import java.util.List;
 
 public class UserAccountsActivity extends AppCompatActivity {
@@ -17,7 +21,9 @@ public class UserAccountsActivity extends AppCompatActivity {
     private UserManagementController controller;
     private SimpleUserAdapter adapter;
     private ProgressBar progressBar;
+    private TextInputEditText etSearchUsers;
 
+    private List<User> allUsers = new ArrayList<>();
     private String launchMode = "MANAGE";
 
     @Override
@@ -29,33 +35,30 @@ public class UserAccountsActivity extends AppCompatActivity {
             launchMode = getIntent().getStringExtra("MODE");
         }
 
-        // --- THIS IS THE FIX ---
-        // The toolbar variable must be initialized before it can be used.
-        MaterialToolbar toolbar = findViewById(R.id.toolbar);
+        MaterialToolbar toolbar = findViewById(R.id.toolbarUserAccounts);
         toolbar.setNavigationOnClickListener(v -> finish());
-        // ----------------------
 
-        // Change the title based on the mode
         if ("VIEW_ONLY".equals(launchMode)) {
             toolbar.setTitle("All User Accounts");
         } else {
-            toolbar.setTitle("User Management"); // A sensible default
+            toolbar.setTitle("User Management");
         }
 
-        // The rest of your code is correct and remains the same
         controller = new UserManagementController();
-        progressBar = findViewById(R.id.progressBar);
+        progressBar = findViewById(R.id.progressBarUserAccounts);
+        etSearchUsers = findViewById(R.id.etSearchUsers);
 
         setupRecyclerView();
         loadUsers();
+        setupSearch();
     }
 
     private void setupRecyclerView() {
-        RecyclerView recyclerView = findViewById(R.id.usersRecyclerView);
+        RecyclerView recyclerView = findViewById(R.id.recyclerViewUserAccounts);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         adapter = new SimpleUserAdapter(user -> {
             Intent intent = new Intent(UserAccountsActivity.this, UserDetailActivity.class);
-            intent.putExtra("USER_ID", user.getUid());
+            intent.putExtra("USER_ID", user.getId());
             intent.putExtra("MODE", launchMode);
             startActivity(intent);
         });
@@ -68,7 +71,9 @@ public class UserAccountsActivity extends AppCompatActivity {
             @Override
             public void onSuccess(List<User> users) {
                 progressBar.setVisibility(View.GONE);
-                adapter.setUsers(users);
+                allUsers.clear();
+                allUsers.addAll(users);
+                adapter.setUsers(allUsers);
             }
 
             @Override
@@ -77,5 +82,39 @@ public class UserAccountsActivity extends AppCompatActivity {
                 Toast.makeText(UserAccountsActivity.this, "Failed to load users: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private void setupSearch() {
+        etSearchUsers.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                filterUsers(s.toString());
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {}
+        });
+    }
+
+    private void filterUsers(String query) {
+        List<User> filteredList = new ArrayList<>();
+        String lowerCaseQuery = query.toLowerCase();
+
+        if (query.isEmpty()) {
+            filteredList.addAll(allUsers);
+        } else {
+            for (User user : allUsers) {
+                boolean nameMatches = user.getFullName() != null && user.getFullName().toLowerCase().contains(lowerCaseQuery);
+                boolean emailMatches = user.getEmail() != null && user.getEmail().toLowerCase().contains(lowerCaseQuery);
+
+                if (nameMatches || emailMatches) {
+                    filteredList.add(user);
+                }
+            }
+        }
+        adapter.setUsers(filteredList);
     }
 }

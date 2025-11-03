@@ -117,14 +117,12 @@ public class PINHomeScreenActivity extends AppCompatActivity {
         btnProfile.setOnClickListener(v -> startActivity(new Intent(this, PinProfileActivity.class)));
         btnCreateNewRequest.setOnClickListener(v -> startActivity(new Intent(this, CreateRequestActivity.class)));
 
-        // The "Active Requests" card opens the pre-filtered list of active items.
         cardActiveRequests.setOnClickListener(v -> {
             Intent intent = new Intent(this, MyRequestsActivity.class);
-            intent.putExtra("STATUS_FILTER", "Active"); // Pass the "Active" instruction
+            intent.putExtra("STATUS_FILTER", "Active");
             startActivity(intent);
         });
 
-        // The "History" card now opens the new, dedicated MatchHistoryActivity.
         cardCompleted.setOnClickListener(v -> {
             Intent intent = new Intent(this, MatchHistoryActivity.class);
             startActivity(intent);
@@ -147,7 +145,7 @@ public class PINHomeScreenActivity extends AppCompatActivity {
             } else if (id == R.id.nav_profile) {
                 startActivity(new Intent(this, PinProfileActivity.class));
             } else if (id == R.id.nav_settings) {
-                Toast.makeText(this, "Settings page not implemented yet", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(this, PINSettingsActivity.class));
             } else if (id == R.id.nav_logout) {
                 logoutUser();
             }
@@ -163,31 +161,47 @@ public class PINHomeScreenActivity extends AppCompatActivity {
             if (currentUser.getEmail() != null) {
                 navHeaderEmail.setText(currentUser.getEmail());
             }
+            // --- START: FIX FOR CRASH ---
+            // Manually build the user object to ensure the ID is set.
             db.collection("users").document(currentUser.getUid()).get()
                     .addOnSuccessListener(documentSnapshot -> {
                         if (documentSnapshot.exists()) {
                             User user = documentSnapshot.toObject(User.class);
-                            if (user != null && user.getFullName() != null) {
-                                navHeaderName.setText(user.getFullName());
+                            if (user != null) {
+                                user.setId(documentSnapshot.getId()); // This prevents crashes
+                                if (user.getFullName() != null && !user.getFullName().isEmpty()) {
+                                    navHeaderName.setText(user.getFullName());
+                                } else {
+                                    navHeaderName.setText("Valued User"); // Fallback text
+                                }
                             }
                         }
                     });
+            // --- END: FIX FOR CRASH ---
         }
     }
 
     private void loadUserData(String userId) {
+        // --- START: FIX FOR CRASH ---
+        // Manually build the user object here as well for safety and consistency.
         db.collection("users").document(userId).get()
                 .addOnSuccessListener(documentSnapshot -> {
                     if (documentSnapshot.exists()) {
                         User user = documentSnapshot.toObject(User.class);
-                        if (user != null && user.getFullName() != null && !user.getFullName().isEmpty()) {
-                            tvWelcomeMessage.setText("Hello, " + user.getFullName().split(" ")[0] + "!");
-                        } else {
-                            tvWelcomeMessage.setText("Hello!");
+                        if (user != null) {
+                            user.setId(documentSnapshot.getId()); // This prevents crashes
+                            if (user.getFullName() != null && !user.getFullName().isEmpty()) {
+                                // Greet user by first name if available
+                                String[] names = user.getFullName().split(" ");
+                                tvWelcomeMessage.setText("Hello, " + names[0] + "!");
+                            } else {
+                                tvWelcomeMessage.setText("Hello!");
+                            }
                         }
                     }
                 })
                 .addOnFailureListener(e -> Log.e(TAG, "Error fetching user data", e));
+        // --- END: FIX FOR CRASH ---
     }
 
     private void loadAllRequestDataWithListener(String userId) {
@@ -224,16 +238,16 @@ public class PINHomeScreenActivity extends AppCompatActivity {
                     tvActiveRequests.setText("Active Requests\n(" + activeCount + ")");
                     tvCompleted.setText("History\n(" + completedCount + ")");
 
+                    // Sort the list of open requests by date to show the most recent ones
                     Collections.sort(openRequests, (r1, r2) -> {
                         if (r1.getCreationTimestamp() == null || r2.getCreationTimestamp() == null) return 0;
                         return r2.getCreationTimestamp().compareTo(r1.getCreationTimestamp());
                     });
 
+                    // Limit the home screen to show a maximum of 3 recent requests
                     int limit = Math.min(3, openRequests.size());
                     helpRequestList.clear();
-                    for(int i = 0; i < limit; i++) {
-                        helpRequestList.add(openRequests.get(i));
-                    }
+                    helpRequestList.addAll(openRequests.subList(0, limit));
                     requestAdapter.notifyDataSetChanged();
                 });
     }

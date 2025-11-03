@@ -5,31 +5,19 @@
 
     <group android:checkableBehavior="single">
         <item
-            android:id="@+id/nav_requests"
-            android:icon="@drawable/ic_requests"
-            android:title="Requests" />
-        <item
             android:id="@+id/nav_my_requests"
             android:icon="@drawable/ic_my_requests"
             android:title="My Requests" />
 
-        <!-- Assuming you have this icon -->
         <item
             android:id="@+id/nav_my_matches"
             android:icon="@drawable/ic_star"
             android:title="My Matches" />
 
-        <!-- A good built-in icon for history -->
         <item
             android:id="@+id/nav_history"
             android:icon="@android:drawable/ic_menu_recent_history"
             android:title="Completion History" />
-
-        <!-- Assuming you have this icon -->
-        <item
-            android:id="@+id/nav_browse_services"
-            android:icon="@drawable/ic_browse"
-            android:title="Browse Services" />
 
         <item
             android:id="@+id/nav_my_profile"
@@ -39,13 +27,8 @@
             android:id="@+id/nav_settings"
             android:icon="@drawable/ic_settings"
             android:title="Settings" />
-        <item
-            android:id="@+id/nav_help_support"
-            android:icon="@drawable/ic_help"
-            android:title="Help &amp; Support" />
     </group>
 
-    <!-- This item is for the logout button, placed in a separate group -->
     <item android:title="">
         <menu>
             <item

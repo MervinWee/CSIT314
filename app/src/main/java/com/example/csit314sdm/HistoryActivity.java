@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.Locale;
 
 // BOUNDARY: This screen displays the Match History for a CSR's company.
-public class HistoryActivity extends AppCompatActivity {
+public class HistoryActivity extends AppCompatActivity implements HelpRequestAdapter.OnSaveClickListener {
 
     private static final String TAG = "HistoryActivity"; // TAG for logging
 
@@ -191,7 +191,8 @@ public class HistoryActivity extends AppCompatActivity {
             Intent intent = new Intent(HistoryActivity.this, HelpRequestDetailActivity.class);
             intent.putExtra(HelpRequestDetailActivity.EXTRA_REQUEST_ID, request.getId());
             startActivity(intent);
-        }, this);
+        });
+        adapter.setOnSaveClickListener(this);
         recyclerViewHistory.setAdapter(adapter);
     }
 
@@ -230,5 +231,36 @@ public class HistoryActivity extends AppCompatActivity {
         String myFormat = "dd/MM/yy";
         SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.US);
         editText.setText(sdf.format(calendar.getTime()));
+    }
+
+    @Override
+    public void onSaveClick(HelpRequest request, boolean isSaved) {
+        if (isSaved) {
+            controller.unsaveRequest(request.getId(), new HelpRequestController.SaveCallback() {
+                @Override
+                public void onSaveSuccess() {
+                    Toast.makeText(HistoryActivity.this, "Request unsaved", Toast.LENGTH_SHORT).show();
+                    fetchCsrCompanyIdAndLoadHistory();
+                }
+
+                @Override
+                public void onSaveFailure(String errorMessage) {
+                    Toast.makeText(HistoryActivity.this, "Failed to unsave request: " + errorMessage, Toast.LENGTH_SHORT).show();
+                }
+            });
+        } else {
+            controller.saveRequest(request.getId(), new HelpRequestController.SaveCallback() {
+                @Override
+                public void onSaveSuccess() {
+                    Toast.makeText(HistoryActivity.this, "Request saved", Toast.LENGTH_SHORT).show();
+                    fetchCsrCompanyIdAndLoadHistory();
+                }
+
+                @Override
+                public void onSaveFailure(String errorMessage) {
+                    Toast.makeText(HistoryActivity.this, "Failed to save request: " + errorMessage, Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
     }
 }

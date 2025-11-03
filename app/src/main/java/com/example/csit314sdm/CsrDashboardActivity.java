@@ -29,7 +29,7 @@ import com.google.firebase.auth.FirebaseUser;
 import java.util.List;
 import java.util.ArrayList;
 
-public class CsrDashboardActivity extends AppCompatActivity {
+public class CsrDashboardActivity extends AppCompatActivity implements HelpRequestAdapter.OnSaveClickListener {
 
     // --- UI Elements ---
     private DrawerLayout drawerLayout;
@@ -49,6 +49,7 @@ public class CsrDashboardActivity extends AppCompatActivity {
     private HelpRequestController controller;
     private UserProfileController userProfileController;
     private HelpRequestAdapter adapter;
+    private String currentCsrId; // Added to store the user's ID safely
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,13 +60,18 @@ public class CsrDashboardActivity extends AppCompatActivity {
         userProfileController = new UserProfileController();
         categoryController = new CategoryController();
 
+        // Safely get the user ID once on creation
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser != null) {
+            currentCsrId = currentUser.getUid();
+        } else {
+            handleLogout(); // If user is null, they shouldn't be here
+            return;
+        }
+
         initializeUI();
         setupNavigationDrawer();
         setupListeners();
-
-        // --- CORRECTED LOAD ORDER ---
-        // 1. First, load the user's details.
-        // 2. ONLY AFTER user details are loaded, then populate filters and load requests.
         loadUserDetails();
     }
 
@@ -94,8 +100,10 @@ public class CsrDashboardActivity extends AppCompatActivity {
         adapter = new HelpRequestAdapter(request -> {
             Intent intent = new Intent(CsrDashboardActivity.this, HelpRequestDetailActivity.class);
             intent.putExtra(HelpRequestDetailActivity.EXTRA_REQUEST_ID, request.getId());
+            intent.putExtra("user_role", "CSR"); // Pass the role
             startActivity(intent);
-        }, this);
+        });
+        adapter.setOnSaveClickListener(this); // Set the save listener
         recyclerView.setAdapter(adapter);
     }
 
@@ -111,34 +119,26 @@ public class CsrDashboardActivity extends AppCompatActivity {
         categoryController.getAllCategories(new CategoryController.CategoryFetchCallback() {
             @Override
             public void onCategoriesFetched(List<Category> categories) {
-                // This runs when categories are successfully fetched from Firestore
                 runOnUiThread(() -> {
-                    // Create a list of strings for the dropdown
                     List<String> categoryNames = new ArrayList<>();
-                    categoryNames.add("All"); // Add the default "All" option first
-
-                    // Add the names of the fetched categories
+                    categoryNames.add("All");
                     for (Category category : categories) {
                         categoryNames.add(category.getName());
                     }
-
-                    // Create the adapter for the category spinner
                     ArrayAdapter<String> categoryAdapter = new ArrayAdapter<>(
                             CsrDashboardActivity.this,
                             android.R.layout.simple_dropdown_item_1line,
                             categoryNames
                     );
                     spinnerCategory.setAdapter(categoryAdapter);
-                    spinnerCategory.setText(categoryNames.get(0), false); // Set default value
+                    spinnerCategory.setText(categoryNames.get(0), false);
                 });
             }
 
             @Override
             public void onFailure(String errorMessage) {
-                // This runs if fetching fails
                 runOnUiThread(() -> {
                     Toast.makeText(CsrDashboardActivity.this, "Could not load categories: " + errorMessage, Toast.LENGTH_SHORT).show();
-                    // As a fallback, load an empty list with "All"
                     List<String> fallbackCategories = new ArrayList<>();
                     fallbackCategories.add("All");
                     ArrayAdapter<String> categoryAdapter = new ArrayAdapter<>(
@@ -156,7 +156,7 @@ public class CsrDashboardActivity extends AppCompatActivity {
     private void setupListeners() {
         cardShortlisted.setOnClickListener(v -> {
             tvListTitle.setText("My Shortlisted Requests");
-            loadSavedRequests(); // Reloads the full list
+            loadSavedRequests();
         });
 
         btnSearch.setOnClickListener(v -> performSearch());
@@ -182,7 +182,7 @@ public class CsrDashboardActivity extends AppCompatActivity {
         controller.searchShortlistedRequests(keyword, location, category, new HelpRequestController.HelpRequestsLoadCallback() {
             @Override
             public void onRequestsLoaded(List<HelpRequest> requests) {
-                runOnUiThread(() -> { // Ensure UI updates are on the main thread
+                runOnUiThread(() -> {
                     progressBar.setVisibility(View.GONE);
                     if (requests.isEmpty()) {
                         tvNoResults.setText("No matching requests found.");
@@ -196,7 +196,7 @@ public class CsrDashboardActivity extends AppCompatActivity {
 
             @Override
             public void onDataLoadFailed(String errorMessage) {
-                runOnUiThread(() -> { // FIX: Wrap UI updates in runOnUiThread
+                runOnUiThread(() -> {
                     progressBar.setVisibility(View.GONE);
                     tvNoResults.setText(errorMessage);
                     tvNoResults.setVisibility(View.VISIBLE);
@@ -210,7 +210,9 @@ public class CsrDashboardActivity extends AppCompatActivity {
         navigationView.setNavigationItemSelectedListener(item -> {
             int itemId = item.getItemId();
 
-            if (itemId == R.id.nav_logout) {
+             if (itemId == R.id.nav_my_requests) {
+                loadSavedRequests();
+            } else if (itemId == R.id.nav_logout) {
                 handleLogout();
             } else if (itemId == R.id.nav_history) {
                 Intent intent = new Intent(CsrDashboardActivity.this, HistoryActivity.class);
@@ -239,7 +241,7 @@ public class CsrDashboardActivity extends AppCompatActivity {
         if (username != null && !username.isEmpty()) {
             tvWelcome.setText("Hello, " + username + "!");
         } else {
-            tvWelcome.setText("Hello! Your Request");
+            tvWelcome.setText("Hello!");
         }
         View headerView = navigationView.getHeaderView(0);
         TextView navHeaderName = headerView.findViewById(R.id.nav_header_name);
@@ -259,29 +261,24 @@ public class CsrDashboardActivity extends AppCompatActivity {
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
         finish();
-        Toast.makeText(this, "Logged out successfully", Toast.LENGTH_SHORT).show();
     }
 
     private void loadUserDetails() {
-        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
-        if (currentUser == null) return;
+        if (currentCsrId == null) return;
 
-        userProfileController.getUserById(currentUser.getUid(), new UserProfileController.UserLoadCallback() {
+        userProfileController.getUserById(currentCsrId, new UserProfileController.UserLoadCallback() {
             @Override
             public void onUserLoaded(User user) {
-                runOnUiThread(() -> { // Ensure UI updates are on the main thread
+                runOnUiThread(() -> {
                     setWelcomeMessage(user);
-
-                    // --- FIX: Now that user is loaded, populate other UI ---
                     populateFilterSpinners();
-                    loadSavedRequests(); // Load initial full list
+                    loadSavedRequests();
                 });
             }
             @Override
             public void onDataLoadFailed(String errorMessage) {
-                runOnUiThread(() -> { // FIX: Wrap UI updates in runOnUiThread
+                runOnUiThread(() -> {
                     Toast.makeText(CsrDashboardActivity.this, "Could not load user profile.", Toast.LENGTH_SHORT).show();
-                    // Even if profile fails, load the rest of the app
                     populateFilterSpinners();
                     loadSavedRequests();
                 });
@@ -289,15 +286,17 @@ public class CsrDashboardActivity extends AppCompatActivity {
         });
     }
 
+    // --- START: THIS IS THE CORRECTED METHOD ---
     private void loadSavedRequests() {
         progressBar.setVisibility(View.VISIBLE);
         recyclerView.setVisibility(View.GONE);
         tvNoResults.setVisibility(View.GONE);
 
-        controller.getSavedHelpRequests(new HelpRequestController.HelpRequestsLoadCallback() {
+        // FIX: Pass the currentCsrId to the updated controller method
+        controller.getSavedHelpRequests(currentCsrId, new HelpRequestController.HelpRequestsLoadCallback() {
             @Override
             public void onRequestsLoaded(List<HelpRequest> requests) {
-                runOnUiThread(() -> { // Ensure UI updates are on the main thread
+                runOnUiThread(() -> {
                     progressBar.setVisibility(View.GONE);
                     if (requests.isEmpty()) {
                         tvNoResults.setText("You have no shortlisted requests.");
@@ -310,7 +309,7 @@ public class CsrDashboardActivity extends AppCompatActivity {
             }
             @Override
             public void onDataLoadFailed(String errorMessage) {
-                runOnUiThread(() -> { // FIX: Wrap UI updates in runOnUiThread
+                runOnUiThread(() -> {
                     progressBar.setVisibility(View.GONE);
                     tvNoResults.setText(errorMessage);
                     tvNoResults.setVisibility(View.VISIBLE);
@@ -319,6 +318,7 @@ public class CsrDashboardActivity extends AppCompatActivity {
             }
         });
     }
+    // --- END: CORRECTION COMPLETE ---
 
     @Override
     public void onBackPressed() {
@@ -326,6 +326,37 @@ public class CsrDashboardActivity extends AppCompatActivity {
             drawerLayout.closeDrawer(GravityCompat.START);
         } else {
             super.onBackPressed();
+        }
+    }
+    
+    @Override
+    public void onSaveClick(HelpRequest request, boolean isSaved) {
+        if (isSaved) { // If it's saved, the user wants to unsave
+            controller.unsaveRequest(request.getId(), new HelpRequestController.SaveCallback() {
+                @Override
+                public void onSaveSuccess() {
+                    Toast.makeText(CsrDashboardActivity.this, "Request unsaved", Toast.LENGTH_SHORT).show();
+                    loadSavedRequests(); // Refresh the list
+                }
+
+                @Override
+                public void onSaveFailure(String errorMessage) {
+                    Toast.makeText(CsrDashboardActivity.this, "Failed to unsave: " + errorMessage, Toast.LENGTH_SHORT).show();
+                }
+            });
+        } else {
+            // Since this screen is for shortlisted items, we only care about saving.
+            controller.saveRequest(request.getId(), new HelpRequestController.SaveCallback() {
+                @Override
+                public void onSaveSuccess() {
+                    Toast.makeText(CsrDashboardActivity.this, "Request saved", Toast.LENGTH_SHORT).show();
+                }
+
+                @Override
+                public void onSaveFailure(String errorMessage) {
+                    Toast.makeText(CsrDashboardActivity.this, "Failed to save: " + errorMessage, Toast.LENGTH_SHORT).show();
+                }
+            });
         }
     }
 }

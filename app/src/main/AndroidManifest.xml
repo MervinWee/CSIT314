@@ -12,105 +12,124 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.CSIT314SDM"
         tools:targetApi="31">
+
+        <!-- A clean, sorted list of all your activities -->
         <activity
-            android:name=".MatchHistoryActivity"
-            android:exported="false" />
-        <activity
-            android:name=".EditHelpRequestActivity"
-            android:exported="false" />
-        <activity
-            android:name=".ChangePasswordActivity"
-            android:exported="false" />
-        <activity
-            android:name=".EditPinProfileActivity"
-            android:exported="false" />
-        <activity
-            android:name=".PinProfileActivity"
-            android:exported="false" />
-        <activity
-            android:name=".CreateRequestActivity"
-            android:exported="false" />
-        <activity
-            android:name=".MyRequestsActivity"
-            android:exported="false" />
-        <activity
-            android:name=".CreateUserProfileActivity"
-            android:exported="false" />
-        <activity
-            android:name=".CSRHomeScreenActivity"
-            android:exported="false" />
-        <activity
-            android:name=".PINHomeScreenActivity"
-            android:exported="false" />
-        <activity
-            android:name=".RegisterActivity"
-            android:exported="false" />
-        <activity
-            android:name=".ForgotPasswordActivity"
+            android:name=".AdminCreateUserActivity"
             android:exported="false" />
         <activity
             android:name=".AdminDashboardActivity"
             android:exported="false" />
         <activity
-            android:name=".SearchUserActivity"
-            android:exported="false" />
-        <activity
-            android:name=".AdminCreateUserActivity"
-            android:exported="false" />
-        <activity
-            android:name=".ViewAllUsersActivity"
-            android:exported="false" />
-        <activity
-            android:name=".UserDetailActivity"
-            android:exported="false" />
-        <activity
-            android:name=".ViewSavedRequestsActivity"
-            android:exported="false" />
-        <activity
-            android:name=".CsrDashboardActivity"
-            android:exported="false" />
-        <activity
-            android:name=".UserManagementActivity"
-            android:exported="false" />
-        <activity
-            android:name=".UserAccountsActivity"
-            android:exported="false" />
-        <activity
-            android:name=".HistoryActivity"
+            android:name=".AllRequestsActivity"
             android:exported="false" />
         <activity
             android:name=".CategoryManagementActivity"
             android:exported="false" />
         <activity
-            android:name=".PlatformDashboardActivity"
+            android:name=".ChangePasswordActivity"
+            android:exported="false" />
+        <activity
+            android:name=".CreateRequestActivity"
+            android:exported="false" />
+        <activity
+            android:name=".CreateUserProfileActivity"
+            android:exported="false" />
+        <activity
+            android:name=".CsrDashboardActivity"
+            android:exported="false" />
+        <activity
+            android:name=".CSRHomeScreenActivity"
+            android:exported="false" />
+        <activity
+            android:name=".CsrProfileActivity"
             android:exported="false" />
         <activity
             android:name=".CSRSettingsActivity"
-            android:exported="false" /> <!-- Add this line inside your <application> tag -->
-        <activity
-            android:name=".HelpRequestDetailActivity"
             android:exported="false" />
         <activity
             android:name=".DailyReportActivity"
             android:exported="false" />
         <activity
-            android:name=".WeeklyReportActivity"
+            android:name=".EditCsrProfileActivity"
             android:exported="false" />
         <activity
-            android:name=".MonthlyReportActivity"
+            android:name=".EditHelpRequestActivity"
+            android:exported="false" />
+        <activity
+            android:name=".EditPinProfileActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ForgotPasswordActivity"
+            android:exported="false" />
+        <activity
+            android:name=".HelpRequestDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".HistoryActivity"
             android:exported="false" />
         <activity
             android:name=".ManageCategoriesActivity"
             android:exported="false" />
         <activity
+            android:name=".MatchHistoryActivity"
+            android:exported="false" />
+        <activity
+            android:name=".MonthlyReportActivity"
+            android:exported="false" />
+        <activity
+            android:name=".MyMatchesActivity"
+            android:exported="false" />
+        <activity
+            android:name=".MyRequestsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".PINHomeScreenActivity"
+            android:exported="false" />
+        <activity
+            android:name=".PinProfileActivity"
+            android:exported="false" />
+        <activity
+            android:name=".PINSettingsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".PlatformDashboardActivity"
+            android:exported="false" />
+        <activity
+            android:name=".RegisterActivity"
+            android:exported="false" />
+        <activity
+            android:name=".SearchUserActivity"
+            android:exported="false" />
+        <activity
+            android:name=".UserAccountsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".UserDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".UserManagementActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ViewAllUsersActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ViewSavedRequestsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".WeeklyReportActivity"
+            android:exported="false" />
+
+        <!-- Launcher Activity (The first screen that opens) -->
+        <activity
             android:name=".loginPage"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
     </application>
 
 </manifest>
