@@ -30,12 +30,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-// BOUNDARY: This screen displays the Match History for a CSR's company.
 public class HistoryActivity extends AppCompatActivity implements HelpRequestAdapter.OnSaveClickListener {
 
-    private static final String TAG = "HistoryActivity"; // TAG for logging
+    private static final String TAG = "HistoryActivity";
 
-    // UI Elements
     private TextInputEditText etDateFrom, etDateTo;
     private AutoCompleteTextView spinnerCategory;
     private Button btnApplyFilters;
@@ -43,7 +41,6 @@ public class HistoryActivity extends AppCompatActivity implements HelpRequestAda
     private ProgressBar progressBarHistory;
     private TextView tvNoHistoryResults;
 
-    // Logic and Data
     private HelpRequestController controller;
     private HelpRequestAdapter adapter;
     private List<HelpRequest> historyList = new ArrayList<>();
@@ -56,7 +53,6 @@ public class HistoryActivity extends AppCompatActivity implements HelpRequestAda
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_history);
 
-        // --- Setup Toolbar & Back Button ---
         MaterialToolbar toolbar = findViewById(R.id.toolbarHistory);
         setSupportActionBar(toolbar);
         ActionBar actionBar = getSupportActionBar();
@@ -70,25 +66,16 @@ public class HistoryActivity extends AppCompatActivity implements HelpRequestAda
         setupSpinners();
         setupDatePickers();
 
-        // The "Apply" button will now trigger the full fetch sequence
         btnApplyFilters.setOnClickListener(v -> fetchCsrCompanyIdAndLoadHistory());
-
-        // Perform an initial fetch when the screen loads (with no date/category filters)
         fetchCsrCompanyIdAndLoadHistory();
     }
 
-    // Handles the click on the back arrow in the toolbar
     @Override
     public boolean onSupportNavigateUp() {
         onBackPressed();
         return true;
     }
 
-    /**
-     * --- NEW METHOD ---
-     * This is now the main entry point. It first fetches the CSR's companyId from their
-     * profile, and only then proceeds to load the history.
-     */
     private void fetchCsrCompanyIdAndLoadHistory() {
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser == null) {
@@ -98,13 +85,11 @@ public class HistoryActivity extends AppCompatActivity implements HelpRequestAda
 
         setLoadingState(true);
 
-        // Get the companyId from the logged-in CSR's user document in Firestore
         FirebaseFirestore.getInstance().collection("users").document(currentUser.getUid()).get()
                 .addOnSuccessListener(documentSnapshot -> {
                     if (documentSnapshot.exists()) {
                         String companyId = documentSnapshot.getString("companyId");
                         if (companyId != null && !companyId.isEmpty()) {
-                            // Once we have the companyId, proceed to fetch the actual history data
                             fetchHistory(companyId);
                         } else {
                             setLoadingState(false);
@@ -122,15 +107,9 @@ public class HistoryActivity extends AppCompatActivity implements HelpRequestAda
                 });
     }
 
-    /**
-     * --- UPDATED METHOD ---
-     * This method is now called by fetchCsrCompanyIdAndLoadHistory and takes the companyId as a parameter.
-     */
     private void fetchHistory(String companyId) {
         String category = spinnerCategory.getText().toString();
-        // 'fromDate' and 'toDate' are already set by the DatePickerDialogs
 
-        // Call the CSR-specific controller method with the correct companyId
         controller.getCompletedHistory(companyId, fromDate, toDate, category, new HelpRequestController.HelpRequestsLoadCallback() {
             @Override
             public void onRequestsLoaded(List<HelpRequest> requests) {
@@ -172,8 +151,6 @@ public class HistoryActivity extends AppCompatActivity implements HelpRequestAda
             progressBarHistory.setVisibility(View.GONE);
         }
     }
-
-    // --- Helper Methods for UI Initialization (No Changes Here) ---
 
     private void initializeViews() {
         etDateFrom = findViewById(R.id.etDateFrom);
@@ -236,6 +213,7 @@ public class HistoryActivity extends AppCompatActivity implements HelpRequestAda
     @Override
     public void onSaveClick(HelpRequest request, boolean isSaved) {
         if (isSaved) {
+            // --- START: FIX ---
             controller.unsaveRequest(request.getId(), new HelpRequestController.SaveCallback() {
                 @Override
                 public void onSaveSuccess() {
@@ -248,7 +226,9 @@ public class HistoryActivity extends AppCompatActivity implements HelpRequestAda
                     Toast.makeText(HistoryActivity.this, "Failed to unsave request: " + errorMessage, Toast.LENGTH_SHORT).show();
                 }
             });
+            // --- END: FIX ---
         } else {
+            // --- START: FIX ---
             controller.saveRequest(request.getId(), new HelpRequestController.SaveCallback() {
                 @Override
                 public void onSaveSuccess() {
@@ -261,6 +241,7 @@ public class HistoryActivity extends AppCompatActivity implements HelpRequestAda
                     Toast.makeText(HistoryActivity.this, "Failed to save request: " + errorMessage, Toast.LENGTH_SHORT).show();
                 }
             });
+            // --- END: FIX ---
         }
     }
 }

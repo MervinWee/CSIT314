@@ -16,7 +16,6 @@ import com.google.firebase.auth.FirebaseUser;
 import java.util.List;
 
 // BOUNDARY: Displays a list of saved help requests to the CSR.
-// --- FIX: Made class final as it's a simple implementation ---
 public final class ViewSavedRequestsActivity extends AppCompatActivity {
 
     private RecyclerView recyclerView;
@@ -25,6 +24,8 @@ public final class ViewSavedRequestsActivity extends AppCompatActivity {
     private ProgressBar progressBar;
     private TextView tvNoResults;
 
+    // The currentCsrId is no longer needed for the controller call,
+    // but it's good to keep for other potential uses.
     private String currentCsrId;
 
     @Override
@@ -53,15 +54,13 @@ public final class ViewSavedRequestsActivity extends AppCompatActivity {
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        // --- START: THIS IS THE CORRECTED CODE BLOCK ---
         adapter = new HelpRequestAdapter(request -> {
             // Go to the detail screen when an item is clicked
             Intent intent = new Intent(ViewSavedRequestsActivity.this, HelpRequestDetailActivity.class);
             intent.putExtra(HelpRequestDetailActivity.EXTRA_REQUEST_ID, request.getId());
             intent.putExtra("user_role", "CSR");
             startActivity(intent);
-        }); // <-- FIX: Pass only the click listener, as the constructor now only takes one argument.
-        // --- END: CORRECTION COMPLETE ---
+        });
 
         recyclerView.setAdapter(adapter);
     }
@@ -71,13 +70,18 @@ public final class ViewSavedRequestsActivity extends AppCompatActivity {
         recyclerView.setVisibility(View.GONE);
         tvNoResults.setVisibility(View.GONE);
 
-        controller.getSavedHelpRequests(currentCsrId, new HelpRequestController.HelpRequestsLoadCallback() {
+        // --- START: THIS IS THE FIX ---
+        // The currentCsrId argument is removed from the call, as the controller
+        // now gets the ID internally.
+        controller.getSavedHelpRequests(new HelpRequestController.HelpRequestsLoadCallback() {
             @Override
             public void onRequestsLoaded(List<HelpRequest> requests) {
                 runOnUiThread(() -> {
                     progressBar.setVisibility(View.GONE);
                     if (requests.isEmpty()) {
                         tvNoResults.setVisibility(View.VISIBLE);
+                        // Make sure to set a message when there are no results
+                        tvNoResults.setText("You have no saved requests.");
                     } else {
                         recyclerView.setVisibility(View.VISIBLE);
                         adapter.setRequests(requests);
@@ -95,5 +99,6 @@ public final class ViewSavedRequestsActivity extends AppCompatActivity {
                 });
             }
         });
+        // --- END: THIS IS THE FIX ---
     }
 }

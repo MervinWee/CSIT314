@@ -62,7 +62,7 @@ public class AllRequestsActivity extends AppCompatActivity {
         recyclerView.setVisibility(View.GONE);
         tvNoResults.setVisibility(View.GONE);
 
-        controller.getActiveHelpRequests(currentCsrId, new HelpRequestController.HelpRequestsLoadCallback() {
+        controller.getActiveHelpRequests(new HelpRequestController.HelpRequestsLoadCallback() {
             @Override
             public void onRequestsLoaded(List<HelpRequest> requests) {
                 runOnUiThread(() -> {
@@ -72,15 +72,12 @@ public class AllRequestsActivity extends AppCompatActivity {
                     } else {
                         recyclerView.setVisibility(View.VISIBLE);
 
-                        // --- START: THIS IS THE CORRECTED CODE BLOCK ---
-                        // FIX: The adapter now only takes one argument (the click listener).
                         adapter = new HelpRequestAdapter(request -> {
                             Intent intent = new Intent(AllRequestsActivity.this, HelpRequestDetailActivity.class);
                             intent.putExtra(HelpRequestDetailActivity.EXTRA_REQUEST_ID, request.getId());
                             intent.putExtra("user_role", "CSR");
                             startActivity(intent);
                         });
-                        // --- END: CORRECTION COMPLETE ---
 
                         adapter.setRequests(requests);
                         recyclerView.setAdapter(adapter);

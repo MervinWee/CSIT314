@@ -1,22 +1,19 @@
 package com.example.csit314sdm;
 
-import com.google.firebase.firestore.PropertyName;
 import com.google.firebase.firestore.ServerTimestamp;
 import java.util.Date;
 import java.util.List;
 
-// ENTITY: Represents a single help request.
 public class HelpRequest {
 
-    // --- Field Declarations ---
     private String id;
     private String title;
     private String description;
     private String location;
     private String submittedBy;
-    private String pinId;
+    private String pinId; // Retained for compatibility, but submittedBy is preferred
     private String pinName;
-    private String pinShortId; // Unique ID for the PIN
+    private String pinShortId;
     private String requestType;
     private String preferredTime;
     private String urgencyLevel;
@@ -24,11 +21,15 @@ public class HelpRequest {
     private String category;
     private String organization;
     private String companyId;
+    private String acceptedByCsrId;
     private Date shortlistedDate;
     private long viewCount = 0;
     private List<String> savedByCsrId;
-    private String notes;
-    private String phoneNumber;
+
+    // --- START: NEW FIELD ---
+    // This field is for temporary use in the app and is not saved in the help_requests collection.
+    private String pinPhoneNumber;
+    // --- END: NEW FIELD ---
 
     @ServerTimestamp
     private Date creationTimestamp;
@@ -61,6 +62,11 @@ public class HelpRequest {
     public String getPinShortId() { return pinShortId; }
     public void setPinShortId(String pinShortId) { this.pinShortId = pinShortId; }
 
+    // --- START: NEW GETTER/SETTER ---
+    public String getPinPhoneNumber() { return pinPhoneNumber; }
+    public void setPinPhoneNumber(String pinPhoneNumber) { this.pinPhoneNumber = pinPhoneNumber; }
+    // --- END: NEW GETTER/SETTER ---
+
     public String getRequestType() { return requestType; }
     public void setRequestType(String requestType) { this.requestType = requestType; }
 
@@ -73,9 +79,6 @@ public class HelpRequest {
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
 
-    public Date getCreationTimestamp() { return creationTimestamp; }
-    public void setCreationTimestamp(Date creationTimestamp) { this.creationTimestamp = creationTimestamp; }
-
     public String getCategory() { return category; }
     public void setCategory(String category) { this.category = category; }
 
@@ -84,6 +87,9 @@ public class HelpRequest {
 
     public String getCompanyId() { return companyId; }
     public void setCompanyId(String companyId) { this.companyId = companyId; }
+
+    public String getAcceptedByCsrId() { return acceptedByCsrId; }
+    public void setAcceptedByCsrId(String acceptedByCsrId) { this.acceptedByCsrId = acceptedByCsrId; }
 
     public Date getShortlistedDate() { return shortlistedDate; }
     public void setShortlistedDate(Date shortlistedDate) { this.shortlistedDate = shortlistedDate; }
@@ -94,16 +100,6 @@ public class HelpRequest {
     public List<String> getSavedByCsrId() { return savedByCsrId; }
     public void setSavedByCsrId(List<String> savedByCsrId) { this.savedByCsrId = savedByCsrId; }
 
-    public String getNotes() { return notes; }
-    public void setNotes(String notes) { this.notes = notes; }
-
-    public String getPhoneNumber() { return phoneNumber; }
-    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
-
-    @PropertyName("savedBy")
-    public void setSavedBy(List<String> savedByList) {
-        if (this.savedByCsrId == null) {
-            this.savedByCsrId = savedByList;
-        }
-    }
+    public Date getCreationTimestamp() { return creationTimestamp; }
+    public void setCreationTimestamp(Date creationTimestamp) { this.creationTimestamp = creationTimestamp; }
 }

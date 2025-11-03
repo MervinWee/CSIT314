@@ -12,8 +12,6 @@ import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
-import com.google.android.material.textfield.TextInputEditText;
-
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.GravityCompat;
@@ -23,11 +21,12 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.navigation.NavigationView;
+import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
 public class CsrDashboardActivity extends AppCompatActivity implements HelpRequestAdapter.OnSaveClickListener {
 
@@ -139,6 +138,7 @@ public class CsrDashboardActivity extends AppCompatActivity implements HelpReque
             public void onFailure(String errorMessage) {
                 runOnUiThread(() -> {
                     Toast.makeText(CsrDashboardActivity.this, "Could not load categories: " + errorMessage, Toast.LENGTH_SHORT).show();
+                    // Provide a fallback with just "All" if loading fails
                     List<String> fallbackCategories = new ArrayList<>();
                     fallbackCategories.add("All");
                     ArrayAdapter<String> categoryAdapter = new ArrayAdapter<>(
@@ -210,7 +210,7 @@ public class CsrDashboardActivity extends AppCompatActivity implements HelpReque
         navigationView.setNavigationItemSelectedListener(item -> {
             int itemId = item.getItemId();
 
-             if (itemId == R.id.nav_my_requests) {
+            if (itemId == R.id.nav_my_requests) {
                 loadSavedRequests();
             } else if (itemId == R.id.nav_logout) {
                 handleLogout();
@@ -286,14 +286,12 @@ public class CsrDashboardActivity extends AppCompatActivity implements HelpReque
         });
     }
 
-    // --- START: THIS IS THE CORRECTED METHOD ---
     private void loadSavedRequests() {
         progressBar.setVisibility(View.VISIBLE);
         recyclerView.setVisibility(View.GONE);
         tvNoResults.setVisibility(View.GONE);
 
-        // FIX: Pass the currentCsrId to the updated controller method
-        controller.getSavedHelpRequests(currentCsrId, new HelpRequestController.HelpRequestsLoadCallback() {
+        controller.getSavedHelpRequests(new HelpRequestController.HelpRequestsLoadCallback() {
             @Override
             public void onRequestsLoaded(List<HelpRequest> requests) {
                 runOnUiThread(() -> {
@@ -318,7 +316,6 @@ public class CsrDashboardActivity extends AppCompatActivity implements HelpReque
             }
         });
     }
-    // --- END: CORRECTION COMPLETE ---
 
     @Override
     public void onBackPressed() {
@@ -328,10 +325,12 @@ public class CsrDashboardActivity extends AppCompatActivity implements HelpReque
             super.onBackPressed();
         }
     }
-    
+
     @Override
     public void onSaveClick(HelpRequest request, boolean isSaved) {
-        if (isSaved) { // If it's saved, the user wants to unsave
+        if (isSaved) { // If it's already saved, the user wants to unsave it.
+            // --- START: FIX ---
+            // Changed UpdateCallback to the correct SaveCallback.
             controller.unsaveRequest(request.getId(), new HelpRequestController.SaveCallback() {
                 @Override
                 public void onSaveSuccess() {
@@ -344,8 +343,10 @@ public class CsrDashboardActivity extends AppCompatActivity implements HelpReque
                     Toast.makeText(CsrDashboardActivity.this, "Failed to unsave: " + errorMessage, Toast.LENGTH_SHORT).show();
                 }
             });
-        } else {
-            // Since this screen is for shortlisted items, we only care about saving.
+            // --- END: FIX ---
+        } else { // If it's not saved, the user wants to save it.
+            // --- START: FIX ---
+            // Changed UpdateCallback to the correct SaveCallback.
             controller.saveRequest(request.getId(), new HelpRequestController.SaveCallback() {
                 @Override
                 public void onSaveSuccess() {
@@ -357,6 +358,7 @@ public class CsrDashboardActivity extends AppCompatActivity implements HelpReque
                     Toast.makeText(CsrDashboardActivity.this, "Failed to save: " + errorMessage, Toast.LENGTH_SHORT).show();
                 }
             });
+            // --- END: FIX ---
         }
     }
 }

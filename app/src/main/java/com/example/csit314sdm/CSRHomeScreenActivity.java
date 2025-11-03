@@ -2,6 +2,7 @@ package com.example.csit314sdm;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.ArrayAdapter;
@@ -11,7 +12,7 @@ import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
-
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
@@ -36,19 +37,19 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
     private RecyclerView recyclerView;
     private ProgressBar progressBar;
     private TextView tvNoResults, tvListTitle, tvWelcome;
-    private MaterialCardView cardShortlisted, cardCompletedRequests, cardActiveRequests;
+    private MaterialCardView cardActiveRequests, cardShortlisted, cardCompletedRequests;
     private TextInputEditText etSearchKeyword;
     private AutoCompleteTextView spinnerLocation, spinnerCategory;
     private Button btnSearch;
 
+    private CategoryController categoryController;
+
     // --- Controllers ---
     private HelpRequestController controller;
     private UserProfileController userProfileController;
-    private CategoryController categoryController;
     private HelpRequestAdapter adapter;
-
-    private boolean isShowingSaved = true;
     private String currentCsrId;
+    private boolean isShowingSaved = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,6 +74,26 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
         loadUserDetails();
     }
 
+    // --- START: THIS IS THE FIX ---
+    /**
+     * The onResume() method is called every time the activity comes back into the foreground.
+     * This is the perfect place to refresh our data after returning from another screen.
+     */
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Refresh the list that was being displayed before the user navigated away.
+        // The `isShowingSaved` flag helps us remember which list to reload.
+        if (isShowingSaved) {
+            loadSavedRequests();
+        } else {
+            // Default to loading active requests if we weren't on the saved list.
+            // You can change this to whatever default you prefer.
+            loadActiveRequests();
+        }
+    }
+    // --- END: THIS IS THE FIX ---
+
     private void initializeUI() {
         drawerLayout = findViewById(R.id.drawer_layout);
         navigationView = findViewById(R.id.nav_view);
@@ -83,9 +104,9 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
         tvNoResults = findViewById(R.id.tvNoResults);
         tvListTitle = findViewById(R.id.tvListTitle);
         tvWelcome = findViewById(R.id.tvWelcome);
+        cardActiveRequests = findViewById(R.id.cardActiveRequests);
         cardShortlisted = findViewById(R.id.cardShortlisted);
         cardCompletedRequests = findViewById(R.id.cardCompletedRequests);
-        cardActiveRequests = findViewById(R.id.cardActiveRequests);
 
         etSearchKeyword = findViewById(R.id.etSearchKeyword);
         spinnerLocation = findViewById(R.id.spinnerLocation);
@@ -93,7 +114,6 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
         btnSearch = findViewById(R.id.btnSearch);
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        // --- FIX: Initialize the adapter ONCE here ---
         adapter = new HelpRequestAdapter(request -> {
             Intent intent = new Intent(CSRHomeScreenActivity.this, HelpRequestDetailActivity.class);
             intent.putExtra(HelpRequestDetailActivity.EXTRA_REQUEST_ID, request.getId());
@@ -105,7 +125,7 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
     }
 
     private void populateFilterSpinners() {
-        String[] locations = new String[]{"All", "Anywhere", "North", "South", "East", "West", "Central"};
+        String[] locations = {"All", "Anywhere", "North", "South", "East", "West", "Central"};
         ArrayAdapter<String> locationAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, locations);
         spinnerLocation.setAdapter(locationAdapter);
         spinnerLocation.setText(locations[0], false);
@@ -176,14 +196,8 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
                 tvListTitle.setText("My Requests");
                 isShowingSaved = true;
                 loadSavedRequests();
-            } else if (itemId == R.id.nav_my_matches) {
-                Intent intent = new Intent(CSRHomeScreenActivity.this, MyMatchesActivity.class);
-                startActivity(intent);
             } else if (itemId == R.id.nav_history) {
                 Intent intent = new Intent(CSRHomeScreenActivity.this, HistoryActivity.class);
-                startActivity(intent);
-            } else if (itemId == R.id.nav_my_profile) {
-                Intent intent = new Intent(CSRHomeScreenActivity.this, CsrProfileActivity.class);
                 startActivity(intent);
             } else if (itemId == R.id.nav_settings) {
                 Intent intent = new Intent(CSRHomeScreenActivity.this, CSRSettingsActivity.class);
@@ -258,6 +272,9 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
                 runOnUiThread(() -> {
                     setWelcomeMessage(user);
                     populateFilterSpinners();
+                    // Set the default view to "Shortlisted" when the app first opens
+                    tvListTitle.setText("Shortlisted Requests");
+                    isShowingSaved = true;
                     loadSavedRequests();
                 });
             }
@@ -267,6 +284,9 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
                 runOnUiThread(() -> {
                     Toast.makeText(CSRHomeScreenActivity.this, "Could not load user profile.", Toast.LENGTH_SHORT).show();
                     populateFilterSpinners();
+                    // Also set a default view on failure
+                    tvListTitle.setText("Shortlisted Requests");
+                    isShowingSaved = true;
                     loadSavedRequests();
                 });
             }
@@ -275,7 +295,7 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
 
     private void loadSavedRequests() {
         showLoading(true);
-        controller.getSavedHelpRequests(currentCsrId, new HelpRequestController.HelpRequestsLoadCallback() {
+        controller.getSavedHelpRequests(new HelpRequestController.HelpRequestsLoadCallback() {
             @Override
             public void onRequestsLoaded(List<HelpRequest> requests) {
                 runOnUiThread(() -> {
@@ -296,7 +316,7 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
 
     private void loadActiveRequests() {
         showLoading(true);
-        controller.getActiveHelpRequests(currentCsrId, new HelpRequestController.HelpRequestsLoadCallback() {
+        controller.getActiveHelpRequests(new HelpRequestController.HelpRequestsLoadCallback() {
             @Override
             public void onRequestsLoaded(List<HelpRequest> requests) {
                 runOnUiThread(() -> {
@@ -369,7 +389,6 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
         Toast.makeText(CSRHomeScreenActivity.this, message, Toast.LENGTH_LONG).show();
     }
 
-    // --- FIX: This method no longer creates a new adapter every time ---
     private void updateRecyclerView(List<HelpRequest> requests, String noResultsMessage) {
         if (requests.isEmpty()) {
             tvNoResults.setText(noResultsMessage);
@@ -378,13 +397,13 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
         } else {
             tvNoResults.setVisibility(View.GONE);
             recyclerView.setVisibility(View.VISIBLE);
-            adapter.setRequests(requests); // Just update the data
+            adapter.setRequests(requests);
         }
     }
 
     @Override
     public void onSaveClick(HelpRequest request, boolean isSaved) {
-        if (isSaved) { // User wants to UNSAVE
+        if (isSaved) {
             controller.unsaveRequest(request.getId(), new HelpRequestController.SaveCallback() {
                 @Override
                 public void onSaveSuccess() {
@@ -399,7 +418,7 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
                     Toast.makeText(CSRHomeScreenActivity.this, "Failed to unsave: " + errorMessage, Toast.LENGTH_SHORT).show();
                 }
             });
-        } else { // User wants to SAVE
+        } else {
             controller.saveRequest(request.getId(), new HelpRequestController.SaveCallback() {
                 @Override
                 public void onSaveSuccess() {

@@ -73,8 +73,6 @@
                 android:layout_marginTop="4dp"
                 tools:text="Need a ride to the hospital for a check-up."/>
 
-            <!-- *** The duplicate TextViews for PIN Name and ID that were here have been removed. *** -->
-
             <!-- Location -->
             <TextView
                 android:layout_width="wrap_content"
@@ -116,6 +114,61 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 tools:text="Medium"/>
+
+            <!-- START: THIS IS THE NEW, UNIFIED BLOCK FOR PIN DETAILS -->
+            <!-- This whole layout will be hidden or shown from the Java code -->
+            <LinearLayout
+                android:id="@+id/layoutPinContactInfo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="16dp"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Person-in-Need Details"
+                    android:textAppearance="?attr/textAppearanceTitleMedium"
+                    android:textStyle="bold" />
+
+                <!-- PIN Name -->
+                <TextView
+                    android:id="@+id/tvDetailPinName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:drawableStart="@android:drawable/ic_menu_myplaces"
+                    android:drawablePadding="8dp"
+                    android:gravity="center_vertical"
+                    tools:text="John Doe" />
+
+                <!-- PIN Phone Number -->
+                <TextView
+                    android:id="@+id/tvDetailPinPhone"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:drawableStart="@android:drawable/ic_menu_call"
+                    android:drawablePadding="8dp"
+                    android:gravity="center_vertical"
+                    tools:text="+65 9123 4567" />
+
+                <!-- PIN ID -->
+                <TextView
+                    android:id="@+id/tvDetailPinId"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:drawableStart="@android:drawable/ic_menu_info_details"
+                    android:drawablePadding="8dp"
+                    android:gravity="center_vertical"
+                    tools:text="PIN ID: 1234" />
+
+            </LinearLayout>
+            <!-- END: NEW PIN DETAILS BLOCK -->
+
 
             <!-- View Count -->
             <LinearLayout
@@ -159,44 +212,6 @@
                 android:layout_marginTop="24dp"
                 android:textSize="12sp"
                 tools:text="Posted on: 02 November 2025 at 06:26 PM GMT"/>
-
-            <!-- START: THIS IS THE CORRECTED AND UNIFIED BLOCK FOR PIN DETAILS -->
-            <TextView
-                android:id="@+id/tvDetailPinNameLabel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:text="PIN Name"
-                android:textStyle="bold"
-                android:visibility="gone"
-                tools:visibility="visible" />
-            <TextView
-                android:id="@+id/tvDetailPinName"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:visibility="gone"
-                tools:text="John Doe"
-                tools:visibility="visible" />
-
-            <TextView
-                android:id="@+id/tvDetailPinIdLabel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="PIN ID"
-                android:textStyle="bold"
-                android:visibility="gone"
-                tools:visibility="visible" />
-            <TextView
-                android:id="@+id/tvDetailPinId"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:visibility="gone"
-                tools:text="1234"
-                tools:visibility="visible" />
-            <!-- END: CORRECTED BLOCK -->
 
             <!-- Action Buttons -->
             <Button
