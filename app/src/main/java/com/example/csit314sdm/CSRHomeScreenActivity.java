@@ -48,6 +48,7 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
     private ProgressBar progressBar;
     private TextView tvNoResults, tvListTitle, tvWelcome;
     private MaterialCardView cardActiveRequests, cardShortlisted, cardCompletedRequests;
+    private MaterialCardView cardMyInProgress; // --- ADDED: New card variable ---
     private TextInputEditText etSearchKeyword;
     private AutoCompleteTextView spinnerLocation, spinnerCategory;
     private Button btnSearch;
@@ -61,7 +62,7 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
     private String currentCsrId;
     private boolean isShowingSaved = false;
 
-    // --- START: PERMISSION LAUNCHER FOR NOTIFICATIONS ---
+    // --- PERMISSION LAUNCHER FOR NOTIFICATIONS ---
     private final ActivityResultLauncher<String> requestPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
                 if (isGranted) {
@@ -70,7 +71,6 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
                     Toast.makeText(this, "Notifications permission was denied. You will not receive reminders.", Toast.LENGTH_LONG).show();
                 }
             });
-    // --- END: PERMISSION LAUNCHER ---
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -106,20 +106,15 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
         }
     }
 
-    // --- START: NEW METHOD TO ASK FOR PERMISSION ---
     private void askNotificationPermission() {
         // This is only required for API level 33+ (Android 13 and higher)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
-                    PackageManager.PERMISSION_GRANTED) {
-                // FCM SDK (and your app) can post notifications.
-            } else {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 // Directly ask for the permission
                 requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
             }
         }
     }
-    // --- END: NEW METHOD ---
 
     private void initializeUI() {
         drawerLayout = findViewById(R.id.drawer_layout);
@@ -134,6 +129,7 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
         cardActiveRequests = findViewById(R.id.cardActiveRequests);
         cardShortlisted = findViewById(R.id.cardShortlisted);
         cardCompletedRequests = findViewById(R.id.cardCompletedRequests);
+        cardMyInProgress = findViewById(R.id.cardMyInProgress); // Find the new card
 
         etSearchKeyword = findViewById(R.id.etSearchKeyword);
         spinnerLocation = findViewById(R.id.spinnerLocation);
@@ -186,6 +182,12 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
     }
 
     private void setupListeners() {
+        // --- ADDED CLICK LISTENER FOR NEW CARD ---
+        cardMyInProgress.setOnClickListener(v -> {
+            Intent intent = new Intent(CSRHomeScreenActivity.this, MyInProgressRequestsActivity.class);
+            startActivity(intent);
+        });
+
         cardActiveRequests.setOnClickListener(v -> {
             tvListTitle.setText("Active Requests");
             isShowingSaved = false;
@@ -220,9 +222,9 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
             int itemId = item.getItemId();
 
             if (itemId == R.id.nav_my_requests) {
-                tvListTitle.setText("My Requests");
-                isShowingSaved = true;
-                loadSavedRequests();
+                // --- MODIFIED: Launch new activity from drawer as well ---
+                Intent intent = new Intent(CSRHomeScreenActivity.this, MyInProgressRequestsActivity.class);
+                startActivity(intent);
             } else if (itemId == R.id.nav_history) {
                 Intent intent = new Intent(CSRHomeScreenActivity.this, HistoryActivity.class);
                 startActivity(intent);
@@ -285,12 +287,9 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
     }
 
     private void handleLogout() {
-        // --- START: UNSUBSCRIBE FROM TOPIC ON LOGOUT ---
-        // It's good practice to unsubscribe when the user logs out.
         if (currentCsrId != null && !currentCsrId.isEmpty()) {
             FirebaseMessaging.getInstance().unsubscribeFromTopic(currentCsrId);
         }
-        // --- END: UNSUBSCRIBE ---
 
         FirebaseAuth.getInstance().signOut();
         Intent intent = new Intent(CSRHomeScreenActivity.this, loginPage.class);
@@ -306,8 +305,6 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
                 runOnUiThread(() -> {
                     setWelcomeMessage(user);
 
-                    // --- START: SUBSCRIBE TO TOPIC ---
-                    // Subscribe this device to a topic named after the user's ID.
                     FirebaseMessaging.getInstance().subscribeToTopic(currentCsrId)
                             .addOnCompleteListener(task -> {
                                 String msg = "Subscribed to topic: " + currentCsrId;
@@ -315,15 +312,13 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
                                     msg = "Subscription to topic failed: " + currentCsrId;
                                 }
                                 Log.d("FCM_TOPIC", msg);
-                                // You can optionally show a Toast, but logging is usually enough.
-                                // Toast.makeText(CSRHomeScreenActivity.this, msg, Toast.LENGTH_SHORT).show();
                             });
-                    // --- END: SUBSCRIBE TO TOPIC ---
 
                     populateFilterSpinners();
-                    tvListTitle.setText("Shortlisted Requests");
-                    isShowingSaved = true;
-                    loadSavedRequests();
+                    // Set default view to "Active Requests" (or any other default you prefer)
+                    tvListTitle.setText("Active Requests");
+                    isShowingSaved = false;
+                    loadActiveRequests();
                 });
             }
 
@@ -332,9 +327,9 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
                 runOnUiThread(() -> {
                     Toast.makeText(CSRHomeScreenActivity.this, "Could not load user profile.", Toast.LENGTH_SHORT).show();
                     populateFilterSpinners();
-                    tvListTitle.setText("Shortlisted Requests");
-                    isShowingSaved = true;
-                    loadSavedRequests();
+                    tvListTitle.setText("Active Requests");
+                    isShowingSaved = false;
+                    loadActiveRequests();
                 });
             }
         });
@@ -384,7 +379,6 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
 
     private void loadCompletedRequests() {
         showLoading(true);
-
         userProfileController.getUserById(currentCsrId, new UserProfileController.UserLoadCallback() {
             @Override
             public void onUserLoaded(User user) {
@@ -479,7 +473,6 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
             });
         }
     }
-
 
     @Override
     public void onBackPressed() {

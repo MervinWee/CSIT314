@@ -41,74 +41,111 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/btnDrawer" />
 
-        <!-- Summary Cards Section -->
+        <!-- START: MODIFIED SUMMARY CARDS SECTION -->
+        <!-- This is now a 2x2 grid using two LinearLayouts -->
         <LinearLayout
             android:id="@+id/summary_cards"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:orientation="horizontal"
+            android:orientation="vertical"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tvWelcome">
-            
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardActiveRequests"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_margin="8dp"
-                android:layout_weight="1"
-                app:cardBackgroundColor="#FCE4EC"
-                app:cardCornerRadius="12dp">
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:padding="16dp"
-                    android:text="Active Requests"
-                    android:textColor="#C2185B"
-                    android:textStyle="bold" />
-            </com.google.android.material.card.MaterialCardView>
 
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardShortlisted"
-                android:layout_width="0dp"
+            <!-- Top Row of Cards -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_margin="8dp"
-                android:layout_weight="1"
-                app:cardBackgroundColor="#E0F2F1"
-                app:cardCornerRadius="12dp">
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:padding="16dp"
-                    android:text="Shortlisted Requests"
-                    android:textColor="#00695C"
-                    android:textStyle="bold" />
-            </com.google.android.material.card.MaterialCardView>
+                android:orientation="horizontal">
 
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardCompletedRequests"
-                android:layout_width="0dp"
+                <!-- NEW: "My Requests" Card -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardMyInProgress"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="8dp"
+                    android:layout_weight="1"
+                    app:cardBackgroundColor="#FFF9C4"
+                    app:cardCornerRadius="12dp">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:padding="16dp"
+                        android:text="My Requests"
+                        android:textColor="#F57F17"
+                        android:textStyle="bold" />
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardActiveRequests"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="8dp"
+                    android:layout_weight="1"
+                    app:cardBackgroundColor="#FCE4EC"
+                    app:cardCornerRadius="12dp">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:padding="16dp"
+                        android:text="Active Requests"
+                        android:textColor="#C2185B"
+                        android:textStyle="bold" />
+                </com.google.android.material.card.MaterialCardView>
+
+            </LinearLayout>
+
+            <!-- Bottom Row of Cards -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_margin="8dp"
-                android:layout_weight="1"
-                app:cardBackgroundColor="#E3F2FD"
-                app:cardCornerRadius="12dp">
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:padding="16dp"
-                    android:text="Completed Requests"
-                    android:textColor="#1565C0"
-                    android:textStyle="bold" />
-            </com.google.android.material.card.MaterialCardView>
+                android:orientation="horizontal">
 
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardShortlisted"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="8dp"
+                    android:layout_weight="1"
+                    app:cardBackgroundColor="#E0F2F1"
+                    app:cardCornerRadius="12dp">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:padding="16dp"
+                        android:text="Shortlisted Requests"
+                        android:textColor="#00695C"
+                        android:textStyle="bold" />
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardCompletedRequests"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="8dp"
+                    android:layout_weight="1"
+                    app:cardBackgroundColor="#E3F2FD"
+                    app:cardCornerRadius="12dp">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:padding="16dp"
+                        android:text="Completed Requests"
+                        android:textColor="#1565C0"
+                        android:textStyle="bold" />
+                </com.google.android.material.card.MaterialCardView>
+
+            </LinearLayout>
         </LinearLayout>
+        <!-- END: MODIFIED SUMMARY CARDS SECTION -->
 
-        <!-- SEARCH AND FILTER SECTION -->
+
+        <!-- SEARCH AND FILTER SECTION (Remains the same) -->
         <LinearLayout
             android:id="@+id/filter_section"
             android:layout_width="0dp"
@@ -230,7 +267,7 @@
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- NavigationView -->
+    <!-- NavigationView (Remains the same) -->
     <com.google.android.material.navigation.NavigationView
         android:id="@+id/nav_view"
         android:layout_width="wrap_content"

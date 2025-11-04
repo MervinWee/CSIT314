@@ -114,6 +114,9 @@
             android:name=".ViewAllUsersActivity"
             android:exported="false" />
         <activity
+            android:name=".MyInProgressRequestsActivity"
+            android:exported="false" />
+        <activity
             android:name=".ViewSavedRequestsActivity"
             android:exported="false" />
         <activity

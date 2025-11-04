@@ -168,7 +168,8 @@ public class HelpRequestController {
     }
 
     public void getActiveHelpRequests(final HelpRequestsLoadCallback callback) {
-        db.collection("help_requests").whereIn("status", Arrays.asList("Open"))
+        // --- FIX: This query now ONLY fetches "Open" requests. ---
+        db.collection("help_requests").whereEqualTo("status", "Open")
                 .orderBy("creationTimestamp", Query.Direction.DESCENDING).get()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
@@ -184,6 +185,49 @@ public class HelpRequestController {
                     }
                 });
     }
+
+    public void getInProgressRequestsForCsr(final HelpRequestsLoadCallback callback) {        String currentCsrId = auth.getUid();
+        if (currentCsrId == null) {
+            if (callback != null) callback.onDataLoadFailed("No user is currently logged in.");
+            return;
+        }
+
+        db.collection("help_requests")
+                .whereEqualTo("status", "In-progress")
+                .whereEqualTo("acceptedByCsrId", currentCsrId)
+                // Note: Firestore can only order by the field used in the last 'whereEqualTo'
+                // so we will sort for urgency on the client side for simplicity.
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        List<HelpRequest> requests = new ArrayList<>();
+                        for (QueryDocumentSnapshot document : task.getResult()) {
+                            HelpRequest request = document.toObject(HelpRequest.class);
+                            request.setId(document.getId());
+                            requests.add(request);
+                        }
+
+                        // --- SORT BY URGENCY on the client ---
+                        // Create a mapping for urgency levels to sort them correctly
+                        Map<String, Integer> urgencyOrder = new HashMap<>();
+                        urgencyOrder.put("Critical", 1);
+                        urgencyOrder.put("High", 2);
+                        urgencyOrder.put("Medium", 3);
+                        urgencyOrder.put("Low", 4);
+
+                        Collections.sort(requests, (r1, r2) -> {
+                            int urgency1 = urgencyOrder.getOrDefault(r1.getUrgencyLevel(), 5);
+                            int urgency2 = urgencyOrder.getOrDefault(r2.getUrgencyLevel(), 5);
+                            return Integer.compare(urgency1, urgency2);
+                        });
+
+                        if (callback != null) callback.onRequestsLoaded(requests);
+                    } else {
+                        if (callback != null) callback.onDataLoadFailed("Failed to load your requests: " + task.getException().getMessage());
+                    }
+                });
+    }
+
 
     public void getSavedHelpRequests(final HelpRequestsLoadCallback callback) {
         String currentCsrId = auth.getUid();
