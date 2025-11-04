@@ -1,5 +1,6 @@
 package com.example.csit314sdm;
 
+import android.content.DialogInterface; // Added for the confirmation dialog
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
@@ -83,12 +84,10 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
         tvDetailViewCount = findViewById(R.id.tvDetailViewCount);
         tvDetailShortlistCount = findViewById(R.id.tvDetailShortlistCount);
 
-        // --- START: INITIALIZE NEW VIEWS ---
         layoutPinContactInfo = findViewById(R.id.layoutPinContactInfo);
         tvDetailPinName = findViewById(R.id.tvDetailPinName);
         tvDetailPinId = findViewById(R.id.tvDetailPinId);
         tvDetailPinPhone = findViewById(R.id.tvDetailPinPhone);
-        // --- END: INITIALIZE NEW VIEWS ---
 
         btnCancelRequest = findViewById(R.id.btnCancelRequest);
         btnCancelRequest.setOnClickListener(v -> handleCancelClick());
@@ -101,7 +100,6 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
     }
 
     private void loadRequestDetails(String requestId, String userRole) {
-        // ... (This method remains the same)
         progressBar.setVisibility(View.VISIBLE);
         detailController.getHelpRequestById(requestId, userRole, new HelpRequestController.SingleRequestLoadCallback() {
             @Override
@@ -124,7 +122,6 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
     }
 
     private void populateUI(HelpRequest request) {
-        // --- Populate standard details ---
         tvRequestType.setText(request.getCategory());
         tvStatus.setText(request.getStatus());
         tvDescription.setText(request.getDescription());
@@ -144,52 +141,54 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
             tvPostedDate.setText("Date not available");
         }
 
-        // --- Hide all action buttons and sensitive info by default ---
         btnCancelRequest.setVisibility(View.GONE);
         btnCompleteRequest.setVisibility(View.GONE);
         btnAcceptRequest.setVisibility(View.GONE);
         layoutPinContactInfo.setVisibility(View.GONE);
         topAppBar.getMenu().findItem(R.id.action_edit_request).setVisible(false);
 
-        // --- Role-based UI Logic ---
         boolean isPinUser = "PIN".equals(userRole);
         boolean isCsrUser = "CSR".equals(userRole);
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         String currentUserId = (currentUser != null) ? currentUser.getUid() : "";
 
+        // --- START: MODIFIED LOGIC ---
         if (isPinUser) {
-            // Logic for PIN user
+            // Logic for the Person-in-Need (PIN)
             if ("Open".equals(request.getStatus())) {
+                btnCancelRequest.setText("Cancel This Request"); // Set text for permanent cancel
                 btnCancelRequest.setVisibility(View.VISIBLE);
                 topAppBar.getMenu().findItem(R.id.action_edit_request).setVisible(true);
+            } else if ("In-progress".equals(request.getStatus())) {
+                // *** THIS IS THE NEW FEATURE ***
+                // Show a button allowing the PIN to release the CSR.
+                btnCancelRequest.setText("Release Assigned CSR"); // Change button text
+                btnCancelRequest.setVisibility(View.VISIBLE); // Show the button
             }
-            // A PIN could also see their own info if needed, but we'll leave that for now.
+
         } else if (isCsrUser) {
-            // Logic for CSR user
+            // Logic for the Customer Service Representative (CSR)
             if ("Open".equals(request.getStatus())) {
                 btnAcceptRequest.setVisibility(View.VISIBLE);
             } else if ("In-progress".equals(request.getStatus())) {
-                // Check if the current CSR is the one who accepted the request
                 if (currentUserId.equals(request.getAcceptedByCsrId())) {
-                    // --- THIS IS THE FIX ---
-                    // Show action buttons AND the PIN's contact details
                     btnCompleteRequest.setVisibility(View.VISIBLE);
+                    btnCancelRequest.setText("Cancel This Request"); // For CSR, it means they are cancelling
                     btnCancelRequest.setVisibility(View.VISIBLE);
-                    layoutPinContactInfo.setVisibility(View.VISIBLE);
 
-                    // Populate the sensitive info fields
+                    // Also show PIN contact details to the assigned CSR
+                    layoutPinContactInfo.setVisibility(View.VISIBLE);
                     tvDetailPinName.setText(request.getPinName());
                     tvDetailPinPhone.setText(request.getPinPhoneNumber());
                     if (request.getPinShortId() != null) {
                         tvDetailPinId.setText("PIN ID: " + request.getPinShortId());
                     }
-                    // --- END OF FIX ---
                 }
             }
         }
+        // --- END: MODIFIED LOGIC ---
     }
 
-    // ... (all other methods from handleEditClick() to performAcceptRequest() remain the same)
     private void handleEditClick() {
         if (currentRequest == null) { return; }
         if ("Open".equals(currentRequest.getStatus())) {
@@ -201,13 +200,65 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
         }
     }
 
+    // --- START: MODIFIED CLICK HANDLER ---
     private void handleCancelClick() {
         if ("PIN".equals(userRole)) {
-            showPinCancelConfirmationDialog();
+            // If the request is 'In-progress', the PIN is releasing the CSR.
+            // If it's 'Open', they are permanently cancelling their own request.
+            if ("In-progress".equals(currentRequest.getStatus())) {
+                showPinReleaseConfirmationDialog(); // A new confirmation dialog
+            } else {
+                showPinCancelConfirmationDialog(); // The original permanent cancel
+            }
         } else if ("CSR".equals(userRole)) {
+            // If the user is a CSR, they are releasing it back to the pool.
             showCsrReleaseConfirmationDialog();
         }
     }
+    // --- END: MODIFIED CLICK HANDLER ---
+
+    // --- START: ADD THESE TWO NEW METHODS ---
+
+    /**
+     * Shows a confirmation dialog to the PIN user before they release an assigned CSR.
+     */
+    private void showPinReleaseConfirmationDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle("Release Assigned CSR")
+                .setMessage("Are you sure you want to release the current representative? This will make your request available for other representatives to accept.")
+                .setPositiveButton("Yes, Release", (dialog, which) -> performPinReleaseRequest())
+                .setNegativeButton("No", null)
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .show();
+    }
+
+    /**
+     * Calls the new controller method for a PIN to release a CSR from a request.
+     */
+    private void performPinReleaseRequest() {
+        progressBar.setVisibility(View.VISIBLE);
+        detailController.releaseRequestByPin(currentRequestId, new HelpRequestController.UpdateCallback() {
+            @Override
+            public void onUpdateSuccess() {
+                runOnUiThread(() -> {
+                    progressBar.setVisibility(View.GONE);
+                    Toast.makeText(HelpRequestDetailActivity.this, "CSR Released. Your request is now active again.", Toast.LENGTH_LONG).show();
+                    // Close the detail screen and go back to the list.
+                    // The onResume() of the previous activity will show the updated list.
+                    finish();
+                });
+            }
+
+            @Override
+            public void onUpdateFailure(String errorMessage) {
+                runOnUiThread(() -> {
+                    progressBar.setVisibility(View.GONE);
+                    Toast.makeText(HelpRequestDetailActivity.this, "Error: " + errorMessage, Toast.LENGTH_LONG).show();
+                });
+            }
+        });
+    }
+    // --- END: ADD THESE TWO NEW METHODS ---
 
     private void showPinCancelConfirmationDialog() {
         new AlertDialog.Builder(this)
@@ -371,5 +422,4 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
             }
         });
     }
-
 }

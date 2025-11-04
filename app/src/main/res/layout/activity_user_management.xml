@@ -1,4 +1,4 @@
-<!-- File: app/src/main/res/layout/activity_user_management.xml -->
+<?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -9,15 +9,12 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <!-- In app/src/main/res/layout/activity_user_management.xml -->
-
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             app:navigationIcon="@drawable/ic_arrow_back"
-            app:title="User Management" /> <!-- This is a default title, we will override it -->
-
+            app:title="User Management" />
 
         <androidx.appcompat.widget.SearchView
             android:id="@+id/searchView"
@@ -27,21 +24,12 @@
             app:iconifiedByDefault="false" />
 
     </com.google.android.material.appbar.AppBarLayout>
-    
-    <Button
-        android:id="@+id/btnMigrateUsers"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/appBarLayout"
-        android:layout_centerHorizontal="true"
-        android:text="Migrate Users" />
 
-    <!-- This ChipGroup is REQUIRED for the design you want -->
     <com.google.android.material.chip.ChipGroup
         android:id="@+id/chipGroupRoleFilter"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@id/btnMigrateUsers"
+        android:layout_below="@id/appBarLayout"
         android:paddingHorizontal="16dp"
         app:singleSelection="true">
 
@@ -58,15 +46,16 @@
             style="@style/Widget.MaterialComponents.Chip.Filter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="User Admin"/> <!-- Use the full role name from your system -->
+            android:text="User Admin"/>
 
         <com.google.android.material.chip.Chip
             android:id="@+id/chipPIN"
             style="@style/Widget.MaterialComponents.Chip.Filter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="PIN"/> <!-- Use the full role name from your system -->
+            android:text="PIN"/>
 
+        <!-- This Chip had the missing attribute. The comment has been removed to fix the syntax. -->
         <com.google.android.material.chip.Chip
             android:id="@+id/chipCSR"
             style="@style/Widget.MaterialComponents.Chip.Filter"

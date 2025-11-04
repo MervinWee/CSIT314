@@ -1,10 +1,7 @@
 package com.example.csit314sdm;
 
-import com.google.android.gms.tasks.Task;
-import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
@@ -52,7 +49,6 @@ public class HelpRequestController {
         auth = FirebaseAuth.getInstance();
     }
 
-    // --- START: THIS IS THE CORRECTED AND FINAL VERSION OF THE METHOD ---
     public void getHelpRequestById(String requestId, String userRole, final SingleRequestLoadCallback callback) {
         if (requestId == null || requestId.isEmpty()) {
             if (callback != null) callback.onDataLoadFailed("Invalid Request ID provided.");
@@ -117,8 +113,6 @@ public class HelpRequestController {
                     if (callback != null) callback.onDataLoadFailed(e.getMessage());
                 });
     }
-    // --- END: REPLACEMENT OF getHelpRequestById ---
-
 
     public void cancelRequest(String requestId, final DeleteCallback callback) {
         if (requestId == null || requestId.isEmpty()) {
@@ -174,7 +168,7 @@ public class HelpRequestController {
     }
 
     public void getActiveHelpRequests(final HelpRequestsLoadCallback callback) {
-        db.collection("help_requests").whereEqualTo("status", "Open")
+        db.collection("help_requests").whereIn("status", Arrays.asList("Open"))
                 .orderBy("creationTimestamp", Query.Direction.DESCENDING).get()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
@@ -293,35 +287,51 @@ public class HelpRequestController {
         }
         String currentCsrId = currentUser.getUid();
 
-        db.collection("help_requests").whereArrayContains("savedByCsrId", currentCsrId).get()
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        List<HelpRequest> requests = new ArrayList<>();
-                        for (QueryDocumentSnapshot document : task.getResult()) {
-                            HelpRequest request = document.toObject(HelpRequest.class);
-                            if (Arrays.asList("Open", "In-progress").contains(request.getStatus())) {
-                                request.setId(document.getId());
-                                requests.add(request);
-                            }
-                        }
+        // --- START: THIS IS THE NEW, EFFICIENT LOGIC ---
 
-                        List<HelpRequest> filteredRequests = requests.stream().filter(r -> {
-                            boolean matches = true;
-                            if (location != null && !location.isEmpty() && !location.equals("All")) matches = r.getLocation().equals(location);
-                            if (matches && category != null && !category.isEmpty() && !category.equals("All")) matches = r.getCategory().equals(category);
-                            if (matches && keyword != null && !keyword.isEmpty()) matches = r.getTitle().toLowerCase().contains(keyword.toLowerCase());
-                            return matches;
-                        }).collect(Collectors.toList());
+        // 1. Start with the base query: requests saved by the current CSR.
+        Query query = db.collection("help_requests").whereArrayContains("savedByCsrId", currentCsrId);
 
-                        Collections.sort(filteredRequests, (r1, r2) -> r2.getCreationTimestamp().compareTo(r1.getCreationTimestamp()));
+        // 2. Dynamically add more filters ONLY if they are provided and not "All".
+        if (category != null && !category.isEmpty() && !category.equalsIgnoreCase("All")) {
+            query = query.whereEqualTo("category", category);
+        }
+        if (location != null && !location.isEmpty() && !location.equalsIgnoreCase("All")) {
+            query = query.whereEqualTo("region", location); // ** We will use a new "region" field
+        }
 
-                        if (callback != null) callback.onRequestsLoaded(filteredRequests);
-                    } else {
-                        if (callback != null) callback.onDataLoadFailed("Query failed. Error: " + task.getException().getMessage());
-                    }
-                });
+        // 3. Execute the query
+        query.get().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                List<HelpRequest> requests = new ArrayList<>();
+                for (QueryDocumentSnapshot document : task.getResult()) {
+                    HelpRequest request = document.toObject(HelpRequest.class);
+                    request.setId(document.getId());
+                    requests.add(request);
+                }
+
+                // 4. Perform the keyword search on the client-side (as full-text search is complex)
+                // This is a good compromise: we filter by structured data on the server, and by unstructured text on the client.
+                if (keyword != null && !keyword.isEmpty()) {
+                    List<HelpRequest> filteredByKeyword = requests.stream()
+                            .filter(r -> r.getTitle().toLowerCase().contains(keyword.toLowerCase()) || r.getDescription().toLowerCase().contains(keyword.toLowerCase()))
+                            .collect(Collectors.toList());
+                    // Sort the final list by date
+                    Collections.sort(filteredByKeyword, (r1, r2) -> r2.getCreationTimestamp().compareTo(r1.getCreationTimestamp()));
+                    if (callback != null) callback.onRequestsLoaded(filteredByKeyword);
+                } else {
+                    // If no keyword, just return the results from the server query
+                    Collections.sort(requests, (r1, r2) -> r2.getCreationTimestamp().compareTo(r1.getCreationTimestamp()));
+                    if (callback != null) callback.onRequestsLoaded(requests);
+                }
+            } else {
+                if (callback != null) callback.onDataLoadFailed("Query failed. Error: " + task.getException().getMessage());
+            }
+        });
     }
 
+    // --- START: THIS IS THE FIX ---
+    // The method signature is updated to accept the csrId as the third argument.
     public void acceptRequest(String requestId, String companyId, String csrId, final UpdateCallback callback) {
         if (csrId == null || csrId.isEmpty()) {
             if (callback != null) callback.onUpdateFailure("Cannot accept request: User ID is invalid.");
@@ -330,9 +340,9 @@ public class HelpRequestController {
 
         Map<String, Object> updates = new HashMap<>();
         updates.put("status", "In-progress");
-        updates.put("acceptedByCsrId", csrId);
+        updates.put("acceptedByCsrId", csrId); // Use the passed-in csrId
         updates.put("companyId", companyId);
-        updates.put("savedByCsrId", FieldValue.arrayUnion(csrId));
+        updates.put("savedByCsrId", FieldValue.arrayUnion(csrId)); // Automatically shortlist
 
         db.collection("help_requests").document(requestId)
                 .update(updates)
@@ -343,6 +353,8 @@ public class HelpRequestController {
                     if (callback != null) callback.onUpdateFailure(e.getMessage());
                 });
     }
+    // --- END: THIS IS THE FIX ---
+
 
     public void releaseRequestByCsr(String requestId, final UpdateCallback callback) {
         Map<String, Object> updates = new HashMap<>();
@@ -357,6 +369,58 @@ public class HelpRequestController {
                 .addOnFailureListener(e -> {
                     if (callback != null) callback.onUpdateFailure(e.getMessage());
                 });
+    }
+    public void releaseRequestByPin(String requestId, final UpdateCallback callback) {
+        db.collection("help_requests").document(requestId).get().addOnSuccessListener(documentSnapshot -> {
+            if (!documentSnapshot.exists()) {
+                if (callback != null) callback.onUpdateFailure("Request not found.");
+                return;
+            }
+
+            HelpRequest request = documentSnapshot.toObject(HelpRequest.class);
+            if (request == null) {
+                if (callback != null) callback.onUpdateFailure("Failed to read request data.");
+                return;
+            }
+
+            String currentUrgency = request.getUrgencyLevel();
+            String newUrgency = currentUrgency;
+
+            // Elevate the urgency level
+            switch (currentUrgency.toLowerCase()) {
+                case "low":
+                    newUrgency = "Medium";
+                    break;
+                case "medium":
+                    newUrgency = "High";
+                    break;
+                case "high":
+                    // If it's already high, it can stay high or become critical
+                    newUrgency = "Critical";
+                    break;
+            }
+
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("status", "Open"); // Set status back to Open
+            updates.put("urgencyLevel", newUrgency); // Set the new, higher urgency
+
+            // Remove the assigned CSR and their company
+            updates.put("acceptedByCsrId", FieldValue.delete());
+            updates.put("companyId", FieldValue.delete());
+
+            // Note: We intentionally do NOT remove the CSR from the `savedByCsrId` list.
+            // This is a business decision. You could if you wanted to.
+
+            db.collection("help_requests").document(requestId).update(updates)
+                    .addOnSuccessListener(aVoid -> {
+                        if (callback != null) callback.onUpdateSuccess();
+                    })
+                    .addOnFailureListener(e -> {
+                        if (callback != null) callback.onUpdateFailure(e.getMessage());
+                    });
+        }).addOnFailureListener(e -> {
+            if (callback != null) callback.onUpdateFailure(e.getMessage());
+        });
     }
 
     public void updateRequestStatus(String requestId, String newStatus, final UpdateCallback callback) {

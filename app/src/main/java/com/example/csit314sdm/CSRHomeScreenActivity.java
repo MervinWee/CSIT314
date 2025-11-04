@@ -1,5 +1,16 @@
 package com.example.csit314sdm;
 
+// --- START: NEW IMPORTS ---
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.os.Build;
+import android.util.Log;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.core.content.ContextCompat;
+import com.google.firebase.messaging.FirebaseMessaging;
+// --- END: NEW IMPORTS ---
+
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.MenuItem;
@@ -18,7 +29,6 @@ import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.textfield.TextInputEditText;
@@ -51,6 +61,17 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
     private String currentCsrId;
     private boolean isShowingSaved = false;
 
+    // --- START: PERMISSION LAUNCHER FOR NOTIFICATIONS ---
+    private final ActivityResultLauncher<String> requestPermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
+                if (isGranted) {
+                    Toast.makeText(this, "Notifications permission granted", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(this, "Notifications permission was denied. You will not receive reminders.", Toast.LENGTH_LONG).show();
+                }
+            });
+    // --- END: PERMISSION LAUNCHER ---
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -72,27 +93,33 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
         setupNavigationDrawer();
         setupListeners();
         loadUserDetails();
+        askNotificationPermission(); // Ask for permission on startup
     }
 
-    // --- START: THIS IS THE FIX ---
-    /**
-     * The onResume() method is called every time the activity comes back into the foreground.
-     * This is the perfect place to refresh our data after returning from another screen.
-     */
     @Override
     protected void onResume() {
         super.onResume();
-        // Refresh the list that was being displayed before the user navigated away.
-        // The `isShowingSaved` flag helps us remember which list to reload.
         if (isShowingSaved) {
             loadSavedRequests();
         } else {
-            // Default to loading active requests if we weren't on the saved list.
-            // You can change this to whatever default you prefer.
             loadActiveRequests();
         }
     }
-    // --- END: THIS IS THE FIX ---
+
+    // --- START: NEW METHOD TO ASK FOR PERMISSION ---
+    private void askNotificationPermission() {
+        // This is only required for API level 33+ (Android 13 and higher)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
+                    PackageManager.PERMISSION_GRANTED) {
+                // FCM SDK (and your app) can post notifications.
+            } else {
+                // Directly ask for the permission
+                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
+            }
+        }
+    }
+    // --- END: NEW METHOD ---
 
     private void initializeUI() {
         drawerLayout = findViewById(R.id.drawer_layout);
@@ -258,6 +285,13 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
     }
 
     private void handleLogout() {
+        // --- START: UNSUBSCRIBE FROM TOPIC ON LOGOUT ---
+        // It's good practice to unsubscribe when the user logs out.
+        if (currentCsrId != null && !currentCsrId.isEmpty()) {
+            FirebaseMessaging.getInstance().unsubscribeFromTopic(currentCsrId);
+        }
+        // --- END: UNSUBSCRIBE ---
+
         FirebaseAuth.getInstance().signOut();
         Intent intent = new Intent(CSRHomeScreenActivity.this, loginPage.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -271,8 +305,22 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
             public void onUserLoaded(User user) {
                 runOnUiThread(() -> {
                     setWelcomeMessage(user);
+
+                    // --- START: SUBSCRIBE TO TOPIC ---
+                    // Subscribe this device to a topic named after the user's ID.
+                    FirebaseMessaging.getInstance().subscribeToTopic(currentCsrId)
+                            .addOnCompleteListener(task -> {
+                                String msg = "Subscribed to topic: " + currentCsrId;
+                                if (!task.isSuccessful()) {
+                                    msg = "Subscription to topic failed: " + currentCsrId;
+                                }
+                                Log.d("FCM_TOPIC", msg);
+                                // You can optionally show a Toast, but logging is usually enough.
+                                // Toast.makeText(CSRHomeScreenActivity.this, msg, Toast.LENGTH_SHORT).show();
+                            });
+                    // --- END: SUBSCRIBE TO TOPIC ---
+
                     populateFilterSpinners();
-                    // Set the default view to "Shortlisted" when the app first opens
                     tvListTitle.setText("Shortlisted Requests");
                     isShowingSaved = true;
                     loadSavedRequests();
@@ -284,7 +332,6 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
                 runOnUiThread(() -> {
                     Toast.makeText(CSRHomeScreenActivity.this, "Could not load user profile.", Toast.LENGTH_SHORT).show();
                     populateFilterSpinners();
-                    // Also set a default view on failure
                     tvListTitle.setText("Shortlisted Requests");
                     isShowingSaved = true;
                     loadSavedRequests();
@@ -432,6 +479,7 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
             });
         }
     }
+
 
     @Override
     public void onBackPressed() {

@@ -21,13 +21,14 @@ import java.util.Locale;
 
 public class CreateRequestActivity extends AppCompatActivity {
 
-    // --- UI Components (with modifications) ---
-    private AutoCompleteTextView actvRequestType; // Changed from TextInputEditText
-    private TextInputEditText etDescription, etLocation, etPreferredTime, etPhoneNumber, etNotes;
+    // --- UI Components ---
+    private AutoCompleteTextView actvRequestType;
+    private TextInputEditText etDescription, etLocation, etPreferredTime, etNotes;
     private AutoCompleteTextView actvUrgency;
+    private AutoCompleteTextView spinnerRegion;
     private MaterialToolbar topAppBar;
 
-    private PlatformDataAccount platformDataAccount; // Controller to get categories
+    private PlatformDataAccount platformDataAccount;
     private final Calendar preferredDateTime = Calendar.getInstance();
 
     @Override
@@ -35,23 +36,23 @@ public class CreateRequestActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_create_request);
 
-        // Initialize controller
         platformDataAccount = new PlatformDataAccount();
-
-        // Find all UI components and set up listeners
         initializeUI();
     }
 
     private void initializeUI() {
-        // --- Find all UI Components ---
         topAppBar = findViewById(R.id.topAppBar);
-        actvRequestType = findViewById(R.id.actvRequestType); // Find the new dropdown
+        actvRequestType = findViewById(R.id.actvRequestType);
         etDescription = findViewById(R.id.etDescription);
         etLocation = findViewById(R.id.etLocation);
         etPreferredTime = findViewById(R.id.etPreferredTime);
-        etPhoneNumber = findViewById(R.id.etPhoneNumber);
-        etNotes = findViewById(R.id.etNotes);
+
+        // --- START: THIS IS THE NEW FIX ---
+        etNotes = findViewById(R.id.etNotes); // This line was also missing
+        // --- END: THIS IS THE NEW FIX ---
+
         actvUrgency = findViewById(R.id.actvUrgency);
+        spinnerRegion = findViewById(R.id.spinnerRegion);
         Button btnSubmitRequest = findViewById(R.id.btnSubmitRequest);
 
         // --- Setup the Urgency Dropdown ---
@@ -59,7 +60,12 @@ public class CreateRequestActivity extends AppCompatActivity {
         ArrayAdapter<String> urgencyAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, urgencyLevels);
         actvUrgency.setAdapter(urgencyAdapter);
 
-        // --- NEW: Load categories for the Request Type dropdown ---
+        // --- Setup the Region Dropdown ---
+        String[] regions = {"Anywhere", "North", "South", "East", "West", "Central"};
+        ArrayAdapter<String> regionAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, regions);
+        spinnerRegion.setAdapter(regionAdapter);
+
+        // --- Load categories ---
         loadCategories();
 
         // --- Set up Click Listeners ---
@@ -68,9 +74,6 @@ public class CreateRequestActivity extends AppCompatActivity {
         etPreferredTime.setOnClickListener(v -> showDateTimePicker());
     }
 
-    /**
-     * NEW: Fetches categories from Firestore and populates the Request Type dropdown.
-     */
     private void loadCategories() {
         platformDataAccount.listenForCategoryChanges(new PlatformDataAccount.CategoryListCallback() {
             @Override
@@ -95,35 +98,35 @@ public class CreateRequestActivity extends AppCompatActivity {
     }
 
     private void submitHelpRequest() {
-        // --- Get User Input (with modifications) ---
-        String requestType = actvRequestType.getText().toString().trim(); // Get text from the dropdown
+        // --- Get User Input ---
+        String requestType = actvRequestType.getText().toString().trim();
         String description = etDescription.getText().toString().trim();
         String location = etLocation.getText().toString().trim();
+        String selectedRegion = spinnerRegion.getText().toString().trim();
         String preferredTime = etPreferredTime.getText().toString().trim();
-        String phoneNumber = etPhoneNumber.getText().toString().trim();
-        String notes = etNotes.getText().toString().trim();
+        String notes = etNotes.getText().toString().trim(); // This line was crashing
         String urgencyLevel = actvUrgency.getText().toString().trim();
 
-        // Validate that a request type and urgency level were selected
-        if (requestType.isEmpty()) {
-            Toast.makeText(this, "Please select a request type.", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        if (urgencyLevel.isEmpty()) {
-            Toast.makeText(this, "Please select an urgency level.", Toast.LENGTH_SHORT).show();
+        // --- Validation ---
+        if (requestType.isEmpty() || urgencyLevel.isEmpty() || selectedRegion.isEmpty() || description.isEmpty() || location.isEmpty() || preferredTime.isEmpty()) {
+            Toast.makeText(this, "Please fill in all required fields.", Toast.LENGTH_SHORT).show();
             return;
         }
 
         String pinId = FirebaseAuth.getInstance().getCurrentUser().getUid();
 
         // --- Instantiate Controller and Pass Data ---
+        // ... inside submitHelpRequest()
         CreateRequestController createController = new CreateRequestController();
+// Pass an empty string for phoneNumber since it's no longer used
+        String phoneNumber = "";
         Task<DocumentReference> creationTask = createController.createNewRequest(
-                requestType, description, location, preferredTime, phoneNumber, notes, urgencyLevel, pinId);
+                requestType, description, location, selectedRegion, preferredTime, notes, urgencyLevel, pinId);
 
-        // --- Handle the Result ---
+
         if (creationTask == null) {
-            Toast.makeText(this, "Please fill in all required fields.", Toast.LENGTH_SHORT).show();
+            // This case might be redundant now with the validation above, but it's safe to keep.
+            Toast.makeText(this, "Failed to create request task.", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -153,9 +156,6 @@ public class CreateRequestActivity extends AppCompatActivity {
         }, currentDate.get(Calendar.YEAR), currentDate.get(Calendar.MONTH), currentDate.get(Calendar.DAY_OF_MONTH)).show();
     }
 
-    /**
-     * NEW: Detaches the Firestore listener when the activity is stopped to prevent memory leaks.
-     */
     @Override
     protected void onStop() {
         super.onStop();

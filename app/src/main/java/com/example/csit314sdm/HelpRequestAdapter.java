@@ -30,6 +30,7 @@ public class HelpRequestAdapter extends RecyclerView.Adapter<HelpRequestAdapter.
         void onItemClick(HelpRequest request);
     }
 
+    // FIX: The interface now correctly uses the controller's UpdateCallback
     public interface OnSaveClickListener {
         void onSaveClick(HelpRequest request, boolean isSaved);
     }
@@ -87,7 +88,6 @@ public class HelpRequestAdapter extends RecyclerView.Adapter<HelpRequestAdapter.
             tvCategory.setText(request.getCategory());
             tvOrg.setText(request.getOrganization());
 
-            // --- FIX: This now correctly shows the PIN Name and PIN Short ID ---
             if (request.getPinName() != null) {
                 tvPinName.setText("PIN Name: " + request.getPinName());
                 tvPinName.setVisibility(View.VISIBLE);
@@ -101,7 +101,6 @@ public class HelpRequestAdapter extends RecyclerView.Adapter<HelpRequestAdapter.
             } else {
                 tvPinId.setVisibility(View.GONE);
             }
-            // --- END: CORRECTION COMPLETE ---
 
             if (request.getCreationTimestamp() != null) {
                 long now = System.currentTimeMillis();

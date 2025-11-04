@@ -9,6 +9,8 @@ public class User {
     // --- FIELD DECLARATIONS -- -
     private String id; // This will store the unique document ID from Firestore.
     private String email;
+
+    private String uid;
     private String fullName;
     private String phoneNumber;
     private String dob; // Stands for Date of Birth
@@ -34,6 +36,13 @@ public class User {
 
     public void setId(String id) { this.id = id; }
 
+    public String getUid() {
+        return uid;
+    }
+
+    public void setUid(String uid) {
+        this.uid = uid;
+    }
 
     // --- Other Getters and Setters ---
 

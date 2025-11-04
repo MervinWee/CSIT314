@@ -34,6 +34,8 @@ dependencies {
     // Firebase BOM must be the first dependency declared
     implementation platform('com.google.firebase:firebase-bom:33.1.1')
 
+    implementation("com.google.firebase:firebase-messaging")
+
     // Standard AndroidX Libraries
     implementation 'androidx.appcompat:appcompat:1.6.1'
 
