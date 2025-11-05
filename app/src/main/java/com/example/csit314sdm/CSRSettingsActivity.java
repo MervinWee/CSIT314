@@ -23,11 +23,11 @@ public class CSRSettingsActivity extends AppCompatActivity {
         SwitchMaterial switchDarkMode = findViewById(R.id.switch_dark_mode);
         Button btnLogout = findViewById(R.id.btn_logout);
 
-        // Handle back button click
+
         btnBack.setOnClickListener(v -> onBackPressed());
 
         switchNotifications.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            // Handle notifications preference change
+
             Toast.makeText(this, "Notifications toggled", Toast.LENGTH_SHORT).show();
         });
 
@@ -40,7 +40,7 @@ public class CSRSettingsActivity extends AppCompatActivity {
         });
 
         btnLogout.setOnClickListener(v -> {
-            // Handle logout
+
             Intent intent = new Intent(CSRSettingsActivity.this, loginPage.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);

@@ -27,20 +27,20 @@ public class SearchUserActivity extends AppCompatActivity {
     private TextView tvNoResults;
     private ImageButton btnBack;
 
-    private String selectedRole = "All"; // Default filter
+    private String selectedRole = "All";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_search_user);
 
-        // Assuming SearchUserController uses LiveData, which is a good pattern
+
         searchController = new SearchUserController();
 
         initializeUI();
         setupObservers();
 
-        // Perform an initial search to show all users
+
         performSearch();
     }
 
@@ -53,7 +53,7 @@ public class SearchUserActivity extends AppCompatActivity {
 
         UserAdapter.OnItemClickListener clickListener = user -> {
             Intent intent = new Intent(SearchUserActivity.this, UserDetailActivity.class);
-            // *** FIX: Changed user.getUid() to user.getId() ***
+
             intent.putExtra("USER_ID", user.getId());
             startActivity(intent);
         };
@@ -82,10 +82,10 @@ public class SearchUserActivity extends AppCompatActivity {
         chipGroupRoleFilter.setOnCheckedStateChangeListener((group, checkedIds) -> {
             if (checkedIds.isEmpty()) {
                 selectedRole = "All";
-                // Ensure the "All" chip is checked if nothing is, to provide clear user feedback
+
                 group.check(R.id.chipAll);
             } else {
-                int selectedChipId = checkedIds.get(0); // get(0) is safe because isEmpty() is false
+                int selectedChipId = checkedIds.get(0);
                 if (selectedChipId == R.id.chipAll) {
                     selectedRole = "All";
                 } else if (selectedChipId == R.id.chipAdmin) {
@@ -101,14 +101,14 @@ public class SearchUserActivity extends AppCompatActivity {
     }
 
     private void setupObservers() {
-        // This assumes your SearchUserController uses LiveData to communicate with the UI
+
         searchController.getUsersLiveData().observe(this, users -> {
             if (users != null && !users.isEmpty()) {
                 userAdapter.setUsers(users);
                 recyclerViewUsers.setVisibility(View.VISIBLE);
                 tvNoResults.setVisibility(View.GONE);
             } else {
-                // If the list is null or empty, clear the adapter and show "No results"
+
                 userAdapter.setUsers(new ArrayList<>());
                 recyclerViewUsers.setVisibility(View.GONE);
                 tvNoResults.setVisibility(View.VISIBLE);

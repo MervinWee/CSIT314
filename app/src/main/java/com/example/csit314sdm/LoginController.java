@@ -57,31 +57,27 @@ public class LoginController {
                 });
     }
 
-    /**
-     * Fetches the user's document from Firestore to get their role.
-     * (Formerly fetchUserType)
-     */
+
     private void fetchUserRole(String uid, final LoginCallback callback) {
         db.collection("users").document(uid).get()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
                         DocumentSnapshot document = task.getResult();
                         if (document.exists()) {
-                            // Use the User Entity to deserialize the document.
+
                             User user = document.toObject(User.class);
 
-                            // --- THIS IS THE KEY CHANGE ---
-                            // Instead of user.getUserType(), we now use user.getRole().
+
                             if (user != null && user.getRole() != null) {
                                 callback.onLoginSuccess(user.getRole());
                             } else {
                                 callback.onLoginFailure("User data is incomplete (role not found). Please contact support.");
-                                mAuth.signOut(); // Sign out user with corrupt data
+                                mAuth.signOut();
                             }
-                            // -----------------------------
+
 
                         } else {
-                            // This is a critical error: user exists in Auth but not in Firestore.
+
                             callback.onLoginFailure("User data not found. Please re-register or contact support.");
                             mAuth.signOut(); // Sign out for security
                         }

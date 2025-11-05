@@ -10,8 +10,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.util.ArrayList;
 import java.util.List;
 
-// --- FIX: Removed the "implements Filterable" and all related filtering logic ---
-// The adapter is now a "dumb" adapter. Its only job is to display the list it is given.
+
 public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder> {
 
     private List<User> userList = new ArrayList<>();
@@ -25,10 +24,10 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         this.listener = listener;
     }
 
-    // This method now simply accepts a list and displays it.
+
     public void setUsers(List<User> users) {
         this.userList = new ArrayList<>(users);
-        notifyDataSetChanged(); // Refresh the view with the new list.
+        notifyDataSetChanged();
     }
 
     @NonNull

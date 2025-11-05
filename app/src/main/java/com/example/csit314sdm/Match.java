@@ -2,7 +2,7 @@ package com.example.csit314sdm;
 
 import java.util.Date;
 
-// ENTITY: Represents a match between a CSR and a PIN.
+
 public class Match {
     private String pinId;
     private String pinName;

@@ -17,8 +17,7 @@ public class Category {
         this.description = description;
     }
 
-    // Use @Exclude so Firestore doesn't try to save this field back to the document.
-    // The ID is the document's key, not a field within it.
+
     @Exclude
     public String getId() {
         return id;

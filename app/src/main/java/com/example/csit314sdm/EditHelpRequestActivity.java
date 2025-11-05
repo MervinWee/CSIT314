@@ -19,16 +19,16 @@ import java.util.Map;
 
 public class EditHelpRequestActivity extends AppCompatActivity {
 
-    // --- START: MODIFIED VARIABLE DECLARATIONS ---
-    private AutoCompleteTextView actvRequestType; // Changed from TextInputEditText
+
+    private AutoCompleteTextView actvRequestType;
     private TextInputEditText etDescription, etPreferredTime, etEditLocation;
     private AutoCompleteTextView actvEditUrgency;
     private Button btnUpdateHelpRequest;
 
     private FirebaseFirestore db;
-    private PlatformDataAccount platformDataAccount; // Added controller for categories
+    private PlatformDataAccount platformDataAccount;
     private String currentRequestId;
-    // --- END: MODIFIED VARIABLE DECLARATIONS ---
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,7 +43,7 @@ public class EditHelpRequestActivity extends AppCompatActivity {
         }
 
         db = FirebaseFirestore.getInstance();
-        platformDataAccount = new PlatformDataAccount(); // Initialize the controller
+        platformDataAccount = new PlatformDataAccount();
         initializeUI();
         loadExistingData();
     }
@@ -52,10 +52,9 @@ public class EditHelpRequestActivity extends AppCompatActivity {
         MaterialToolbar topAppBar = findViewById(R.id.topAppBar_edit_request);
         topAppBar.setNavigationOnClickListener(v -> finish());
 
-        // --- START: MODIFIED INITIALIZATION ---
-        // Use the new ID and type from your updated XML
+
         actvRequestType = findViewById(R.id.actvEditRequestType);
-        // --- END: MODIFIED INITIALIZATION ---
+
 
         etDescription = findViewById(R.id.etEditDescription);
         etPreferredTime = findViewById(R.id.etEditPreferredTime);
@@ -63,12 +62,12 @@ public class EditHelpRequestActivity extends AppCompatActivity {
         actvEditUrgency = findViewById(R.id.actvEditUrgency);
         btnUpdateHelpRequest = findViewById(R.id.btnUpdateHelpRequest);
 
-        // --- Setup the Urgency Dropdown ---
+
         String[] urgencyLevels = getResources().getStringArray(R.array.urgency_levels);
         ArrayAdapter<String> urgencyAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, urgencyLevels);
         actvEditUrgency.setAdapter(urgencyAdapter);
 
-        // --- NEW: Load categories for the Request Type dropdown ---
+
         loadCategories();
 
         btnUpdateHelpRequest.setOnClickListener(v -> updateHelpRequest());
@@ -105,10 +104,9 @@ public class EditHelpRequestActivity extends AppCompatActivity {
                     if (documentSnapshot.exists()) {
                         HelpRequest request = documentSnapshot.toObject(HelpRequest.class);
                         if (request != null) {
-                            // --- START: MODIFIED DATA LOADING ---
-                            // Set dropdown text. setFilter to false is crucial.
+
                             actvRequestType.setText(request.getCategory(), false);
-                            // --- END: MODIFIED DATA LOADING ---
+
                             etDescription.setText(request.getDescription());
                             etPreferredTime.setText(request.getPreferredTime());
                             etEditLocation.setText(request.getLocation());
@@ -122,9 +120,9 @@ public class EditHelpRequestActivity extends AppCompatActivity {
     }
 
     private void updateHelpRequest() {
-        // --- START: MODIFIED VALUE RETRIEVAL ---
+
         String requestType = actvRequestType.getText().toString().trim();
-        // --- END: MODIFIED VALUE RETRIEVAL ---
+
 
         String description = etDescription.getText().toString().trim();
         String preferredTime = etPreferredTime.getText().toString().trim();
@@ -138,7 +136,7 @@ public class EditHelpRequestActivity extends AppCompatActivity {
 
         Map<String, Object> updates = new HashMap<>();
         updates.put("category", requestType);
-        updates.put("title", requestType); // It's common to have title and category be the same
+        updates.put("title", requestType);
         updates.put("description", description);
         updates.put("preferredTime", preferredTime);
         updates.put("location", location);
@@ -153,10 +151,7 @@ public class EditHelpRequestActivity extends AppCompatActivity {
                 .addOnFailureListener(e -> Toast.makeText(this, "Update failed. Please try again.", Toast.LENGTH_SHORT).show());
     }
 
-    // --- NEW METHOD ---
-    /**
-     * Detaches the Firestore listener when the activity is stopped to prevent memory leaks.
-     */
+
     @Override
     protected void onStop() {
         super.onStop();

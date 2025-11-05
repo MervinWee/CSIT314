@@ -28,7 +28,7 @@ public class CreateUserProfileActivity extends AppCompatActivity {
     private ImageButton btnBack;
     private ProgressBar progressBar;
 
-    private List<User> userList = new ArrayList<>(); // Initialize the list to prevent null errors
+    private List<User> userList = new ArrayList<>();
     private User selectedUser;
 
     private static final String TAG = "CreateUserProfile";
@@ -57,8 +57,7 @@ public class CreateUserProfileActivity extends AppCompatActivity {
         btnSaveProfile.setOnClickListener(v -> handleSaveProfile());
         etDateOfBirth.setOnClickListener(v -> showDatePickerDialog());
 
-        // This listener ensures that when an admin clicks an item from the filtered dropdown,
-        // the corresponding User object is correctly selected.
+
         spinnerUserAccount.setOnItemClickListener((parent, view, position, id) -> {
             String selectedEmail = (String) parent.getItemAtPosition(position);
             for (User user : userList) {
@@ -86,13 +85,13 @@ public class CreateUserProfileActivity extends AppCompatActivity {
                     return;
                 }
 
-                // Clear the list before adding new users
+
                 userList.clear();
                 List<String> userEmails = new ArrayList<>();
 
-                // Filter the list to find users needing a profile
+
                 for (User user : allUsers) {
-                    // A user needs a profile if their full name or phone number is missing
+
                     if (user.getFullName() == null || user.getFullName().trim().isEmpty() ||
                             user.getPhoneNumber() == null || user.getPhoneNumber().trim().isEmpty()) {
                         userList.add(user);
@@ -124,7 +123,6 @@ public class CreateUserProfileActivity extends AppCompatActivity {
 
     private void handleSaveProfile() {
         // Before saving, ensure a user has actually been selected from the list,
-        // not just typed in.
         String currentText = spinnerUserAccount.getText().toString();
         boolean userIsValid = false;
         if (selectedUser != null && selectedUser.getEmail().equals(currentText)) {
@@ -153,7 +151,7 @@ public class CreateUserProfileActivity extends AppCompatActivity {
             public void onProfileSaveSuccess() {
                 progressBar.setVisibility(View.GONE);
                 Toast.makeText(CreateUserProfileActivity.this, "Profile created successfully!", Toast.LENGTH_LONG).show();
-                finish(); // Close the screen and go back
+                finish();
             }
 
             @Override

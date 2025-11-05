@@ -69,17 +69,16 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.HistoryV
             tvCategory.setText(request.getCategory());
             tvStatus.setText(request.getStatus());
 
-            // Format and display the date
-            // --- FIX: Change getTimestamp() to getCreationTimestamp() ---
+
             if (request.getCreationTimestamp() != null) {
                 SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault());
-                // --- FIX: Change getTimestamp() to getCreationTimestamp() here too ---
+
                 tvDate.setText(sdf.format(request.getCreationTimestamp()));
             } else {
                 tvDate.setText("No date available");
             }
 
-            // Set the click listener for the entire item view
+
             itemView.setOnClickListener(v -> {
                 if (listener != null) {
                     listener.onItemClick(request);

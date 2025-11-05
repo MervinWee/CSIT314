@@ -10,7 +10,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import java.util.List;
 
-// ADAPTER: Manages the list of matches for the MyMatchesActivity.
+
 public class MyMatchesAdapter extends RecyclerView.Adapter<MyMatchesAdapter.MatchViewHolder> {
 
     private List<Match> matchList;

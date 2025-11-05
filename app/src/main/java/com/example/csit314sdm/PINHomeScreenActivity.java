@@ -161,8 +161,7 @@ public class PINHomeScreenActivity extends AppCompatActivity {
             if (currentUser.getEmail() != null) {
                 navHeaderEmail.setText(currentUser.getEmail());
             }
-            // --- START: FIX FOR CRASH ---
-            // Manually build the user object to ensure the ID is set.
+
             db.collection("users").document(currentUser.getUid()).get()
                     .addOnSuccessListener(documentSnapshot -> {
                         if (documentSnapshot.exists()) {
@@ -177,13 +176,12 @@ public class PINHomeScreenActivity extends AppCompatActivity {
                             }
                         }
                     });
-            // --- END: FIX FOR CRASH ---
+            //
         }
     }
 
     private void loadUserData(String userId) {
-        // --- START: FIX FOR CRASH ---
-        // Manually build the user object here as well for safety and consistency.
+
         db.collection("users").document(userId).get()
                 .addOnSuccessListener(documentSnapshot -> {
                     if (documentSnapshot.exists()) {
@@ -201,7 +199,7 @@ public class PINHomeScreenActivity extends AppCompatActivity {
                     }
                 })
                 .addOnFailureListener(e -> Log.e(TAG, "Error fetching user data", e));
-        // --- END: FIX FOR CRASH ---
+
     }
 
     private void loadAllRequestDataWithListener(String userId) {
@@ -214,7 +212,7 @@ public class PINHomeScreenActivity extends AppCompatActivity {
                     if (queryDocumentSnapshots == null) return;
 
                     int activeCount = 0;
-                    int completedCount = 0; // This is the "History" count
+                    int completedCount = 0;
                     List<HelpRequest> openRequests = new ArrayList<>();
 
                     for (DocumentSnapshot snapshot : queryDocumentSnapshots) {
@@ -238,13 +236,13 @@ public class PINHomeScreenActivity extends AppCompatActivity {
                     tvActiveRequests.setText("Active Requests\n(" + activeCount + ")");
                     tvCompleted.setText("History\n(" + completedCount + ")");
 
-                    // Sort the list of open requests by date to show the most recent ones
+
                     Collections.sort(openRequests, (r1, r2) -> {
                         if (r1.getCreationTimestamp() == null || r2.getCreationTimestamp() == null) return 0;
                         return r2.getCreationTimestamp().compareTo(r1.getCreationTimestamp());
                     });
 
-                    // Limit the home screen to show a maximum of 3 recent requests
+
                     int limit = Math.min(3, openRequests.size());
                     helpRequestList.clear();
                     helpRequestList.addAll(openRequests.subList(0, limit));

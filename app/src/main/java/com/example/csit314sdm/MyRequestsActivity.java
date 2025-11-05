@@ -30,13 +30,13 @@ public class MyRequestsActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private PinMyRequestsAdapter adapter;
     private List<HelpRequest> requestList;
-    private HelpRequestController controller; // Changed from ViewRequestsController
+    private HelpRequestController controller;
     private ProgressBar progressBar;
     private TextView tvNoRequests;
     private MaterialToolbar topAppBar;
     private ListenerRegistration firestoreListener;
 
-    private String currentStatusFilter = "All"; // Default filter
+    private String currentStatusFilter = "All";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,7 +48,7 @@ public class MyRequestsActivity extends AppCompatActivity {
         progressBar = findViewById(R.id.progressBar_my_requests);
         tvNoRequests = findViewById(R.id.tv_no_requests);
 
-        controller = new HelpRequestController(); // Changed from ViewRequestsController
+        controller = new HelpRequestController();
 
         topAppBar.setNavigationOnClickListener(v -> finish());
         topAppBar.setOnMenuItemClickListener(item -> {
@@ -63,16 +63,16 @@ public class MyRequestsActivity extends AppCompatActivity {
         if (intent != null && intent.hasExtra("STATUS_FILTER")) {
             String filterValue = intent.getStringExtra("STATUS_FILTER");
             if ("History".equals(filterValue)) {
-                // If the homepage sent "History", set the filter and title
+
                 currentStatusFilter = "History";
                 topAppBar.setTitle("My History");
             } else if ("Active".equals(filterValue)) {
-                // If the homepage sent "Active", set the filter and title
+
                 currentStatusFilter = "Active";
                 topAppBar.setTitle("My Active Requests");
             }
         }
-        // If no filter is passed, it defaults to "All", showing "My Help Requests"
+
 
         setupRecyclerView();
     }
@@ -80,7 +80,7 @@ public class MyRequestsActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        // This will now load either all requests or just the history, based on the filter
+
         loadHelpRequestsWithListener();
     }
 
@@ -93,7 +93,7 @@ public class MyRequestsActivity extends AppCompatActivity {
     }
 
     private void setupRecyclerView() {
-        // This method is correct and does not need changes
+
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         requestList = new ArrayList<>();
         adapter = new PinMyRequestsAdapter(requestList, this, request -> {
@@ -105,7 +105,7 @@ public class MyRequestsActivity extends AppCompatActivity {
     }
 
     private void loadHelpRequestsWithListener() {
-        // This method is correct and does not need changes
+
         progressBar.setVisibility(View.VISIBLE);
         tvNoRequests.setVisibility(View.GONE);
         recyclerView.setVisibility(View.GONE);
@@ -114,7 +114,7 @@ public class MyRequestsActivity extends AppCompatActivity {
             firestoreListener.remove();
         }
 
-        Query query = controller.getFilteredHelpRequestsQuery(currentStatusFilter); // Changed from viewController
+        Query query = controller.getFilteredHelpRequestsQuery(currentStatusFilter);
         if (query == null) { /* ... handle no user ... */ return; }
 
         firestoreListener = query.addSnapshotListener((snapshots, e) -> {
@@ -141,7 +141,7 @@ public class MyRequestsActivity extends AppCompatActivity {
     }
 
     private void showFilterDialog() {
-        // This method is correct and does not need changes
+
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_filter_requests, null);
         Spinner statusSpinner = dialogView.findViewById(R.id.spinner_status);
         ArrayAdapter<CharSequence> statusAdapter = ArrayAdapter.createFromResource(this,
@@ -154,7 +154,7 @@ public class MyRequestsActivity extends AppCompatActivity {
                 .setView(dialogView)
                 .setPositiveButton("Apply", (dialog, which) -> {
                     currentStatusFilter = statusSpinner.getSelectedItem().toString();
-                    topAppBar.setTitle("My Help Requests"); // Reset title after filtering
+                    topAppBar.setTitle("My Help Requests");
                     loadHelpRequestsWithListener();
                 })
                 .setNegativeButton("Cancel", null)

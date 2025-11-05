@@ -24,11 +24,11 @@ public class PINSettingsActivity extends AppCompatActivity {
         SwitchMaterial switchDarkMode = findViewById(R.id.switch_dark_mode);
         Button btnLogout = findViewById(R.id.btn_logout);
 
-        // Handle back button click
+
         btnBack.setOnClickListener(v -> onBackPressed());
 
         switchNotifications.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            // Handle notifications preference change
+
             Toast.makeText(this, "Notifications toggled", Toast.LENGTH_SHORT).show();
         });
 

@@ -213,7 +213,7 @@ public class HistoryActivity extends AppCompatActivity implements HelpRequestAda
     @Override
     public void onSaveClick(HelpRequest request, boolean isSaved) {
         if (isSaved) {
-            // --- START: FIX ---
+
             controller.unsaveRequest(request.getId(), new HelpRequestController.SaveCallback() {
                 @Override
                 public void onSaveSuccess() {
@@ -226,9 +226,9 @@ public class HistoryActivity extends AppCompatActivity implements HelpRequestAda
                     Toast.makeText(HistoryActivity.this, "Failed to unsave request: " + errorMessage, Toast.LENGTH_SHORT).show();
                 }
             });
-            // --- END: FIX ---
+
         } else {
-            // --- START: FIX ---
+
             controller.saveRequest(request.getId(), new HelpRequestController.SaveCallback() {
                 @Override
                 public void onSaveSuccess() {
@@ -241,7 +241,7 @@ public class HistoryActivity extends AppCompatActivity implements HelpRequestAda
                     Toast.makeText(HistoryActivity.this, "Failed to save request: " + errorMessage, Toast.LENGTH_SHORT).show();
                 }
             });
-            // --- END: FIX ---
+
         }
     }
 }

@@ -23,7 +23,7 @@ public class ManageCategoriesActivity extends AppCompatActivity {
     private Button btnCreateCategory, btnEditCategory, btnDeleteCategory, btnBack;
     private CategoryAdapter categoryAdapter;
 
-    private PlatformDataAccount platformDataAccount; // The CONTROL layer
+    private PlatformDataAccount platformDataAccount;
     private Category selectedCategory = null;
 
     @Override
@@ -33,7 +33,7 @@ public class ManageCategoriesActivity extends AppCompatActivity {
 
         platformDataAccount = new PlatformDataAccount();
 
-        // Initialize Views
+
         rvCategories = findViewById(R.id.rvCategories);
         btnCreateCategory = findViewById(R.id.btnCreateCategory);
         btnEditCategory = findViewById(R.id.btnEditCategory);
@@ -42,7 +42,7 @@ public class ManageCategoriesActivity extends AppCompatActivity {
 
         setupRecyclerView();
 
-        // Use the controller to listen for data changes
+
         platformDataAccount.listenForCategoryChanges(new PlatformDataAccount.CategoryListCallback() {
             @Override
             public void onDataLoaded(List<Category> categories) {

@@ -30,7 +30,7 @@ public class HelpRequestAdapter extends RecyclerView.Adapter<HelpRequestAdapter.
         void onItemClick(HelpRequest request);
     }
 
-    // FIX: The interface now correctly uses the controller's UpdateCallback
+
     public interface OnSaveClickListener {
         void onSaveClick(HelpRequest request, boolean isSaved);
     }

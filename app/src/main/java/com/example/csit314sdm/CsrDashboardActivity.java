@@ -328,9 +328,8 @@ public class CsrDashboardActivity extends AppCompatActivity implements HelpReque
 
     @Override
     public void onSaveClick(HelpRequest request, boolean isSaved) {
-        if (isSaved) { // If it's already saved, the user wants to unsave it.
-            // --- START: FIX ---
-            // Changed UpdateCallback to the correct SaveCallback.
+        if (isSaved) {
+
             controller.unsaveRequest(request.getId(), new HelpRequestController.SaveCallback() {
                 @Override
                 public void onSaveSuccess() {
@@ -343,10 +342,9 @@ public class CsrDashboardActivity extends AppCompatActivity implements HelpReque
                     Toast.makeText(CsrDashboardActivity.this, "Failed to unsave: " + errorMessage, Toast.LENGTH_SHORT).show();
                 }
             });
-            // --- END: FIX ---
-        } else { // If it's not saved, the user wants to save it.
-            // --- START: FIX ---
-            // Changed UpdateCallback to the correct SaveCallback.
+
+        } else {
+
             controller.saveRequest(request.getId(), new HelpRequestController.SaveCallback() {
                 @Override
                 public void onSaveSuccess() {
@@ -358,7 +356,7 @@ public class CsrDashboardActivity extends AppCompatActivity implements HelpReque
                     Toast.makeText(CsrDashboardActivity.this, "Failed to save: " + errorMessage, Toast.LENGTH_SHORT).show();
                 }
             });
-            // --- END: FIX ---
+
         }
     }
 }

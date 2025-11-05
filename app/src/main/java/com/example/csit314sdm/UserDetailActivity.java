@@ -21,16 +21,16 @@ import java.util.Map;
 
 public class UserDetailActivity extends AppCompatActivity {
 
-    // --- UI Components ---
+
     private EditText etFullName, etContact;
     private TextView tvEmail, tvStatus;
     private Spinner spinnerRole;
     private Button btnToggleEdit, btnToggleSuspend, btnUpdateProfile;
     private ProgressBar progressBar;
     private ScrollView contentScrollView;
-    private MaterialToolbar toolbar; // Added a toolbar variable
+    private MaterialToolbar toolbar;
 
-    // --- Control and Entity ---
+
     private UserManagementController controller;
 
     private TextView tvToolbarTitle;
@@ -40,15 +40,15 @@ public class UserDetailActivity extends AppCompatActivity {
     private boolean isEditMode = false;
     private final String[] roles = {"PIN", "CSR", "User Admin"};
 
-    // --- The key variable for this fix ---
-    private String launchMode = "MANAGE"; // Default to "MANAGE" mode
+
+    private String launchMode = "MANAGE"; //
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_user_detail);
 
-        // --- Read the launch mode from the Intent ---
+
         if (getIntent().hasExtra("MODE")) {
             launchMode = getIntent().getStringExtra("MODE");
         }
@@ -63,22 +63,20 @@ public class UserDetailActivity extends AppCompatActivity {
         }
 
         initializeViews();
-        applyLaunchMode(); // Apply UI changes based on the mode
+        applyLaunchMode();
         loadUserDetails();
     }
 
-    // In UserDetailActivity.java
+
     private void initializeViews() {
-        // --- FIX #1: Find the views that ACTUALLY exist in your XML ---
 
-        // Find the custom title TextView from your RelativeLayout header
-        tvToolbarTitle = findViewById(R.id.tvToolbarTitle); // ADD THIS ID TO YOUR XML
+        tvToolbarTitle = findViewById(R.id.tvToolbarTitle);
 
-        // Find the back button
+
         ImageButton btnBack = findViewById(R.id.btnBack);
-        btnBack.setOnClickListener(v -> finish()); // The finish() method is correct
+        btnBack.setOnClickListener(v -> finish());
 
-        // The rest of your view initializations are correct
+
         etFullName = findViewById(R.id.etDetailFullName);
         etContact = findViewById(R.id.etDetailContact);
         tvEmail = findViewById(R.id.tvDetailEmail);
@@ -97,7 +95,7 @@ public class UserDetailActivity extends AppCompatActivity {
         btnToggleSuspend.setOnClickListener(v -> confirmAndToggleSuspend());
     }
 
-    // --- FIX #2: Update this method to use the custom title TextView ---
+
     private void applyLaunchMode() {
         if ("VIEW_ONLY".equals(launchMode)) {
             // 1. Change the title using the correct TextView
@@ -117,11 +115,11 @@ public class UserDetailActivity extends AppCompatActivity {
             btnToggleSuspend.setVisibility(View.GONE);
 
         } else {
-            // This is the default "MANAGE" mode
+
             if (tvToolbarTitle != null) {
                 tvToolbarTitle.setText("User Profile Details");
             }
-            // Ensure the Edit button is visible in manage mode
+
             btnToggleEdit.setVisibility(View.VISIBLE);
         }
     }

@@ -13,7 +13,7 @@ public class HelpRequest {
     private String region;
     private String location;
     private String submittedBy;
-    private String pinId; // Retained for compatibility, but submittedBy is preferred
+    private String pinId;
     private String pinName;
     private String pinShortId;
     private String requestType;
@@ -28,17 +28,16 @@ public class HelpRequest {
     private long viewCount = 0;
     private List<String> savedByCsrId;
 
-    // --- START: NEW FIELD ---
-    // This field is for temporary use in the app and is not saved in the help_requests collection.
+
     private String pinPhoneNumber;
-    // --- END: NEW FIELD ---
+
 
     @ServerTimestamp
     private Date creationTimestamp;
 
     public HelpRequest() {}
 
-    // --- Getters and Setters ---
+
 
 
     public String getRegion() {
@@ -73,10 +72,10 @@ public class HelpRequest {
     public String getPinShortId() { return pinShortId; }
     public void setPinShortId(String pinShortId) { this.pinShortId = pinShortId; }
 
-    // --- START: NEW GETTER/SETTER ---
+
     public String getPinPhoneNumber() { return pinPhoneNumber; }
     public void setPinPhoneNumber(String pinPhoneNumber) { this.pinPhoneNumber = pinPhoneNumber; }
-    // --- END: NEW GETTER/SETTER ---
+
 
     public String getRequestType() { return requestType; }
     public void setRequestType(String requestType) { this.requestType = requestType; }

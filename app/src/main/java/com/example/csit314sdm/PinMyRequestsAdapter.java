@@ -51,18 +51,17 @@ public class PinMyRequestsAdapter extends RecyclerView.Adapter<PinMyRequestsAdap
             holder.date.setText("Date not available");
         }
 
-        // --- THIS IS THE FIX FOR THE URGENCY BUBBLE ---
-        // First, check if the urgency level exists and is not empty.
+
         if (request.getUrgencyLevel() != null && !request.getUrgencyLevel().isEmpty()) {
             holder.urgency.setVisibility(View.VISIBLE);
             holder.urgency.setText(request.getUrgencyLevel());
 
-            // Set the color of the urgency bubble based on the text.
+
             switch (request.getUrgencyLevel().toLowerCase()) {
                 case "low":
                     holder.urgency.setBackground(ContextCompat.getDrawable(context, R.drawable.urgency_low_background)); // Green
                     break;
-                // FIX: This now correctly checks for "medium"
+
                 case "medium":
                     holder.urgency.setBackground(ContextCompat.getDrawable(context, R.drawable.urgency_medium_background)); // Yellow
                     break;
@@ -70,16 +69,14 @@ public class PinMyRequestsAdapter extends RecyclerView.Adapter<PinMyRequestsAdap
                     holder.urgency.setBackground(ContextCompat.getDrawable(context, R.drawable.urgency_high_background)); // Red
                     break;
                 default:
-                    holder.urgency.setVisibility(View.GONE); // Hide bubble if text doesn't match
+                    holder.urgency.setVisibility(View.GONE);
                     break;
             }
         } else {
-            // If there's no urgency level, hide the bubble completely.
+
             holder.urgency.setVisibility(View.GONE);
         }
-        // --- END OF URGENCY FIX ---
 
-        // Change the color of the status bubble
         switch (request.getStatus()) {
             case "Open":
                 holder.status.setBackground(ContextCompat.getDrawable(context, R.drawable.status_bubble_open));
@@ -95,7 +92,7 @@ public class PinMyRequestsAdapter extends RecyclerView.Adapter<PinMyRequestsAdap
                 break;
         }
 
-        // Set the click listener for the whole card
+
         holder.itemView.setOnClickListener(v -> clickListener.onItemClicked(request));
     }
 
@@ -104,20 +101,20 @@ public class PinMyRequestsAdapter extends RecyclerView.Adapter<PinMyRequestsAdap
         return requests.size();
     }
 
-    // --- ViewHolder class needs to be updated ---
+
     static class ViewHolder extends RecyclerView.ViewHolder {
         TextView title;
         TextView status;
         TextView date;
-        TextView urgency; // ADD THE URGENCY TEXTVIEW
-        TextView viewCount; // ADD THE VIEWCOUNT TEXTVIEW
+        TextView urgency;
+        TextView viewCount;
 
         ViewHolder(View view) {
             super(view);
             title = view.findViewById(R.id.tvPinRequestTitle);
             status = view.findViewById(R.id.tvPinRequestStatus);
             date = view.findViewById(R.id.tvPinRequestDate);
-            urgency = view.findViewById(R.id.tvPinRequestUrgency); // FIND THE URGENCY BUBBLE
+            urgency = view.findViewById(R.id.tvPinRequestUrgency);
             viewCount = view.findViewById(R.id.tvPinRequestViewCount);
         }
     }

@@ -4,14 +4,11 @@ import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.EmailAuthProvider;import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
-/**
- * CONTROL: Manages the business logic for securely changing a user's password.
- */
+
 public class ChangePasswordController {
 
     private final FirebaseAuth mAuth;
 
-    // Callback to communicate the result back to the Activity
     public interface ChangePasswordCallback {
         void onChangeSuccess();
         void onChangeFailure(String errorMessage);
@@ -56,7 +53,6 @@ public class ChangePasswordController {
                     }
                 });
             } else {
-                // Re-authentication failed (likely wrong current password)
                 callback.onChangeFailure("Authentication failed. Please check your current password.");
             }
         });

@@ -36,16 +36,16 @@ public class MyInProgressRequestsActivity extends AppCompatActivity {
     }
 
     private void initializeUI() {
-        MaterialToolbar topAppBar = findViewById(R.id.topAppBar); // Assuming your layout has a toolbar with this ID
+        MaterialToolbar topAppBar = findViewById(R.id.topAppBar);
         topAppBar.setNavigationOnClickListener(v -> finish());
 
-        recyclerView = findViewById(R.id.recyclerViewRequests); // Assuming this ID
-        progressBar = findViewById(R.id.progressBar); // Assuming this ID
-        tvNoResults = findViewById(R.id.tvNoResults); // Assuming this ID
+        recyclerView = findViewById(R.id.recyclerViewRequests);
+        progressBar = findViewById(R.id.progressBar);
+        tvNoResults = findViewById(R.id.tvNoResults);
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
-        // The adapter is the same one you use elsewhere. It navigates to HelpRequestDetailActivity.
+
         adapter = new HelpRequestAdapter(request -> {
             Intent intent = new Intent(MyInProgressRequestsActivity.this, HelpRequestDetailActivity.class);
             intent.putExtra(HelpRequestDetailActivity.EXTRA_REQUEST_ID, request.getId());
@@ -61,7 +61,7 @@ public class MyInProgressRequestsActivity extends AppCompatActivity {
         recyclerView.setVisibility(View.GONE);
         tvNoResults.setVisibility(View.GONE);
 
-        // Use the new controller method
+
         controller.getInProgressRequestsForCsr(new HelpRequestController.HelpRequestsLoadCallback() {
             @Override
             public void onRequestsLoaded(List<HelpRequest> requests) {
@@ -72,7 +72,7 @@ public class MyInProgressRequestsActivity extends AppCompatActivity {
                         tvNoResults.setVisibility(View.VISIBLE);
                     } else {
                         recyclerView.setVisibility(View.VISIBLE);
-                        adapter.setRequests(requests); // The adapter now shows the sorted list
+                        adapter.setRequests(requests);
                     }
                 });
             }

@@ -1,6 +1,6 @@
 package com.example.csit314sdm;
 
-// --- START: NEW IMPORTS ---
+
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Build;
@@ -40,7 +40,7 @@ import java.util.List;
 
 public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequestAdapter.OnSaveClickListener {
 
-    // --- UI Elements ---
+
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
     private ImageButton btnDrawer;
@@ -48,21 +48,21 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
     private ProgressBar progressBar;
     private TextView tvNoResults, tvListTitle, tvWelcome;
     private MaterialCardView cardActiveRequests, cardShortlisted, cardCompletedRequests;
-    private MaterialCardView cardMyInProgress; // --- ADDED: New card variable ---
+    private MaterialCardView cardMyInProgress;
     private TextInputEditText etSearchKeyword;
     private AutoCompleteTextView spinnerLocation, spinnerCategory;
     private Button btnSearch;
 
     private CategoryController categoryController;
 
-    // --- Controllers ---
+
     private HelpRequestController controller;
     private UserProfileController userProfileController;
     private HelpRequestAdapter adapter;
     private String currentCsrId;
     private boolean isShowingSaved = false;
 
-    // --- PERMISSION LAUNCHER FOR NOTIFICATIONS ---
+
     private final ActivityResultLauncher<String> requestPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
                 if (isGranted) {
@@ -93,7 +93,7 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
         setupNavigationDrawer();
         setupListeners();
         loadUserDetails();
-        askNotificationPermission(); // Ask for permission on startup
+        askNotificationPermission();
     }
 
     @Override
@@ -107,10 +107,10 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
     }
 
     private void askNotificationPermission() {
-        // This is only required for API level 33+ (Android 13 and higher)
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                // Directly ask for the permission
+
                 requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
             }
         }
@@ -129,7 +129,7 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
         cardActiveRequests = findViewById(R.id.cardActiveRequests);
         cardShortlisted = findViewById(R.id.cardShortlisted);
         cardCompletedRequests = findViewById(R.id.cardCompletedRequests);
-        cardMyInProgress = findViewById(R.id.cardMyInProgress); // Find the new card
+        cardMyInProgress = findViewById(R.id.cardMyInProgress);
 
         etSearchKeyword = findViewById(R.id.etSearchKeyword);
         spinnerLocation = findViewById(R.id.spinnerLocation);

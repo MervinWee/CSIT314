@@ -13,7 +13,7 @@ public class UserProfileController {
     private final FirebaseFirestore db;
     private static final String COLLECTION_NAME = "users"; // Use a constant for the collection name
 
-    // --- EXISTING INTERFACES ---
+
     public interface UsersLoadCallback {
         void onUsersLoaded(List<User> users);
         void onDataLoadFailed(String errorMessage);
@@ -34,22 +34,17 @@ public class UserProfileController {
         void onDeleteFailure(String errorMessage);
     }
 
-    // --- START: ADD THIS NEW INTERFACE ---
-    /**
-     * Callback interface specifically for the profile creation/saving process.
-     */
     public interface ProfileCallback {
         void onProfileSaveSuccess();
         void onProfileSaveFailure(String errorMessage);
     }
-    // --- END: ADD THIS NEW INTERFACE ---
 
 
     public UserProfileController() {
         db = FirebaseFirestore.getInstance();
     }
 
-    // --- EXISTING METHOD ---
+
     public void getUserById(String uid, final UserLoadCallback callback) {
         if (uid == null || uid.isEmpty()) {
             callback.onDataLoadFailed("User ID is invalid.");
@@ -74,12 +69,6 @@ public class UserProfileController {
                 });
     }
 
-    // --- START: ADD THIS NEW METHOD ---
-    /**
-     * Fetches all users from the 'users' collection.
-     * This is required by CreateUserProfileActivity to list all users who need a profile.
-     * @param callback The callback to invoke on success or failure.
-     */
     public void getAllUsersWithProfileCheck(UsersLoadCallback callback) {
         db.collection(COLLECTION_NAME)
                 .get()
@@ -97,20 +86,7 @@ public class UserProfileController {
                     }
                 });
     }
-    // --- END: ADD THIS NEW METHOD ---
 
-
-    // --- START: ADD THIS NEW METHOD ---
-    /**
-     * Saves the full profile details for a newly selected user.
-     * Required by CreateUserProfileActivity.
-     * @param user The user object containing the ID to update.
-     * @param fullName The full name to save.
-     * @param contact The contact number to save.
-     * @param dob The date of birth to save.
-     * @param address The address to save.
-     * @param callback The callback to invoke on success or failure.
-     */
     public void saveUserProfile(User user, String fullName, String contact, String dob, String address, final ProfileCallback callback) {
         if (user == null || user.getId() == null || user.getId().isEmpty()) {
             callback.onProfileSaveFailure("Invalid user or user ID provided.");
@@ -128,10 +104,7 @@ public class UserProfileController {
                 .addOnSuccessListener(aVoid -> callback.onProfileSaveSuccess())
                 .addOnFailureListener(e -> callback.onProfileSaveFailure("Failed to save profile: " + e.getMessage()));
     }
-    // --- END: ADD THIS NEW METHOD ---
 
-
-    // --- EXISTING METHOD ---
     public void updateUserProfile(String uid, String newFullName, String newPhoneNumber, String newDob, String newAddress, final ProfileUpdateCallback callback) {
         if (uid == null || uid.isEmpty()) {
             callback.onUpdateFailure("User ID is invalid.");
@@ -150,7 +123,7 @@ public class UserProfileController {
                 .addOnFailureListener(e -> callback.onUpdateFailure("Failed to update profile: " + e.getMessage()));
     }
 
-    // --- EXISTING METHOD ---
+
     public void deleteUserAccount(String uid, final UserDeleteCallback callback) {
         if (uid == null || uid.isEmpty()) {
             callback.onDeleteFailure("User ID is invalid.");

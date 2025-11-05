@@ -12,10 +12,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.List;
 
-/**
- * Adapter for the simple list of recent requests on the PIN Homepage.
- * This adapter uses the 'item_request_card_simple.xml' layout.
- */
+
 public class SimpleRequestAdapter extends RecyclerView.Adapter<SimpleRequestAdapter.SimpleViewHolder> {
 
     private final List<HelpRequest> requestList;
@@ -43,9 +40,9 @@ public class SimpleRequestAdapter extends RecyclerView.Adapter<SimpleRequestAdap
     @Override
     public void onBindViewHolder(@NonNull SimpleViewHolder holder, int position) {
         HelpRequest request = requestList.get(position);
-        holder.bind(request, clickListener); // Use the bind helper method
+        holder.bind(request, clickListener);
 
-        // --- Logic for the Status Bubble ---
+
         if (request.getStatus() != null) {
             holder.status.setText(request.getStatus());
 
@@ -73,19 +70,19 @@ public class SimpleRequestAdapter extends RecyclerView.Adapter<SimpleRequestAdap
         return requestList.size();
     }
 
-    // This ViewHolder finds the views from the simple card layout.
+
     static class SimpleViewHolder extends RecyclerView.ViewHolder {
         TextView title;
         TextView status;
 
         public SimpleViewHolder(@NonNull View itemView) {
             super(itemView);
-            // These IDs will come from the 'item_request_card_simple.xml' layout file.
+
             title = itemView.findViewById(R.id.item_request_title);
             status = itemView.findViewById(R.id.item_request_status);
         }
 
-        // Helper method to bind data and set the click listener for the whole card
+
         public void bind(final HelpRequest request, final OnItemClickListener listener) {
             title.setText(request.getCategory());
             itemView.setOnClickListener(v -> listener.onItemClick(request));

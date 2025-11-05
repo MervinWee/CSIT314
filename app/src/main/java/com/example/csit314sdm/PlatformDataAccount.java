@@ -145,11 +145,11 @@ public class PlatformDataAccount {
                 return;
             }
             List<User> usersToUpdate = new ArrayList<>();
-            // This loop now needs to be different because toObjects does not give us document IDs.
+
             for (DocumentSnapshot document : task.getResult().getDocuments()) {
                 User user = document.toObject(User.class);
                 if (user != null) {
-                    user.setId(document.getId()); // Manually set the ID
+                    user.setId(document.getId());
                     if (user.getCreationDate() == null) {
                         usersToUpdate.add(user);
                     }
@@ -164,7 +164,7 @@ public class PlatformDataAccount {
             WriteBatch batch = db.batch();
             Date migrationTime = new Date();
             for (User user : usersToUpdate) {
-                // *** FIX: Changed from getUid() to getId() ***
+
                 if (user.getId() != null && !user.getId().isEmpty()) {
                     batch.update(usersRef.document(user.getId()), "creationDate", migrationTime);
                 }

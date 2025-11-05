@@ -6,14 +6,14 @@ import java.util.Date;
 
 public class User {
 
-    // --- FIELD DECLARATIONS -- -
-    private String id; // This will store the unique document ID from Firestore.
+
+    private String id;
     private String email;
 
     private String uid;
     private String fullName;
     private String phoneNumber;
-    private String dob; // Stands for Date of Birth
+    private String dob;
     private String role;
     private String accountStatus;
     private String address;
@@ -21,16 +21,10 @@ public class User {
     private Date creationDate;
     private String companyId;
 
-    // Public, no-argument constructor is REQUIRED for Firestore deserialization
+
     public User() {}
 
-    // --- GETTERS AND SETTERS ---
 
-    // --- FIX: Added getId() and setId() for the document ID ---
-    /**
-     * The @Exclude annotation tells Firestore not to save this field back into the document,
-     * as the ID is metadata, not part of the data itself.
-     */
     @Exclude
     public String getId() { return id; }
 
@@ -86,10 +80,7 @@ public class User {
     @PropertyName("companyId")
     public void setCompanyId(String companyId) { this.companyId = companyId; }
 
-    /**
-     * This is a fallback setter to handle old data that might have used 'createdAt'
-     * instead of 'creationDate'. It prevents the app from crashing if it encounters old documents.
-     */
+
     @PropertyName("createdAt")
     public void setCreatedAt(Date date) {
         if (this.creationDate == null) {
@@ -97,6 +88,4 @@ public class User {
         }
     }
 
-    // NOTE: The 'uid' field and its getter/setter have been removed to avoid confusion with 'id'.
-    // The 'id' field will now be used consistently to store the Firestore document ID.
 }

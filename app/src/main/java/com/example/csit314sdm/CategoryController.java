@@ -54,12 +54,6 @@ public class CategoryController {
 
     // Inside your CategoryController.java class...
 
-    /**
-     * Updates an existing category document in Firestore.
-     *
-     * @param category The category object with its updated details and existing ID.
-     * @param callback The callback to report success or failure.
-     */
     public void updateCategory(Category category, final CategoryOperationCallback callback) {
         if (category.getId() == null || category.getId().isEmpty()) {
             callback.onFailure("Category ID is missing. Cannot update.");

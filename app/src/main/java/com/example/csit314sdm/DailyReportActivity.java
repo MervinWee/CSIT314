@@ -66,32 +66,32 @@ public class DailyReportActivity extends AppCompatActivity {
     }
 
     private void updateDateInView() {
-        String myFormat = "MM/dd/yy"; //In which you need put here
+        String myFormat = "MM/dd/yy";
         SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.US);
         etDate.setText(sdf.format(selectedDate.getTime()));
     }
 
     private void generateReport() {
-        btnGenerateReport.setEnabled(false); // Disable button to prevent multiple clicks
+        btnGenerateReport.setEnabled(false);
         Toast.makeText(this, "Generating report...", Toast.LENGTH_SHORT).show();
 
         platformDataAccount.generateDailyReport(selectedDate.getTime(), new PlatformDataAccount.DailyReportCallback() {
             @Override
             public void onReportDataLoaded(int newUserCount, int newRequestCount, int completedMatchesCount) {
-                // This toast will show even if the counts are 0.
+
                 String successMsg = String.format("Report complete: %d users, %d requests, %d matches", newUserCount, newRequestCount, completedMatchesCount);
                 Toast.makeText(DailyReportActivity.this, successMsg, Toast.LENGTH_LONG).show();
 
                 tvNewUsersCount.setText(String.valueOf(newUserCount));
                 tvNewRequestsCount.setText(String.valueOf(newRequestCount));
                 tvCompletedMatchesCount.setText(String.valueOf(completedMatchesCount));
-                btnGenerateReport.setEnabled(true); // Re-enable button
+                btnGenerateReport.setEnabled(true);
             }
 
             @Override
             public void onError(String message) {
                 Toast.makeText(DailyReportActivity.this, "Error: " + message, Toast.LENGTH_LONG).show();
-                btnGenerateReport.setEnabled(true); // Re-enable button
+                btnGenerateReport.setEnabled(true);
             }
         });
     }

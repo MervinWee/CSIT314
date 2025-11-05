@@ -124,11 +124,6 @@ public class AdminCreateUserActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * Generates a random, 5-digit number as a String.
-     * In a real-world app, you'd check for uniqueness in the database.
-     * @return A 5-digit string (e.g., "54321").
-     */
     private String generateUniqueCompanyId() {
         Random random = new Random();
         // Generates a number between 10000 and 99999

@@ -152,18 +152,17 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         String currentUserId = (currentUser != null) ? currentUser.getUid() : "";
 
-        // --- START: MODIFIED LOGIC ---
+
         if (isPinUser) {
-            // Logic for the Person-in-Need (PIN)
+
             if ("Open".equals(request.getStatus())) {
-                btnCancelRequest.setText("Cancel This Request"); // Set text for permanent cancel
+                btnCancelRequest.setText("Cancel This Request");
                 btnCancelRequest.setVisibility(View.VISIBLE);
                 topAppBar.getMenu().findItem(R.id.action_edit_request).setVisible(true);
             } else if ("In-progress".equals(request.getStatus())) {
-                // *** THIS IS THE NEW FEATURE ***
-                // Show a button allowing the PIN to release the CSR.
-                btnCancelRequest.setText("Release Assigned CSR"); // Change button text
-                btnCancelRequest.setVisibility(View.VISIBLE); // Show the button
+
+                btnCancelRequest.setText("Release Assigned CSR");
+                btnCancelRequest.setVisibility(View.VISIBLE);
             }
 
         } else if (isCsrUser) {
@@ -173,7 +172,7 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
             } else if ("In-progress".equals(request.getStatus())) {
                 if (currentUserId.equals(request.getAcceptedByCsrId())) {
                     btnCompleteRequest.setVisibility(View.VISIBLE);
-                    btnCancelRequest.setText("Cancel This Request"); // For CSR, it means they are cancelling
+                    btnCancelRequest.setText("Cancel This Request");
                     btnCancelRequest.setVisibility(View.VISIBLE);
 
                     // Also show PIN contact details to the assigned CSR
@@ -186,7 +185,6 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
                 }
             }
         }
-        // --- END: MODIFIED LOGIC ---
     }
 
     private void handleEditClick() {
@@ -200,28 +198,20 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
         }
     }
 
-    // --- START: MODIFIED CLICK HANDLER ---
+
     private void handleCancelClick() {
         if ("PIN".equals(userRole)) {
-            // If the request is 'In-progress', the PIN is releasing the CSR.
-            // If it's 'Open', they are permanently cancelling their own request.
             if ("In-progress".equals(currentRequest.getStatus())) {
-                showPinReleaseConfirmationDialog(); // A new confirmation dialog
+                showPinReleaseConfirmationDialog();
             } else {
-                showPinCancelConfirmationDialog(); // The original permanent cancel
+                showPinCancelConfirmationDialog();
             }
         } else if ("CSR".equals(userRole)) {
-            // If the user is a CSR, they are releasing it back to the pool.
+
             showCsrReleaseConfirmationDialog();
         }
     }
-    // --- END: MODIFIED CLICK HANDLER ---
 
-    // --- START: ADD THESE TWO NEW METHODS ---
-
-    /**
-     * Shows a confirmation dialog to the PIN user before they release an assigned CSR.
-     */
     private void showPinReleaseConfirmationDialog() {
         new AlertDialog.Builder(this)
                 .setTitle("Release Assigned CSR")
@@ -232,9 +222,7 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
                 .show();
     }
 
-    /**
-     * Calls the new controller method for a PIN to release a CSR from a request.
-     */
+
     private void performPinReleaseRequest() {
         progressBar.setVisibility(View.VISIBLE);
         detailController.releaseRequestByPin(currentRequestId, new HelpRequestController.UpdateCallback() {
@@ -243,8 +231,6 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     progressBar.setVisibility(View.GONE);
                     Toast.makeText(HelpRequestDetailActivity.this, "CSR Released. Your request is now active again.", Toast.LENGTH_LONG).show();
-                    // Close the detail screen and go back to the list.
-                    // The onResume() of the previous activity will show the updated list.
                     finish();
                 });
             }
@@ -258,7 +244,7 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
             }
         });
     }
-    // --- END: ADD THESE TWO NEW METHODS ---
+
 
     private void showPinCancelConfirmationDialog() {
         new AlertDialog.Builder(this)

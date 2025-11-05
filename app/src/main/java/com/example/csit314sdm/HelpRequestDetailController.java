@@ -11,10 +11,8 @@ public class HelpRequestDetailController {
         void onDataLoadFailed(String errorMessage);
     }
 
-    // Method to fetch a single help request by its ID
+
     public void getRequestById(String requestId, final RequestDetailCallback callback) {
-        // This example assumes you are using Firestore.
-        // Replace with your actual data source if different.
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         db.collection("help_requests").document(requestId)
                 .get()
@@ -22,7 +20,7 @@ public class HelpRequestDetailController {
                     if (task.isSuccessful()) {
                         DocumentSnapshot document = task.getResult();
                         if (document != null && document.exists()) {
-                            // Convert the document snapshot to a HelpRequest object
+
                             HelpRequest request = document.toObject(HelpRequest.class);
                             if (request != null) {
                                 callback.onRequestLoaded(request);

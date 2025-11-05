@@ -14,40 +14,40 @@ public class RegistrationController {
 
     private final FirebaseFirestore db;
 
-    // Callback interface remains the same
+
     public interface RegistrationCallback {
         void onRegistrationSuccess(String role);
         void onRegistrationFailure(String errorMessage);
     }
 
     public RegistrationController() {
-        // No need to pass FirebaseApp.getInstance() here, just getInstance() is fine.
+
         db = FirebaseFirestore.getInstance();
     }
 
-    // --- FIX: This is the NEW overloaded method for creating CSRs with a company ID ---
+
     public void registerUser(String email, String password, String role, String companyId, final RegistrationCallback callback) {
         if (!isInputValid(email, password, callback)) {
             return;
         }
-        // This single method now handles the secondary app creation logic
+
         createUserWithSecondaryAuth(email, password, role, companyId, callback);
     }
 
-    // This is the ORIGINAL method, now simplified to call the new one with a null companyId
+
     public void registerUser(String email, String password, String role, final RegistrationCallback callback) {
         if (!isInputValid(email, password, callback)) {
             return;
         }
-        // For non-CSR users, we just pass null for the companyId
+
         createUserWithSecondaryAuth(email, password, role, null, callback);
     }
 
-    // --- Centralized user creation logic ---
+
     private void createUserWithSecondaryAuth(String email, String password, String role, String companyId, final RegistrationCallback callback) {
         try {
             FirebaseApp mainApp = FirebaseApp.getInstance();
-            // Use a unique name for the temporary app to avoid crashes
+
             String secondaryAppName = "user-creation-instance-" + System.currentTimeMillis();
             FirebaseApp secondaryApp = FirebaseApp.initializeApp(mainApp.getApplicationContext(), mainApp.getOptions(), secondaryAppName);
             FirebaseAuth secondaryAuth = FirebaseAuth.getInstance(secondaryApp);
@@ -57,7 +57,7 @@ public class RegistrationController {
                         if (task.isSuccessful()) {
                             FirebaseUser firebaseUser = task.getResult().getUser();
                             if (firebaseUser != null) {
-                                // Pass all user data to the save method
+
                                 saveUserDataToFirestore(firebaseUser, role, companyId, callback);
                             } else {
                                 callback.onRegistrationFailure("Secondary auth: Failed to get user after creation.");
@@ -65,7 +65,7 @@ public class RegistrationController {
                         } else {
                             callback.onRegistrationFailure("Secondary auth: " + task.getException().getMessage());
                         }
-                        // Always clean up the temporary app instance
+
                         secondaryApp.delete();
                     });
         } catch (Exception e) {
@@ -74,7 +74,7 @@ public class RegistrationController {
     }
 
 
-    // --- FIX: NEW overloaded version of saveUserDataToFirestore that handles companyId ---
+
     private void saveUserDataToFirestore(FirebaseUser firebaseUser, String role, String companyId, final RegistrationCallback callback) {
         generateUniqueShortId(new UniqueIdCallback() {
             @Override
@@ -89,13 +89,13 @@ public class RegistrationController {
                 newUserMap.put("accountStatus", "Active");
                 newUserMap.put("shortId", shortId);
 
-                // Initialize other fields to prevent null errors later
+
                 newUserMap.put("fullName", "");
-                newUserMap.put("dateOfBirth", ""); // Renamed from dob for consistency
+                newUserMap.put("dateOfBirth", "");
                 newUserMap.put("address", "");
                 newUserMap.put("phoneNumber", "");
 
-                // *** FIX: Add the companyId to the map ONLY if it's a CSR user ***
+
                 if (companyId != null && !companyId.isEmpty()) {
                     newUserMap.put("companyId", companyId);
                 }
@@ -130,7 +130,7 @@ public class RegistrationController {
         return true;
     }
 
-    // Helper method and interface for generating the unique 4-digit ID
+
     private void generateUniqueShortId(final UniqueIdCallback callback) {
         int randomId = new Random().nextInt(9000) + 1000;
         String shortId = String.valueOf(randomId);
@@ -141,7 +141,7 @@ public class RegistrationController {
                         if (task.getResult().isEmpty()) {
                             callback.onUniqueIdFound(shortId);
                         } else {
-                            generateUniqueShortId(callback); // ID exists, try again
+                            generateUniqueShortId(callback);
                         }
                     } else {
                         callback.onIdGenerationFailed("Database error while checking for unique ID.");
