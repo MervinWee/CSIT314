@@ -1,6 +1,5 @@
 package com.example.csit314sdm;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -12,8 +11,6 @@ import android.widget.ProgressBar;
 import android.widget.Spinner;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
-
-import java.util.Random; // Import the Random class
 
 public class AdminCreateUserActivity extends AppCompatActivity {
 
@@ -106,15 +103,7 @@ public class AdminCreateUserActivity extends AppCompatActivity {
                 }
             };
 
-            // *** FIX: Check if the role is "CSR" and handle accordingly ***
-            if ("CSR".equals(userType)) {
-                String companyId = generateUniqueCompanyId();
-                // Call an overloaded registerUser method that accepts a companyId
-                registrationController.registerUser(email, password, userType, companyId, callback);
-            } else {
-                // For other roles (PIN, Admin), call the original method
-                registrationController.registerUser(email, password, userType, callback);
-            }
+            registrationController.registerUser(email, password, userType, callback);
 
         } catch (Exception e) {
             progressBar.setVisibility(View.GONE);
@@ -122,12 +111,5 @@ public class AdminCreateUserActivity extends AppCompatActivity {
             Toast.makeText(this, "An unexpected error occurred during user creation.", Toast.LENGTH_LONG).show();
             Log.e("AdminCreateUser", "Error in handleCreateUser", e);
         }
-    }
-
-    private String generateUniqueCompanyId() {
-        Random random = new Random();
-        // Generates a number between 10000 and 99999
-        int fiveDigitNumber = 10000 + random.nextInt(90000);
-        return String.valueOf(fiveDigitNumber);
     }
 }
