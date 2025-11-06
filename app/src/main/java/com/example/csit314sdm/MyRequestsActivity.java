@@ -99,6 +99,7 @@ public class MyRequestsActivity extends AppCompatActivity {
         adapter = new PinMyRequestsAdapter(requestList, this, request -> {
             Intent detailIntent = new Intent(MyRequestsActivity.this, HelpRequestDetailActivity.class);
             detailIntent.putExtra(HelpRequestDetailActivity.EXTRA_REQUEST_ID, request.getId());
+            detailIntent.putExtra("user_role", "PIN");
             startActivity(detailIntent);
         });
         recyclerView.setAdapter(adapter);

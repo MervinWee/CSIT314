@@ -153,7 +153,7 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
         String currentUserId = (currentUser != null) ? currentUser.getUid() : "";
 
 
-        if (isPinUser) {
+        if (isPinUser && currentUserId.equals(request.getSubmittedBy())) {
 
             if ("Open".equals(request.getStatus())) {
                 btnCancelRequest.setText("Cancel This Request");
