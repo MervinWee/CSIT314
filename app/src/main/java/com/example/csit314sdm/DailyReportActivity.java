@@ -37,6 +37,7 @@ public class DailyReportActivity extends AppCompatActivity implements DailyRepor
         controller = new DailyReportController(this, platformDataAccount);
 
         etDate = findViewById(R.id.etDate);
+        etDate.setKeyListener(null);
         btnGenerateReport = findViewById(R.id.btnGenerateReport);
         btnBack = findViewById(R.id.btnBack);
         tvNewUsersCount = findViewById(R.id.tvNewUsersCount);
@@ -45,7 +46,10 @@ public class DailyReportActivity extends AppCompatActivity implements DailyRepor
 
         etDate.setOnClickListener(v -> showDatePickerDialog());
 
-        btnGenerateReport.setOnClickListener(v -> controller.generateReport(selectedDate.getTime()));
+        btnGenerateReport.setOnClickListener(v -> {
+            showToast("Generating report...");
+            controller.generateReport(selectedDate.getTime());
+        });
 
         btnBack.setOnClickListener(v -> finish());
 
@@ -75,6 +79,9 @@ public class DailyReportActivity extends AppCompatActivity implements DailyRepor
 
     @Override
     public void showReportData(int newUserCount, int newRequestCount, int completedMatchesCount) {
+        String successMsg = String.format("Report complete: %d users, %d requests, %d matches", newUserCount, newRequestCount, completedMatchesCount);
+        showToast(successMsg);
+
         tvNewUsersCount.setText(String.valueOf(newUserCount));
         tvNewRequestsCount.setText(String.valueOf(newRequestCount));
         tvCompletedMatchesCount.setText(String.valueOf(completedMatchesCount));
@@ -82,7 +89,7 @@ public class DailyReportActivity extends AppCompatActivity implements DailyRepor
 
     @Override
     public void showError(String message) {
-        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+        Toast.makeText(this, "Error: " + message, Toast.LENGTH_LONG).show();
     }
 
     @Override

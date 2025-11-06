@@ -21,20 +21,17 @@ public class DailyReportController {
 
     public void generateReport(Date selectedDate) {
         view.setGenerateButtonEnabled(false);
-        view.showToast("Generating report...");
 
         platformDataAccount.generateDailyReport(selectedDate, new PlatformDataAccount.DailyReportCallback() {
             @Override
             public void onReportDataLoaded(int newUserCount, int newRequestCount, int completedMatchesCount) {
-                String successMsg = String.format("Report complete: %d users, %d requests, %d matches", newUserCount, newRequestCount, completedMatchesCount);
-                view.showToast(successMsg);
                 view.showReportData(newUserCount, newRequestCount, completedMatchesCount);
                 view.setGenerateButtonEnabled(true);
             }
 
             @Override
             public void onError(String message) {
-                view.showError("Error: " + message);
+                view.showError(message);
                 view.setGenerateButtonEnabled(true);
             }
         });
