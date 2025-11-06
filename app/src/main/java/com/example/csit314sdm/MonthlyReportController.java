@@ -19,7 +19,6 @@ public class MonthlyReportController {
 
     public void generateReport(int year, int month) {
         view.setGenerateButtonEnabled(false);
-        view.showToast("Generating monthly report...");
 
         platformDataAccount.generateMonthlyReport(year, month, new PlatformDataAccount.MonthlyReportCallback() {
             @Override
@@ -30,7 +29,7 @@ public class MonthlyReportController {
 
             @Override
             public void onError(String message) {
-                view.showError("Error: " + message);
+                view.showError(message);
                 view.setGenerateButtonEnabled(true);
             }
         });

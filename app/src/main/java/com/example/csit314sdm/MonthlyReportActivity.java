@@ -36,6 +36,7 @@ public class MonthlyReportActivity extends AppCompatActivity implements MonthlyR
         controller = new MonthlyReportController(this, platformDataAccount);
 
         etMonth = findViewById(R.id.etMonth);
+        etMonth.setKeyListener(null);
         btnGenerateReport = findViewById(R.id.btnGenerateReport);
         btnBack = findViewById(R.id.btnBack);
         tvTopCompany = findViewById(R.id.tvTopCompany);
@@ -44,8 +45,9 @@ public class MonthlyReportActivity extends AppCompatActivity implements MonthlyR
         etMonth.setOnClickListener(v -> showMonthPickerDialog());
 
         btnGenerateReport.setOnClickListener(v -> {
+            showToast("Generating monthly report...");
             int year = selectedMonth.get(Calendar.YEAR);
-            int month = selectedMonth.get(Calendar.MONTH) + 1; // Calendar.MONTH is 0-based
+            int month = selectedMonth.get(Calendar.MONTH) + 1;
             controller.generateReport(year, month);
         });
 
@@ -78,11 +80,12 @@ public class MonthlyReportActivity extends AppCompatActivity implements MonthlyR
     public void showReportData(String topCompany, String mostRequestedService) {
         tvTopCompany.setText(topCompany != null ? topCompany : "N/A");
         tvMostRequestedService.setText(mostRequestedService != null ? mostRequestedService : "N/A");
+        showToast("Monthly report generated successfully.");
     }
 
     @Override
     public void showError(String message) {
-        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+        Toast.makeText(this, "Error: " + message, Toast.LENGTH_LONG).show();
     }
 
     @Override

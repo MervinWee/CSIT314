@@ -39,7 +39,9 @@ public class WeeklyReportActivity extends AppCompatActivity implements WeeklyRep
         controller = new WeeklyReportController(this, platformDataAccount);
 
         etStartDate = findViewById(R.id.etStartDate);
+        etStartDate.setKeyListener(null);
         etEndDate = findViewById(R.id.etEndDate);
+        etEndDate.setKeyListener(null);
         btnGenerateReport = findViewById(R.id.btnGenerateReport);
         btnBack = findViewById(R.id.btnBack);
         tvUniquePinsCount = findViewById(R.id.tvUniquePinsCount);
@@ -49,7 +51,10 @@ public class WeeklyReportActivity extends AppCompatActivity implements WeeklyRep
         etStartDate.setOnClickListener(v -> showStartDatePickerDialog());
         etEndDate.setOnClickListener(v -> showEndDatePickerDialog());
 
-        btnGenerateReport.setOnClickListener(v -> controller.generateReport(startDate.getTime(), endDate.getTime()));
+        btnGenerateReport.setOnClickListener(v -> {
+            showToast("Generating weekly report...");
+            controller.generateReport(startDate.getTime(), endDate.getTime());
+        });
 
         btnBack.setOnClickListener(v -> finish());
 
@@ -104,11 +109,12 @@ public class WeeklyReportActivity extends AppCompatActivity implements WeeklyRep
         tvUniquePinsCount.setText(String.valueOf(uniquePins));
         tvUniqueCsrCompaniesCount.setText(String.valueOf(uniqueCsrs));
         tvTotalCompletedMatchesCount.setText(String.valueOf(totalMatches));
+        showToast("Weekly report generated successfully.");
     }
 
     @Override
     public void showError(String message) {
-        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+        Toast.makeText(this, "Error: " + message, Toast.LENGTH_LONG).show();
     }
 
     @Override
