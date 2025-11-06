@@ -21,7 +21,6 @@ public class WeeklyReportController {
 
     public void generateReport(Date startDate, Date endDate) {
         view.setGenerateButtonEnabled(false);
-        view.showToast("Generating weekly report...");
 
         platformDataAccount.generateWeeklyReport(startDate, endDate, new PlatformDataAccount.WeeklyReportCallback() {
             @Override
@@ -32,7 +31,7 @@ public class WeeklyReportController {
 
             @Override
             public void onError(String message) {
-                view.showError("Error: " + message);
+                view.showError(message);
                 view.setGenerateButtonEnabled(true);
             }
         });

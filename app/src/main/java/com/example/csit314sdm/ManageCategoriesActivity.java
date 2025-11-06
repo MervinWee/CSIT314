@@ -1,7 +1,8 @@
 package com.example.csit314sdm;
 
 import android.os.Bundle;
-import android.view.LayoutInflater;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -21,37 +22,56 @@ public class ManageCategoriesActivity extends AppCompatActivity {
 
     private RecyclerView rvCategories;
     private Button btnCreateCategory, btnEditCategory, btnDeleteCategory, btnBack;
+    private EditText etSearchCategory; // Added for search
     private CategoryAdapter categoryAdapter;
 
-    private PlatformDataAccount platformDataAccount;
+    private CategoryController categoryController;
     private Category selectedCategory = null;
+    private List<Category> allCategories = new ArrayList<>(); // Added to hold the master list
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_manage_categories);
 
-        platformDataAccount = new PlatformDataAccount();
+        categoryController = new CategoryController();
 
-
+        // Bind views
         rvCategories = findViewById(R.id.rvCategories);
         btnCreateCategory = findViewById(R.id.btnCreateCategory);
         btnEditCategory = findViewById(R.id.btnEditCategory);
         btnDeleteCategory = findViewById(R.id.btnDeleteCategory);
         btnBack = findViewById(R.id.btnBack);
+        etSearchCategory = findViewById(R.id.etSearchCategory); // Assuming this ID exists in your XML
 
         setupRecyclerView();
 
-
-        platformDataAccount.listenForCategoryChanges(new PlatformDataAccount.CategoryListCallback() {
+        categoryController.getAllCategories(new CategoryController.CategoryFetchCallback() {
             @Override
-            public void onDataLoaded(List<Category> categories) {
-                categoryAdapter.updateCategories(categories);
+            public void onCategoriesFetched(List<Category> categories) {
+                allCategories.clear();
+                allCategories.addAll(categories);
+                categoryAdapter.updateCategories(new ArrayList<>(allCategories)); // Display all initially
                 resetSelection();
             }
+
             @Override
-            public void onError(String message) {
-                Toast.makeText(ManageCategoriesActivity.this, "Error loading categories: " + message, Toast.LENGTH_LONG).show();
+            public void onFailure(String errorMessage) {
+                Toast.makeText(ManageCategoriesActivity.this, "Error loading categories: " + errorMessage, Toast.LENGTH_LONG).show();
+            }
+        });
+
+        // Add TextWatcher for search functionality
+        etSearchCategory.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) { }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                filter(s.toString());
             }
         });
 
@@ -70,11 +90,22 @@ public class ManageCategoriesActivity extends AppCompatActivity {
         btnBack.setOnClickListener(v -> finish());
     }
 
+    private void filter(String text) {
+        List<Category> filteredList = new ArrayList<>();
+        for (Category item : allCategories) {
+            if (item.getName().toLowerCase().contains(text.toLowerCase())) {
+                filteredList.add(item);
+            }
+        }
+        categoryAdapter.updateCategories(filteredList);
+        resetSelection();
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (platformDataAccount != null) {
-            platformDataAccount.detachCategoryListener();
+        if (categoryController != null) {
+            categoryController.cleanup();
         }
     }
 
@@ -124,15 +155,22 @@ public class ManageCategoriesActivity extends AppCompatActivity {
                 return;
             }
 
-            PlatformDataAccount.FirebaseCallback callback = new PlatformDataAccount.FirebaseCallback() {
-                @Override public void onSuccess(String message) { Toast.makeText(ManageCategoriesActivity.this, message, Toast.LENGTH_SHORT).show(); } // Corrected
-                @Override public void onError(String message) { Toast.makeText(ManageCategoriesActivity.this, "Error: " + message, Toast.LENGTH_SHORT).show(); }
+            CategoryController.CategoryOperationCallback callback = new CategoryController.CategoryOperationCallback() {
+                @Override
+                public void onSuccess(String message) {
+                    Toast.makeText(ManageCategoriesActivity.this, message, Toast.LENGTH_SHORT).show();
+                }
+
+                @Override
+                public void onFailure(String errorMessage) {
+                    Toast.makeText(ManageCategoriesActivity.this, "Error: " + errorMessage, Toast.LENGTH_SHORT).show();
+                }
             };
 
             if (isEditing) {
-                platformDataAccount.updateCategory(existingCategory, name, description, callback);
+                categoryController.updateCategory(existingCategory, name, description, callback);
             } else {
-                platformDataAccount.createCategory(name, description, callback);
+                categoryController.createCategory(name, description, callback);
             }
         });
         builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
@@ -144,9 +182,16 @@ public class ManageCategoriesActivity extends AppCompatActivity {
                 .setTitle("Delete Category")
                 .setMessage("Are you sure you want to delete '" + categoryToDelete.getName() + "'?")
                 .setPositiveButton("Delete", (dialog, which) -> {
-                    platformDataAccount.deleteCategory(categoryToDelete, new PlatformDataAccount.FirebaseCallback() {
-                        @Override public void onSuccess(String message) { Toast.makeText(ManageCategoriesActivity.this, message, Toast.LENGTH_SHORT).show(); } // Corrected
-                        @Override public void onError(String message) { Toast.makeText(ManageCategoriesActivity.this, "Error: " + message, Toast.LENGTH_SHORT).show(); }
+                    categoryController.deleteCategory(categoryToDelete, new CategoryController.CategoryOperationCallback() {
+                        @Override
+                        public void onSuccess(String message) {
+                            Toast.makeText(ManageCategoriesActivity.this, message, Toast.LENGTH_SHORT).show();
+                        }
+
+                        @Override
+                        public void onFailure(String errorMessage) {
+                            Toast.makeText(ManageCategoriesActivity.this, "Error: " + errorMessage, Toast.LENGTH_SHORT).show();
+                        }
                     });
                 })
                 .setNegativeButton("Cancel", null)
