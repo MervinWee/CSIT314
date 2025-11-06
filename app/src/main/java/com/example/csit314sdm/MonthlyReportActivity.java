@@ -15,7 +15,7 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
 
-public class MonthlyReportActivity extends AppCompatActivity {
+public class MonthlyReportActivity extends AppCompatActivity implements MonthlyReportController.View {
 
     private TextInputEditText etMonth;
     private Button btnGenerateReport;
@@ -23,6 +23,7 @@ public class MonthlyReportActivity extends AppCompatActivity {
     private TextView tvTopCompany;
     private TextView tvMostRequestedService;
 
+    private MonthlyReportController controller;
     private PlatformDataAccount platformDataAccount;
     private Calendar selectedMonth = Calendar.getInstance();
 
@@ -32,6 +33,7 @@ public class MonthlyReportActivity extends AppCompatActivity {
         setContentView(R.layout.activity_monthly_report);
 
         platformDataAccount = new PlatformDataAccount();
+        controller = new MonthlyReportController(this, platformDataAccount);
 
         etMonth = findViewById(R.id.etMonth);
         btnGenerateReport = findViewById(R.id.btnGenerateReport);
@@ -41,7 +43,11 @@ public class MonthlyReportActivity extends AppCompatActivity {
 
         etMonth.setOnClickListener(v -> showMonthPickerDialog());
 
-        btnGenerateReport.setOnClickListener(v -> generateReport());
+        btnGenerateReport.setOnClickListener(v -> {
+            int year = selectedMonth.get(Calendar.YEAR);
+            int month = selectedMonth.get(Calendar.MONTH) + 1; // Calendar.MONTH is 0-based
+            controller.generateReport(year, month);
+        });
 
         btnBack.setOnClickListener(v -> finish());
 
@@ -68,26 +74,24 @@ public class MonthlyReportActivity extends AppCompatActivity {
         etMonth.setText(sdf.format(selectedMonth.getTime()));
     }
 
-    private void generateReport() {
-        btnGenerateReport.setEnabled(false);
-        Toast.makeText(this, "Generating monthly report...", Toast.LENGTH_SHORT).show();
+    @Override
+    public void showReportData(String topCompany, String mostRequestedService) {
+        tvTopCompany.setText(topCompany != null ? topCompany : "N/A");
+        tvMostRequestedService.setText(mostRequestedService != null ? mostRequestedService : "N/A");
+    }
 
-        int year = selectedMonth.get(Calendar.YEAR);
-        int month = selectedMonth.get(Calendar.MONTH) + 1; // Calendar.MONTH is 0-based
+    @Override
+    public void showError(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+    }
 
-        platformDataAccount.generateMonthlyReport(year, month, new PlatformDataAccount.MonthlyReportCallback() {
-            @Override
-            public void onReportDataLoaded(String topCompany, String mostRequestedService) {
-                tvTopCompany.setText(topCompany != null ? topCompany : "N/A");
-                tvMostRequestedService.setText(mostRequestedService != null ? mostRequestedService : "N/A");
-                btnGenerateReport.setEnabled(true);
-            }
+    @Override
+    public void setGenerateButtonEnabled(boolean enabled) {
+        btnGenerateReport.setEnabled(enabled);
+    }
 
-            @Override
-            public void onError(String message) {
-                Toast.makeText(MonthlyReportActivity.this, "Error: " + message, Toast.LENGTH_LONG).show();
-                btnGenerateReport.setEnabled(true);
-            }
-        });
+    @Override
+    public void showToast(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
 }

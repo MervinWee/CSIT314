@@ -15,7 +15,7 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
 
-public class DailyReportActivity extends AppCompatActivity {
+public class DailyReportActivity extends AppCompatActivity implements DailyReportController.View {
 
     private TextInputEditText etDate;
     private Button btnGenerateReport;
@@ -24,6 +24,7 @@ public class DailyReportActivity extends AppCompatActivity {
     private TextView tvNewRequestsCount;
     private TextView tvCompletedMatchesCount;
 
+    private DailyReportController controller;
     private PlatformDataAccount platformDataAccount;
     private Calendar selectedDate = Calendar.getInstance();
 
@@ -33,6 +34,7 @@ public class DailyReportActivity extends AppCompatActivity {
         setContentView(R.layout.activity_daily_report);
 
         platformDataAccount = new PlatformDataAccount();
+        controller = new DailyReportController(this, platformDataAccount);
 
         etDate = findViewById(R.id.etDate);
         btnGenerateReport = findViewById(R.id.btnGenerateReport);
@@ -43,7 +45,7 @@ public class DailyReportActivity extends AppCompatActivity {
 
         etDate.setOnClickListener(v -> showDatePickerDialog());
 
-        btnGenerateReport.setOnClickListener(v -> generateReport());
+        btnGenerateReport.setOnClickListener(v -> controller.generateReport(selectedDate.getTime()));
 
         btnBack.setOnClickListener(v -> finish());
 
@@ -71,28 +73,25 @@ public class DailyReportActivity extends AppCompatActivity {
         etDate.setText(sdf.format(selectedDate.getTime()));
     }
 
-    private void generateReport() {
-        btnGenerateReport.setEnabled(false);
-        Toast.makeText(this, "Generating report...", Toast.LENGTH_SHORT).show();
+    @Override
+    public void showReportData(int newUserCount, int newRequestCount, int completedMatchesCount) {
+        tvNewUsersCount.setText(String.valueOf(newUserCount));
+        tvNewRequestsCount.setText(String.valueOf(newRequestCount));
+        tvCompletedMatchesCount.setText(String.valueOf(completedMatchesCount));
+    }
 
-        platformDataAccount.generateDailyReport(selectedDate.getTime(), new PlatformDataAccount.DailyReportCallback() {
-            @Override
-            public void onReportDataLoaded(int newUserCount, int newRequestCount, int completedMatchesCount) {
+    @Override
+    public void showError(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+    }
 
-                String successMsg = String.format("Report complete: %d users, %d requests, %d matches", newUserCount, newRequestCount, completedMatchesCount);
-                Toast.makeText(DailyReportActivity.this, successMsg, Toast.LENGTH_LONG).show();
+    @Override
+    public void setGenerateButtonEnabled(boolean enabled) {
+        btnGenerateReport.setEnabled(enabled);
+    }
 
-                tvNewUsersCount.setText(String.valueOf(newUserCount));
-                tvNewRequestsCount.setText(String.valueOf(newRequestCount));
-                tvCompletedMatchesCount.setText(String.valueOf(completedMatchesCount));
-                btnGenerateReport.setEnabled(true);
-            }
-
-            @Override
-            public void onError(String message) {
-                Toast.makeText(DailyReportActivity.this, "Error: " + message, Toast.LENGTH_LONG).show();
-                btnGenerateReport.setEnabled(true);
-            }
-        });
+    @Override
+    public void showToast(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
 }

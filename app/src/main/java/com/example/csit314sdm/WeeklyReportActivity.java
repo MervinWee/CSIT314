@@ -15,7 +15,7 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
 
-public class WeeklyReportActivity extends AppCompatActivity {
+public class WeeklyReportActivity extends AppCompatActivity implements WeeklyReportController.View {
 
     private TextInputEditText etStartDate;
     private TextInputEditText etEndDate;
@@ -25,6 +25,7 @@ public class WeeklyReportActivity extends AppCompatActivity {
     private TextView tvUniqueCsrCompaniesCount;
     private TextView tvTotalCompletedMatchesCount;
 
+    private WeeklyReportController controller;
     private PlatformDataAccount platformDataAccount;
     private Calendar startDate = Calendar.getInstance();
     private Calendar endDate = Calendar.getInstance();
@@ -35,6 +36,7 @@ public class WeeklyReportActivity extends AppCompatActivity {
         setContentView(R.layout.activity_weekly_report);
 
         platformDataAccount = new PlatformDataAccount();
+        controller = new WeeklyReportController(this, platformDataAccount);
 
         etStartDate = findViewById(R.id.etStartDate);
         etEndDate = findViewById(R.id.etEndDate);
@@ -47,7 +49,7 @@ public class WeeklyReportActivity extends AppCompatActivity {
         etStartDate.setOnClickListener(v -> showStartDatePickerDialog());
         etEndDate.setOnClickListener(v -> showEndDatePickerDialog());
 
-        btnGenerateReport.setOnClickListener(v -> generateReport());
+        btnGenerateReport.setOnClickListener(v -> controller.generateReport(startDate.getTime(), endDate.getTime()));
 
         btnBack.setOnClickListener(v -> finish());
 
@@ -86,35 +88,36 @@ public class WeeklyReportActivity extends AppCompatActivity {
     }
 
     private void updateStartDateInView() {
-        String myFormat = "MM/dd/yy"; //In which you need put here
+        String myFormat = "MM/dd/yy";
         SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.US);
         etStartDate.setText(sdf.format(startDate.getTime()));
     }
 
     private void updateEndDateInView() {
-        String myFormat = "MM/dd/yy"; //In which you need put here
+        String myFormat = "MM/dd/yy";
         SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.US);
         etEndDate.setText(sdf.format(endDate.getTime()));
     }
 
-    private void generateReport() {
-        btnGenerateReport.setEnabled(false);
-        Toast.makeText(this, "Generating weekly report...", Toast.LENGTH_SHORT).show();
+    @Override
+    public void showReportData(int uniquePins, int uniqueCsrs, int totalMatches) {
+        tvUniquePinsCount.setText(String.valueOf(uniquePins));
+        tvUniqueCsrCompaniesCount.setText(String.valueOf(uniqueCsrs));
+        tvTotalCompletedMatchesCount.setText(String.valueOf(totalMatches));
+    }
 
-        platformDataAccount.generateWeeklyReport(startDate.getTime(), endDate.getTime(), new PlatformDataAccount.WeeklyReportCallback() {
-            @Override
-            public void onReportDataLoaded(int uniquePins, int uniqueCsrs, int totalMatches) {
-                tvUniquePinsCount.setText(String.valueOf(uniquePins));
-                tvUniqueCsrCompaniesCount.setText(String.valueOf(uniqueCsrs));
-                tvTotalCompletedMatchesCount.setText(String.valueOf(totalMatches));
-                btnGenerateReport.setEnabled(true);
-            }
+    @Override
+    public void showError(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+    }
 
-            @Override
-            public void onError(String message) {
-                Toast.makeText(WeeklyReportActivity.this, "Error: " + message, Toast.LENGTH_LONG).show();
-                btnGenerateReport.setEnabled(true);
-            }
-        });
+    @Override
+    public void setGenerateButtonEnabled(boolean enabled) {
+        btnGenerateReport.setEnabled(enabled);
+    }
+
+    @Override
+    public void showToast(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
 }
