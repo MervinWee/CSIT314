@@ -15,11 +15,13 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 public class EditCsrProfileActivity extends AppCompatActivity {
 
-    private UserProfileController userProfileController;
+    private UserManagementController userManagementController; // Corrected controller
     private TextInputEditText etFullName, etContactNumber, etDateOfBirth, etAddress;
     private Button btnSaveChanges;
     private ProgressBar progressBar;
@@ -29,7 +31,7 @@ public class EditCsrProfileActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_edit_csr_profile);
 
-        userProfileController = new UserProfileController();
+        userManagementController = new UserManagementController(); // Corrected instantiation
 
         MaterialToolbar toolbar = findViewById(R.id.toolbarEditCsrProfile);
         toolbar.setNavigationOnClickListener(v -> finish());
@@ -51,9 +53,10 @@ public class EditCsrProfileActivity extends AppCompatActivity {
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser != null) {
             progressBar.setVisibility(View.VISIBLE);
-            userProfileController.getUserById(currentUser.getUid(), new UserProfileController.UserLoadCallback() {
+            // Corrected to use UserManagementController and its UserCallback
+            userManagementController.fetchUserById(currentUser.getUid(), new UserManagementController.UserCallback<User>() {
                 @Override
-                public void onUserLoaded(User user) {
+                public void onSuccess(User user) { // Corrected method name
                     etFullName.setText(user.getFullName());
                     etContactNumber.setText(user.getPhoneNumber());
                     etDateOfBirth.setText(user.getDob());
@@ -62,9 +65,9 @@ public class EditCsrProfileActivity extends AppCompatActivity {
                 }
 
                 @Override
-                public void onDataLoadFailed(String errorMessage) {
+                public void onFailure(Exception e) { // Corrected method name and parameter
                     progressBar.setVisibility(View.GONE);
-                    Toast.makeText(EditCsrProfileActivity.this, "Failed to load profile: " + errorMessage, Toast.LENGTH_SHORT).show();
+                    Toast.makeText(EditCsrProfileActivity.this, "Failed to load profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 }
             });
         }
@@ -85,18 +88,26 @@ public class EditCsrProfileActivity extends AppCompatActivity {
 
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser != null) {
-            userProfileController.updateUserProfile(currentUser.getUid(), fullName, contact, dob, address, new UserProfileController.ProfileUpdateCallback() {
+            // Create a map for the updated data, as required by the controller
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("fullName", fullName);
+            updates.put("phoneNumber", contact);
+            updates.put("dob", dob);
+            updates.put("address", address);
+
+            // Corrected to use UserManagementController and its UserCallback
+            userManagementController.updateUserProfile(currentUser.getUid(), updates, new UserManagementController.UserCallback<Void>() {
                 @Override
-                public void onUpdateSuccess() {
+                public void onSuccess(Void aVoid) { // Corrected method name
                     progressBar.setVisibility(View.GONE);
                     Toast.makeText(EditCsrProfileActivity.this, "Profile updated successfully!", Toast.LENGTH_SHORT).show();
                     finish();
                 }
 
                 @Override
-                public void onUpdateFailure(String errorMessage) {
+                public void onFailure(Exception e) { // Corrected method name and parameter
                     progressBar.setVisibility(View.GONE);
-                    Toast.makeText(EditCsrProfileActivity.this, "Failed to update profile: " + errorMessage, Toast.LENGTH_SHORT).show();
+                    Toast.makeText(EditCsrProfileActivity.this, "Failed to update profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 }
             });
         }

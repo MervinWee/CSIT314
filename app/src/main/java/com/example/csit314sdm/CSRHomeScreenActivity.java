@@ -1,6 +1,5 @@
 package com.example.csit314sdm;
 
-
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Build;
@@ -9,11 +8,8 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.core.content.ContextCompat;
 import com.google.firebase.messaging.FirebaseMessaging;
-// --- END: NEW IMPORTS ---
-
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.ArrayAdapter;
@@ -40,7 +36,6 @@ import java.util.List;
 
 public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequestAdapter.OnSaveClickListener {
 
-
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
     private ImageButton btnDrawer;
@@ -54,14 +49,11 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
     private Button btnSearch;
 
     private CategoryController categoryController;
-
-
     private HelpRequestController controller;
-    private UserProfileController userProfileController;
+    private UserManagementController userManagementController;
     private HelpRequestAdapter adapter;
     private String currentCsrId;
     private boolean isShowingSaved = false;
-
 
     private final ActivityResultLauncher<String> requestPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
@@ -78,7 +70,7 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
         setContentView(R.layout.activity_csrhome_screen);
 
         controller = new HelpRequestController();
-        userProfileController = new UserProfileController();
+        userManagementController = new UserManagementController();
         categoryController = new CategoryController();
 
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
@@ -107,10 +99,8 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
     }
 
     private void askNotificationPermission() {
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-
                 requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);
             }
         }
@@ -182,7 +172,6 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
     }
 
     private void setupListeners() {
-        // --- ADDED CLICK LISTENER FOR NEW CARD ---
         cardMyInProgress.setOnClickListener(v -> {
             Intent intent = new Intent(CSRHomeScreenActivity.this, MyInProgressRequestsActivity.class);
             startActivity(intent);
@@ -222,7 +211,6 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
             int itemId = item.getItemId();
 
             if (itemId == R.id.nav_my_requests) {
-                // --- MODIFIED: Launch new activity from drawer as well ---
                 Intent intent = new Intent(CSRHomeScreenActivity.this, MyInProgressRequestsActivity.class);
                 startActivity(intent);
             } else if (itemId == R.id.nav_history) {
@@ -299,9 +287,9 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
     }
 
     private void loadUserDetails() {
-        userProfileController.getUserById(currentCsrId, new UserProfileController.UserLoadCallback() {
+        userManagementController.fetchUserById(currentCsrId, new UserManagementController.UserCallback<User>() {
             @Override
-            public void onUserLoaded(User user) {
+            public void onSuccess(User user) {
                 runOnUiThread(() -> {
                     setWelcomeMessage(user);
 
@@ -315,7 +303,6 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
                             });
 
                     populateFilterSpinners();
-                    // Set default view to "Active Requests" (or any other default you prefer)
                     tvListTitle.setText("Active Requests");
                     isShowingSaved = false;
                     loadActiveRequests();
@@ -323,7 +310,7 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
             }
 
             @Override
-            public void onDataLoadFailed(String errorMessage) {
+            public void onFailure(Exception e) {
                 runOnUiThread(() -> {
                     Toast.makeText(CSRHomeScreenActivity.this, "Could not load user profile.", Toast.LENGTH_SHORT).show();
                     populateFilterSpinners();
@@ -379,9 +366,9 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
 
     private void loadCompletedRequests() {
         showLoading(true);
-        userProfileController.getUserById(currentCsrId, new UserProfileController.UserLoadCallback() {
+        userManagementController.fetchUserById(currentCsrId, new UserManagementController.UserCallback<User>() {
             @Override
-            public void onUserLoaded(User user) {
+            public void onSuccess(User user) {
                 String companyId = user.getCompanyId();
                 if (companyId == null || companyId.isEmpty()) {
                     showError("Cannot fetch history: Your user profile is missing a Company ID.");
@@ -408,7 +395,7 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
             }
 
             @Override
-            public void onDataLoadFailed(String errorMessage) {
+            public void onFailure(Exception e) {
                 showError("Cannot fetch history: Could not load your user profile.");
             }
         });

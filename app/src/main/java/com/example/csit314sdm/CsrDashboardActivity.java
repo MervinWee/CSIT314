@@ -264,21 +264,31 @@ public class CsrDashboardActivity extends AppCompatActivity implements HelpReque
     }
 
     private void loadUserDetails() {
-        if (currentCsrId == null) return;
+        if (currentCsrId == null) {
+            // If there's no user ID, we can't proceed.
+            Toast.makeText(this, "Critical error: User is not logged in.", Toast.LENGTH_LONG).show();
+            handleLogout(); // Log out the user as a safety measure.
+            return;
+        }
 
-        userProfileController.getUserById(currentCsrId, new UserProfileController.UserLoadCallback() {
+        // Call the method with the correct callback interface from the User class
+        userProfileController.getUserById(currentCsrId, new User.UserCallback<User>() {
             @Override
-            public void onUserLoaded(User user) {
+            public void onSuccess(User user) {
+                // This is the success method
                 runOnUiThread(() -> {
                     setWelcomeMessage(user);
                     populateFilterSpinners();
                     loadSavedRequests();
                 });
             }
+
             @Override
-            public void onDataLoadFailed(String errorMessage) {
+            public void onFailure(Exception e) {
+                // This is the failure method
                 runOnUiThread(() -> {
-                    Toast.makeText(CsrDashboardActivity.this, "Could not load user profile.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(CsrDashboardActivity.this, "Could not load user profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    // Still try to load other components so the app doesn't just sit blank
                     populateFilterSpinners();
                     loadSavedRequests();
                 });

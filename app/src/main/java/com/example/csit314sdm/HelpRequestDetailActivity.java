@@ -1,6 +1,5 @@
 package com.example.csit314sdm;
 
-import android.content.DialogInterface; // Added for the confirmation dialog
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
@@ -13,6 +12,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.appbar.MaterialToolbar;
+import com.google.android.material.card.MaterialCardView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
@@ -22,19 +22,21 @@ import java.util.Locale;
 
 public class HelpRequestDetailActivity extends AppCompatActivity {
 
-    public static final String EXTRA_REQUEST_ID = "request_id";
-
-    private MaterialToolbar topAppBar;
-    private ProgressBar progressBar;
-    private TextView tvRequestType, tvStatus, tvDescription, tvLocation, tvPreferredTime, tvUrgency, tvPostedDate, tvDetailViewCount, tvDetailShortlistCount, tvDetailPinName, tvDetailPinId, tvDetailPinPhone;
-    private Button btnCancelRequest, btnCompleteRequest, btnAcceptRequest;
-    private View layoutPinContactInfo; // The container for sensitive info
+    public static final String EXTRA_REQUEST_ID = "REQUEST_ID";
 
     private HelpRequestController detailController;
-    private UserProfileController userProfileController;
-    private HelpRequest currentRequest;
+    private UserManagementController userManagementController; // Corrected controller
+    private MaterialToolbar topAppBar;
+    private ProgressBar progressBar;
+    private TextView tvRequestType, tvStatus, tvDescription, tvLocation, tvPreferredTime, tvUrgency, tvPostedDate;
+    private TextView tvDetailViewCount, tvDetailShortlistCount;
+    private MaterialCardView layoutPinContactInfo;
+    private TextView tvDetailPinName, tvDetailPinId, tvDetailPinPhone;
+    private Button btnCancelRequest, btnCompleteRequest, btnAcceptRequest;
+
     private String currentRequestId;
     private String userRole;
+    private HelpRequest currentRequest;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,7 +53,7 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
         }
 
         detailController = new HelpRequestController();
-        userProfileController = new UserProfileController();
+        userManagementController = new UserManagementController(); // Corrected instantiation
 
         initializeUI();
     }
@@ -152,21 +154,16 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         String currentUserId = (currentUser != null) ? currentUser.getUid() : "";
 
-
         if (isPinUser) {
-
             if ("Open".equals(request.getStatus())) {
                 btnCancelRequest.setText("Cancel This Request");
                 btnCancelRequest.setVisibility(View.VISIBLE);
                 topAppBar.getMenu().findItem(R.id.action_edit_request).setVisible(true);
             } else if ("In-progress".equals(request.getStatus())) {
-
                 btnCancelRequest.setText("Release Assigned CSR");
                 btnCancelRequest.setVisibility(View.VISIBLE);
             }
-
         } else if (isCsrUser) {
-            // Logic for the Customer Service Representative (CSR)
             if ("Open".equals(request.getStatus())) {
                 btnAcceptRequest.setVisibility(View.VISIBLE);
             } else if ("In-progress".equals(request.getStatus())) {
@@ -175,7 +172,6 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
                     btnCancelRequest.setText("Cancel This Request");
                     btnCancelRequest.setVisibility(View.VISIBLE);
 
-                    // Also show PIN contact details to the assigned CSR
                     layoutPinContactInfo.setVisibility(View.VISIBLE);
                     tvDetailPinName.setText(request.getPinName());
                     tvDetailPinPhone.setText(request.getPinPhoneNumber());
@@ -198,7 +194,6 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
         }
     }
 
-
     private void handleCancelClick() {
         if ("PIN".equals(userRole)) {
             if ("In-progress".equals(currentRequest.getStatus())) {
@@ -207,7 +202,6 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
                 showPinCancelConfirmationDialog();
             }
         } else if ("CSR".equals(userRole)) {
-
             showCsrReleaseConfirmationDialog();
         }
     }
@@ -221,7 +215,6 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
                 .setIcon(android.R.drawable.ic_dialog_alert)
                 .show();
     }
-
 
     private void performPinReleaseRequest() {
         progressBar.setVisibility(View.VISIBLE);
@@ -244,7 +237,6 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
             }
         });
     }
-
 
     private void showPinCancelConfirmationDialog() {
         new AlertDialog.Builder(this)
@@ -366,9 +358,10 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
 
         String currentUserId = currentUser.getUid();
 
-        userProfileController.getUserById(currentUserId, new UserProfileController.UserLoadCallback() {
+        // Corrected to use UserManagementController and its UserCallback
+        userManagementController.fetchUserById(currentUserId, new UserManagementController.UserCallback<User>() {
             @Override
-            public void onUserLoaded(User user) {
+            public void onSuccess(User user) { // Corrected method name
                 if (user != null && user.getCompanyId() != null && !user.getCompanyId().isEmpty()) {
                     String companyId = user.getCompanyId();
 
@@ -401,10 +394,10 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onDataLoadFailed(String errorMessage) {
+            public void onFailure(Exception e) { // Corrected method name and parameter
                 progressBar.setVisibility(View.GONE);
                 btnAcceptRequest.setEnabled(true);
-                Toast.makeText(HelpRequestDetailActivity.this, "Failed to get user profile: " + errorMessage, Toast.LENGTH_LONG).show();
+                Toast.makeText(HelpRequestDetailActivity.this, "Failed to get user profile: " + e.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
     }

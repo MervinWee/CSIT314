@@ -3,7 +3,6 @@ package com.example.csit314sdm;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
@@ -50,9 +49,10 @@ public class UserManagementActivity extends AppCompatActivity {
     private void setupRecyclerView() {
         RecyclerView recyclerView = findViewById(R.id.usersRecyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        // Corrected the click listener to use user.getId() instead of user.getUid()
         adapter = new UserAdapter(user -> {
             Intent intent = new Intent(UserManagementActivity.this, UserDetailActivity.class);
-            intent.putExtra("USER_ID", user.getUid());
+            intent.putExtra("USER_ID", user.getId()); // Use getId() which holds the document ID
             startActivity(intent);
         });
         recyclerView.setAdapter(adapter);

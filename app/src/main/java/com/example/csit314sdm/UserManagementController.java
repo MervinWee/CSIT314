@@ -1,113 +1,86 @@
 package com.example.csit314sdm;
 
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.Query;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
-
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 public class UserManagementController {
-
-    private final FirebaseFirestore db = FirebaseFirestore.getInstance();
-    private static final String USERS_COLLECTION = "users";
 
     public interface UserCallback<T> {
         void onSuccess(T result);
         void onFailure(Exception e);
     }
 
-    // --- Search and Filter Method ---
     public void searchUsers(String searchText, String role, UserCallback<List<User>> callback) {
-        Query query = db.collection(USERS_COLLECTION);
+        User.searchUsers(searchText, role, new User.UserCallback<List<User>>() {
+            @Override
+            public void onSuccess(List<User> result) {
+                callback.onSuccess(result);
+            }
 
-        // Apply role filter if a specific role is selected
-        if (role != null && !role.equalsIgnoreCase("All")) {
-            query = query.whereEqualTo("role", role);
-        }
-
-        // Always sort by email for consistent ordering
-        query = query.orderBy("email");
-
-        // Apply search text filter for email
-        if (searchText != null && !searchText.isEmpty()) {
-            query = query.whereGreaterThanOrEqualTo("email", searchText)
-                    .whereLessThanOrEqualTo("email", searchText + "\uf8ff");
-        }
-
-        query.get()
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    // FIX: Manually iterate to set the correct ID
-                    List<User> users = new ArrayList<>();
-                    for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
-                        User user = document.toObject(User.class);
-                        // *** FIX: Changed setUid to setId ***
-                        user.setId(document.getId());
-                        users.add(user);
-                    }
-                    callback.onSuccess(users);
-                })
-                .addOnFailureListener(callback::onFailure);
-    }
-
-
-    // --- Existing Methods (Now Corrected) ---
-
-    public void fetchAllUsers(UserCallback<List<User>> callback) {
-        db.collection(USERS_COLLECTION).orderBy("email").get() // Added orderBy for consistency
-                .addOnSuccessListener(queryDocumentSnapshots -> {
-                    // FIX: Manually iterate to set the correct ID
-                    List<User> users = new ArrayList<>();
-                    for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
-                        User user = document.toObject(User.class);
-                        // *** FIX: Changed setUid to setId ***
-                        user.setId(document.getId());
-                        users.add(user);
-                    }
-                    callback.onSuccess(users);
-                })
-                .addOnFailureListener(callback::onFailure);
+            @Override
+            public void onFailure(Exception e) {
+                callback.onFailure(e);
+            }
+        });
     }
 
     public void fetchUserById(String userId, UserCallback<User> callback) {
-        db.collection(USERS_COLLECTION).document(userId).get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (documentSnapshot.exists()) {
-                        User user = documentSnapshot.toObject(User.class);
-                        if (user != null) {
-                            // *** FIX: Changed setUid to setId ***
-                            user.setId(documentSnapshot.getId());
-                            callback.onSuccess(user);
-                        } else {
-                            callback.onFailure(new Exception("Failed to parse user data."));
-                        }
-                    } else {
-                        callback.onFailure(new Exception("User not found."));
-                    }
-                })
-                .addOnFailureListener(callback::onFailure);
+        User.fetchUserById(userId, new User.UserCallback<User>() {
+            @Override
+            public void onSuccess(User result) {
+                callback.onSuccess(result);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                callback.onFailure(e);
+            }
+        });
     }
 
     public void updateUserProfile(String userId, Map<String, Object> updates, UserCallback<Void> callback) {
-        if (userId == null || userId.isEmpty()) {
-            callback.onFailure(new IllegalArgumentException("User ID cannot be empty."));
-            return;
-        }
-        db.collection(USERS_COLLECTION).document(userId).update(updates)
-                .addOnSuccessListener(aVoid -> callback.onSuccess(null)) // Pass null for Void
-                .addOnFailureListener(callback::onFailure);
+        User.updateUserProfile(userId, updates, new User.UserCallback<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                callback.onSuccess(result);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                callback.onFailure(e);
+            }
+        });
     }
 
     public void suspendUserProfile(String userId, UserCallback<Void> callback) {
-        db.collection(USERS_COLLECTION).document(userId).update("accountStatus", "Suspended")
-                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
-                .addOnFailureListener(callback::onFailure);
+        User.suspendUserProfile(userId, new User.UserCallback<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                callback.onSuccess(result);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                callback.onFailure(e);
+            }
+        });
     }
 
     public void reinstateUserProfile(String userId, UserCallback<Void> callback) {
-        db.collection(USERS_COLLECTION).document(userId).update("accountStatus", "Active")
-                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
-                .addOnFailureListener(callback::onFailure);
+        User.reinstateUserProfile(userId, new User.UserCallback<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                callback.onSuccess(result);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                callback.onFailure(e);
+            }
+        });
+    }
+
+    public void deleteUserAccount(String userId, User.UserDeleteCallback callback) {
+        User.deleteUserAccount(userId, callback);
     }
 }

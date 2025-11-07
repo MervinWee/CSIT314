@@ -5,15 +5,18 @@ import android.os.Bundle;
 import android.widget.Button;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
-import com.google.firebase.auth.FirebaseAuth;
 import com.google.android.material.card.MaterialCardView;
 
 public class AdminDashboardActivity extends AppCompatActivity {
+
+    private LoginController loginController;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_admin_dashboard);
+
+        loginController = new LoginController();
 
         // --- Find all the clickable cards from the layout ---
         MaterialCardView cardCreateUserAccount = findViewById(R.id.cardCreateUserAccount);
@@ -62,9 +65,9 @@ public class AdminDashboardActivity extends AppCompatActivity {
 
         if (btnAdminLogout != null) {
             btnAdminLogout.setOnClickListener(v -> {
-                FirebaseAuth.getInstance().signOut();
+                loginController.logoutUser();
                 Toast.makeText(AdminDashboardActivity.this, "You have been logged out.", Toast.LENGTH_SHORT).show();
-                Intent intent = new Intent(AdminDashboardActivity.this, loginPage.class);
+                Intent intent = new Intent(AdminDashboardActivity.this, LoginActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 startActivity(intent);
                 finish();

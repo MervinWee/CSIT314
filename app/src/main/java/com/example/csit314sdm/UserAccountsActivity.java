@@ -67,7 +67,8 @@ public class UserAccountsActivity extends AppCompatActivity {
 
     private void loadUsers() {
         progressBar.setVisibility(View.VISIBLE);
-        controller.fetchAllUsers(new UserManagementController.UserCallback<List<User>>() {
+        // Corrected to use the existing searchUsers method to fetch all users
+        controller.searchUsers("", "All", new UserManagementController.UserCallback<List<User>>() {
             @Override
             public void onSuccess(List<User> users) {
                 progressBar.setVisibility(View.GONE);
