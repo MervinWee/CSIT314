@@ -117,7 +117,7 @@ public class MyCompletedRequestsActivity extends AppCompatActivity {
 
         showLoading(true);
 
-        controller.searchMyCompletedRequests(keyword, location, category, new HelpRequest.HelpRequestsLoadCallback() {
+        controller.searchMyCompletedRequests(keyword, location, category, new HelpRequestController.HelpRequestsLoadCallback() {
             @Override
             public void onRequestsLoaded(List<HelpRequest> requests) {
                 showLoading(false);

@@ -2,7 +2,6 @@ package com.example.csit314sdm;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.ProgressBar;
@@ -63,16 +62,13 @@ public class MyRequestsActivity extends AppCompatActivity {
         if (intent != null && intent.hasExtra("STATUS_FILTER")) {
             String filterValue = intent.getStringExtra("STATUS_FILTER");
             if ("History".equals(filterValue)) {
-
                 currentStatusFilter = "History";
                 topAppBar.setTitle("My History");
             } else if ("Active".equals(filterValue)) {
-
                 currentStatusFilter = "Active";
                 topAppBar.setTitle("My Active Requests");
             }
         }
-
 
         setupRecyclerView();
     }
@@ -80,7 +76,6 @@ public class MyRequestsActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-
         loadHelpRequestsWithListener();
     }
 
@@ -93,7 +88,6 @@ public class MyRequestsActivity extends AppCompatActivity {
     }
 
     private void setupRecyclerView() {
-
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         requestList = new ArrayList<>();
         adapter = new PinMyRequestsAdapter(requestList, this, request -> {
@@ -106,7 +100,6 @@ public class MyRequestsActivity extends AppCompatActivity {
     }
 
     private void loadHelpRequestsWithListener() {
-
         progressBar.setVisibility(View.VISIBLE);
         tvNoRequests.setVisibility(View.GONE);
         recyclerView.setVisibility(View.GONE);
@@ -116,17 +109,21 @@ public class MyRequestsActivity extends AppCompatActivity {
         }
 
         Query query = controller.getFilteredHelpRequestsQuery(currentStatusFilter);
-        if (query == null) { /* ... handle no user ... */ return; }
-
         firestoreListener = query.addSnapshotListener((snapshots, e) -> {
-            progressBar.setVisibility(View.GONE);
-            if (e != null) { /* ... handle error ... */ return; }
+            if (e != null) {
+                progressBar.setVisibility(View.GONE);
+                Toast.makeText(MyRequestsActivity.this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                tvNoRequests.setText(e.getMessage());
+                tvNoRequests.setVisibility(View.VISIBLE);
+                return;
+            }
 
+            progressBar.setVisibility(View.GONE);
             requestList.clear();
             if (snapshots != null) {
                 for (QueryDocumentSnapshot doc : snapshots) {
                     HelpRequest request = doc.toObject(HelpRequest.class);
-                    request.setId(doc.getId());
+                    request.setId(doc.getId()); // Manually set the document ID
                     requestList.add(request);
                 }
             }
@@ -134,15 +131,16 @@ public class MyRequestsActivity extends AppCompatActivity {
             if (requestList.isEmpty()) {
                 tvNoRequests.setText("No requests found matching your filter.");
                 tvNoRequests.setVisibility(View.VISIBLE);
+                recyclerView.setVisibility(View.GONE);
             } else {
                 adapter.notifyDataSetChanged();
                 recyclerView.setVisibility(View.VISIBLE);
+                tvNoRequests.setVisibility(View.GONE);
             }
         });
     }
 
     private void showFilterDialog() {
-
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_filter_requests, null);
         Spinner statusSpinner = dialogView.findViewById(R.id.spinner_status);
         ArrayAdapter<CharSequence> statusAdapter = ArrayAdapter.createFromResource(this,

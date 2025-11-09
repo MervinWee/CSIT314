@@ -18,6 +18,7 @@ import com.google.firebase.auth.FirebaseUser;
 
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Locale;
 
 public class HelpRequestDetailActivity extends AppCompatActivity {
@@ -25,7 +26,7 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
     public static final String EXTRA_REQUEST_ID = "REQUEST_ID";
 
     private HelpRequestController detailController;
-    private UserManagementController userManagementController; // Corrected controller
+    private UserManagementController userManagementController;
     private MaterialToolbar topAppBar;
     private ProgressBar progressBar;
     private TextView tvRequestType, tvStatus, tvDescription, tvLocation, tvPreferredTime, tvUrgency, tvPostedDate;
@@ -53,7 +54,7 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
         }
 
         detailController = new HelpRequestController();
-        userManagementController = new UserManagementController(); // Corrected instantiation
+        userManagementController = new UserManagementController();
 
         initializeUI();
     }
@@ -124,21 +125,21 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
     }
 
     private void populateUI(HelpRequest request) {
-        tvRequestType.setText(request.getCategory());
-        tvStatus.setText(request.getStatus());
-        tvDescription.setText(request.getDescription());
-        tvLocation.setText(request.getLocation());
-        tvPreferredTime.setText(request.getPreferredTime());
-        tvUrgency.setText(request.getUrgencyLevel());
+        tvRequestType.setText(detailController.getCategory(request));
+        tvStatus.setText(detailController.getStatus(request));
+        tvDescription.setText(detailController.getDescription(request));
+        tvLocation.setText(detailController.getLocation(request));
+        tvPreferredTime.setText(detailController.getPreferredTime(request));
+        tvUrgency.setText(detailController.getUrgencyLevel(request));
 
         NumberFormat numberFormat = NumberFormat.getNumberInstance(Locale.US);
-        tvDetailViewCount.setText(numberFormat.format(request.getViewCount()));
-        int shortlistCount = request.getSavedByCsrId() != null ? request.getSavedByCsrId().size() : 0;
-        tvDetailShortlistCount.setText(String.format("%s companies", numberFormat.format(shortlistCount)));
+        tvDetailViewCount.setText(numberFormat.format(detailController.getViewCount(request)));
+        tvDetailShortlistCount.setText(String.format("%s companies", numberFormat.format(detailController.getShortlistCount(request))));
 
-        if (request.getCreationTimestamp() != null) {
+        Date creationTimestamp = detailController.getCreationTimestamp(request);
+        if (creationTimestamp != null) {
             SimpleDateFormat sdf = new SimpleDateFormat("dd MMMM yyyy 'at' hh:mm a", Locale.getDefault());
-            tvPostedDate.setText("Posted on: " + sdf.format(request.getCreationTimestamp()));
+            tvPostedDate.setText("Posted on: " + sdf.format(creationTimestamp));
         } else {
             tvPostedDate.setText("Date not available");
         }
@@ -155,28 +156,29 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
         String currentUserId = (currentUser != null) ? currentUser.getUid() : "";
 
         if (isPinUser) {
-            if ("Open".equals(request.getStatus())) {
+            if ("Open".equals(detailController.getStatus(request))) {
                 btnCancelRequest.setText("Cancel This Request");
                 btnCancelRequest.setVisibility(View.VISIBLE);
                 topAppBar.getMenu().findItem(R.id.action_edit_request).setVisible(true);
-            } else if ("In-progress".equals(request.getStatus())) {
+            } else if ("In-progress".equals(detailController.getStatus(request))) {
                 btnCancelRequest.setText("Release Assigned CSR");
                 btnCancelRequest.setVisibility(View.VISIBLE);
             }
         } else if (isCsrUser) {
-            if ("Open".equals(request.getStatus())) {
+            if ("Open".equals(detailController.getStatus(request))) {
                 btnAcceptRequest.setVisibility(View.VISIBLE);
-            } else if ("In-progress".equals(request.getStatus())) {
-                if (currentUserId.equals(request.getAcceptedByCsrId())) {
+            } else if ("In-progress".equals(detailController.getStatus(request))) {
+                if (currentUserId.equals(detailController.getAcceptedByCsrId(request))) {
                     btnCompleteRequest.setVisibility(View.VISIBLE);
                     btnCancelRequest.setText("Cancel This Request");
                     btnCancelRequest.setVisibility(View.VISIBLE);
 
                     layoutPinContactInfo.setVisibility(View.VISIBLE);
-                    tvDetailPinName.setText(request.getPinName());
-                    tvDetailPinPhone.setText(request.getPinPhoneNumber());
-                    if (request.getPinShortId() != null) {
-                        tvDetailPinId.setText("PIN ID: " + request.getPinShortId());
+                    tvDetailPinName.setText(detailController.getPinName(request));
+                    tvDetailPinPhone.setText(detailController.getPinPhoneNumber(request));
+                    String pinShortId = detailController.getPinShortId(request);
+                    if (pinShortId != null) {
+                        tvDetailPinId.setText("PIN ID: " + pinShortId);
                     }
                 }
             }
@@ -185,7 +187,7 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
 
     private void handleEditClick() {
         if (currentRequest == null) { return; }
-        if ("Open".equals(currentRequest.getStatus())) {
+        if ("Open".equals(detailController.getStatus(currentRequest))) {
             Intent intent = new Intent(this, EditHelpRequestActivity.class);
             intent.putExtra("REQUEST_ID", currentRequestId);
             startActivity(intent);
@@ -196,7 +198,7 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
 
     private void handleCancelClick() {
         if ("PIN".equals(userRole)) {
-            if ("In-progress".equals(currentRequest.getStatus())) {
+            if ("In-progress".equals(detailController.getStatus(currentRequest))) {
                 showPinReleaseConfirmationDialog();
             } else {
                 showPinCancelConfirmationDialog();
@@ -358,10 +360,9 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
 
         String currentUserId = currentUser.getUid();
 
-        // Corrected to use UserManagementController and its UserCallback
         userManagementController.fetchUserById(currentUserId, new UserManagementController.UserCallback<User>() {
             @Override
-            public void onSuccess(User user) { // Corrected method name
+            public void onSuccess(User user) {
                 if (user != null && user.getCompanyId() != null && !user.getCompanyId().isEmpty()) {
                     String companyId = user.getCompanyId();
 
@@ -394,7 +395,7 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onFailure(Exception e) { // Corrected method name and parameter
+            public void onFailure(Exception e) {
                 progressBar.setVisibility(View.GONE);
                 btnAcceptRequest.setEnabled(true);
                 Toast.makeText(HelpRequestDetailActivity.this, "Failed to get user profile: " + e.getMessage(), Toast.LENGTH_LONG).show();

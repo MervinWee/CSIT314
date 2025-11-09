@@ -59,7 +59,11 @@ public class LoginActivity extends AppCompatActivity {
                     Intent intent = new Intent(LoginActivity.this, PlatformDashboardActivity.class);
                     startActivity(intent);
                     finish();
-                }else {
+                } else if ("PIN".equals(userRole)) {
+                    Intent intent = new Intent(LoginActivity.this, PinProfileActivity.class); 
+                    startActivity(intent);
+                    finish();
+                } else {
                     Toast.makeText(LoginActivity.this, "Invalid User Role", Toast.LENGTH_SHORT).show();
                 }
             }
