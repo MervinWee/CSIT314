@@ -51,7 +51,6 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
     private CategoryController categoryController;
     private HelpRequestController controller;
     private UserManagementController userManagementController;
-    private LoginController loginController; // Added LoginController
     private HelpRequestAdapter adapter;
     private String currentCsrId;
     private boolean isShowingSaved = false;
@@ -73,13 +72,16 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
         controller = new HelpRequestController();
         userManagementController = new UserManagementController();
         categoryController = new CategoryController();
-        loginController = new LoginController(); // Initialized LoginController
 
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser != null) {
             currentCsrId = currentUser.getUid();
         } else {
-            handleLogout();
+            // If user is somehow null, just navigate to login without cleanup
+            Intent intent = new Intent(this, loginPage.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+            finish();
             return;
         }
 
@@ -89,57 +91,7 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
         loadUserDetails();
         askNotificationPermission();
     }
-    
-    private void handleLogout() {
-        if (currentCsrId != null && !currentCsrId.isEmpty()) {
-            FirebaseMessaging.getInstance().unsubscribeFromTopic(currentCsrId);
-        }
 
-        loginController.logoutUser(); // ** THE FIX IS HERE **
-        Intent intent = new Intent(CSRHomeScreenActivity.this, LoginActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        startActivity(intent);
-        finish();
-    }
-
-    // ... (rest of the file is unchanged)
-
-    private void setupNavigationDrawer() {
-        navigationView.setNavigationItemSelectedListener(item -> {
-            int itemId = item.getItemId();
-
-            if (itemId == R.id.nav_my_requests) {
-                Intent intent = new Intent(CSRHomeScreenActivity.this, MyInProgressRequestsActivity.class);
-                startActivity(intent);
-            } else if (itemId == R.id.nav_my_matches) {
-                Intent intent = new Intent(CSRHomeScreenActivity.this, MyMatchesActivity.class);
-                startActivity(intent);
-            } else if (itemId == R.id.nav_my_profile) {
-                Intent intent = new Intent(CSRHomeScreenActivity.this, CsrProfileActivity.class);
-                startActivity(intent);
-            } else if (itemId == R.id.nav_history) {
-                Intent intent = new Intent(CSRHomeScreenActivity.this, HistoryActivity.class);
-                startActivity(intent);
-            } else if (itemId == R.id.nav_settings) {
-                Intent intent = new Intent(CSRHomeScreenActivity.this, CSRSettingsActivity.class);
-                startActivity(intent);
-            } else if (itemId == R.id.nav_logout) {
-                handleLogout();
-            }
-
-            drawerLayout.closeDrawer(GravityCompat.START);
-            return true;
-        });
-
-        btnDrawer.setOnClickListener(v -> {
-            if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
-                drawerLayout.closeDrawer(GravityCompat.START);
-            } else {
-                drawerLayout.openDrawer(GravityCompat.START);
-            }
-        });
-    }
-    
     @Override
     protected void onResume() {
         super.onResume();
@@ -225,7 +177,7 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
 
     private void setupListeners() {
         cardMyInProgress.setOnClickListener(v -> {
-            Intent intent = new Intent(CSRHomeScreenActivity.this, MyCompletedRequestsActivity.class);
+            Intent intent = new Intent(CSRHomeScreenActivity.this, MyInProgressRequestsActivity.class);
             startActivity(intent);
         });
 
@@ -255,6 +207,42 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
                 return true;
             }
             return false;
+        });
+    }
+
+    private void setupNavigationDrawer() {
+        navigationView.setNavigationItemSelectedListener(item -> {
+            int itemId = item.getItemId();
+
+            if (itemId == R.id.nav_my_requests) {
+                Intent intent = new Intent(CSRHomeScreenActivity.this, MyInProgressRequestsActivity.class);
+                startActivity(intent);
+            } else if (itemId == R.id.nav_history) {
+                Intent intent = new Intent(CSRHomeScreenActivity.this, HistoryActivity.class);
+                startActivity(intent);
+            } else if (itemId == R.id.nav_settings) {
+                Intent intent = new Intent(CSRHomeScreenActivity.this, CSRSettingsActivity.class);
+                startActivity(intent);
+            } else if (itemId == R.id.nav_logout) {
+                LogoutController logoutController = new LogoutController(currentCsrId);
+                logoutController.logout(() -> {
+                    Intent intent = new Intent(CSRHomeScreenActivity.this, loginPage.class);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
+                    finish();
+                });
+            }
+
+            drawerLayout.closeDrawer(GravityCompat.START);
+            return true;
+        });
+
+        btnDrawer.setOnClickListener(v -> {
+            if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+                drawerLayout.closeDrawer(GravityCompat.START);
+            } else {
+                drawerLayout.openDrawer(GravityCompat.START);
+            }
         });
     }
 

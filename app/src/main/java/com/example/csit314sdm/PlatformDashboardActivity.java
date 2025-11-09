@@ -4,20 +4,19 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Button;
 import androidx.appcompat.app.AppCompatActivity;
-import com.google.firebase.auth.FirebaseAuth;
 
 public class PlatformDashboardActivity extends AppCompatActivity {
 
-
     private PlatformDataAccount platformDataAccount;
+    private LogoutController logoutController;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_platform_dashboard);
 
-
         platformDataAccount = new PlatformDataAccount();
+        logoutController = new LogoutController(platformDataAccount);
 
         Button btnManageCategories = findViewById(R.id.btnManageCategories);
         Button btnPlatformLogout = findViewById(R.id.btnPlatformLogout);
@@ -46,16 +45,14 @@ public class PlatformDashboardActivity extends AppCompatActivity {
         });
 
         btnPlatformLogout.setOnClickListener(v -> {
-
-            if (platformDataAccount != null) {
-                platformDataAccount.cleanupAllListeners();
-            }
-            
-            FirebaseAuth.getInstance().signOut();
-
-            Intent intent = new Intent(PlatformDashboardActivity.this, loginPage.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            startActivity(intent);
+            logoutController.logout(new LogoutController.LogoutCallback() {
+                @Override
+                public void onLogoutComplete() {
+                    Intent intent = new Intent(PlatformDashboardActivity.this, loginPage.class);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
+                }
+            });
         });
     }
 }

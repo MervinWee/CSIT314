@@ -9,14 +9,15 @@ import com.google.android.material.card.MaterialCardView;
 
 public class AdminDashboardActivity extends AppCompatActivity {
 
-    private LoginController loginController;
+    private LogoutController logoutController;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_admin_dashboard);
 
-        loginController = new LoginController();
+        // Initialize the standard logout controller for users with no special cleanup needs.
+        logoutController = new LogoutController();
 
         // --- Find all the clickable cards from the layout ---
         MaterialCardView cardCreateUserAccount = findViewById(R.id.cardCreateUserAccount);
@@ -42,14 +43,10 @@ public class AdminDashboardActivity extends AppCompatActivity {
             });
         }
 
-
-
         if (cardRetrieveUserAccount != null) {
             cardRetrieveUserAccount.setOnClickListener(v -> {
                 Intent intent = new Intent(AdminDashboardActivity.this, UserAccountsActivity.class);
-
                 intent.putExtra("MODE", "VIEW_ONLY");
-
                 startActivity(intent);
             });
         }
@@ -62,15 +59,18 @@ public class AdminDashboardActivity extends AppCompatActivity {
             });
         }
 
-
         if (btnAdminLogout != null) {
             btnAdminLogout.setOnClickListener(v -> {
-                loginController.logoutUser();
-                Toast.makeText(AdminDashboardActivity.this, "You have been logged out.", Toast.LENGTH_SHORT).show();
-                Intent intent = new Intent(AdminDashboardActivity.this, LoginActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                startActivity(intent);
-                finish();
+                logoutController.logout(new LogoutController.LogoutCallback() {
+                    @Override
+                    public void onLogoutComplete() {
+                        Toast.makeText(AdminDashboardActivity.this, "You have been logged out.", Toast.LENGTH_SHORT).show();
+                        Intent intent = new Intent(AdminDashboardActivity.this, loginPage.class); // Corrected to loginPage
+                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                        startActivity(intent);
+                        finish();
+                    }
+                });
             });
         }
     }
