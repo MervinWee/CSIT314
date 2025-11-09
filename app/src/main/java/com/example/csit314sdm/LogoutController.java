@@ -58,4 +58,8 @@ public class LogoutController {
             callback.onLogoutComplete();
         }
     }
+
+    public void logoutUser() {
+        User.logoutUser();
+    }
 }

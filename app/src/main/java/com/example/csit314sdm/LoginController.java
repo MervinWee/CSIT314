@@ -36,7 +36,4 @@ public class LoginController {
         });
     }
 
-    public void logoutUser() {
-        User.logoutUser();
-    }
 }
