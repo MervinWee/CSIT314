@@ -26,12 +26,15 @@ public class RegistrationController {
      */
     public void registerUser(String email, String password, String role, final RegistrationCallback callback) {
         if ("CSR".equals(role)) {
+            // If the role is CSR, generate a company ID and pass it.
             String companyId = generateUniqueCompanyId();
             User.createUser(email, password, role, companyId, callback);
         } else {
-            User.createUser(email, password, role, callback);
+            // If the role is anything else (e.g., Admin, PIN), pass null for the company ID.
+            User.createUser(email, password, role, null, callback);
         }
     }
+
 
     /**
      * A private helper method that encapsulates the business rule for generating a company ID.

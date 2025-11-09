@@ -2,7 +2,6 @@ package com.example.csit314sdm;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.ArrayAdapter;
@@ -12,25 +11,21 @@ import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-
 import java.util.ArrayList;
 import java.util.List;
 
 public class CsrDashboardActivity extends AppCompatActivity implements HelpRequestAdapter.OnSaveClickListener {
 
-    // --- UI Elements ---
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
     private ImageButton btnDrawer;
@@ -264,21 +259,31 @@ public class CsrDashboardActivity extends AppCompatActivity implements HelpReque
     }
 
     private void loadUserDetails() {
-        if (currentCsrId == null) return;
+        if (currentCsrId == null) {
+            // If there's no user ID, we can't proceed.
+            Toast.makeText(this, "Critical error: User is not logged in.", Toast.LENGTH_LONG).show();
+            handleLogout(); // Log out the user as a safety measure.
+            return;
+        }
 
-        userProfileController.getUserById(currentCsrId, new UserProfileController.UserLoadCallback() {
+        // Call the method with the correct callback interface from the User class
+        userProfileController.getUserById(currentCsrId, new User.UserCallback<User>() {
             @Override
-            public void onUserLoaded(User user) {
+            public void onSuccess(User user) {
+                // This is the success method
                 runOnUiThread(() -> {
                     setWelcomeMessage(user);
                     populateFilterSpinners();
                     loadSavedRequests();
                 });
             }
+
             @Override
-            public void onDataLoadFailed(String errorMessage) {
+            public void onFailure(Exception e) {
+                // This is the failure method
                 runOnUiThread(() -> {
-                    Toast.makeText(CsrDashboardActivity.this, "Could not load user profile.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(CsrDashboardActivity.this, "Could not load user profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    // Still try to load other components so the app doesn't just sit blank
                     populateFilterSpinners();
                     loadSavedRequests();
                 });
