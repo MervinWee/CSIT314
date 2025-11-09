@@ -1,0 +1,293 @@
+Index: app/src/main/java/com/example/csit314sdm/HelpRequest.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.csit314sdm;\r\n\r\nimport com.google.firebase.auth.FirebaseAuth;\r\nimport com.google.firebase.auth.FirebaseUser;\r\nimport com.google.firebase.firestore.FieldValue;\r\nimport com.google.firebase.firestore.FirebaseFirestore;\r\nimport com.google.firebase.firestore.Query;\r\nimport com.google.firebase.firestore.QueryDocumentSnapshot;\r\nimport com.google.firebase.firestore.ServerTimestamp;\r\n\r\nimport java.util.ArrayList;\r\nimport java.util.Arrays;\r\nimport java.util.Calendar;\r\nimport java.util.Collections;\r\nimport java.util.Date;\r\nimport java.util.HashMap;\r\nimport java.util.List;\r\nimport java.util.Map;\r\nimport java.util.stream.Collectors;\r\n\r\npublic class HelpRequest {\r\n\r\n    // --- Fields ---\r\n    private String id;\r\n    private String title, description, region, location, submittedBy, pinId, pinName, pinShortId;\r\n    private String requestType, preferredTime, urgencyLevel, status, category, organization, companyId, acceptedByCsrId;\r\n    private Date shortlistedDate;\r\n    private long viewCount = 0;\r\n    private List<String> savedByCsrId;\r\n    private String pinPhoneNumber;\r\n\r\n    @ServerTimestamp\r\n    private Date creationTimestamp;\r\n\r\n    // --- Constructors ---\r\n    public HelpRequest() {}\r\n\r\n    // --- Getters and Setters (omitted for brevity, but they exist) ---\r\n    public String getId() { return id; }\r\n    public void setId(String id) { this.id = id; }\r\n    public String getTitle() { return title; }\r\n    public void setTitle(String title) { this.title = title; }\r\n    public String getDescription() { return description; }\r\n    public void setDescription(String description) { this.description = description; }\r\n    public String getRegion() { return region; }\r\n    public void setRegion(String region) { this.region = region; }\r\n    public String getLocation() { return location; }\r\n    public void setLocation(String location) { this.location = location; }\r\n    public String getSubmittedBy() { return submittedBy; }\r\n    public void setSubmittedBy(String submittedBy) { this.submittedBy = submittedBy; }\r\n    public String getPinId() { return pinId; }\r\n    public void setPinId(String pinId) { this.pinId = pinId; }\r\n    public String getPinName() { return pinName; }\r\n    public void setPinName(String pinName) { this.pinName = pinName; }\r\n    public String getPinShortId() { return pinShortId; }\r\n    public void setPinShortId(String pinShortId) { this.pinShortId = pinShortId; }\r\n    public String getRequestType() { return requestType; }\r\n    public void setRequestType(String requestType) { this.requestType = requestType; }\r\n    public String getPreferredTime() { return preferredTime; }\r\n    public void setPreferredTime(String preferredTime) { this.preferredTime = preferredTime; }\r\n    public String getUrgencyLevel() { return urgencyLevel; }\r\n    public void setUrgencyLevel(String urgencyLevel) { this.urgencyLevel = urgencyLevel; }\r\n    public String getStatus() { return status; }\r\n    public void setStatus(String status) { this.status = status; }\r\n    public String getCategory() { return category; }\r\n    public void setCategory(String category) { this.category = category; }\r\n    public String getOrganization() { return organization; }\r\n    public void setOrganization(String organization) { this.organization = organization; }\r\n    public String getCompanyId() { return companyId; }\r\n    public void setCompanyId(String companyId) { this.companyId = companyId; }\r\n    public String getAcceptedByCsrId() { return acceptedByCsrId; }\r\n    public void setAcceptedByCsrId(String acceptedByCsrId) { this.acceptedByCsrId = acceptedByCsrId; }\r\n    public Date getShortlistedDate() { return shortlistedDate; }\r\n    public void setShortlistedDate(Date shortlistedDate) { this.shortlistedDate = shortlistedDate; }\r\n    public long getViewCount() { return viewCount; }\r\n    public void setViewCount(long viewCount) { this.viewCount = viewCount; }\r\n    public List<String> getSavedByCsrId() { return savedByCsrId; }\r\n    public void setSavedByCsrId(List<String> savedByCsrId) { this.savedByCsrId = savedByCsrId; }\r\n    public String getPinPhoneNumber() { return pinPhoneNumber; }\r\n    public void setPinPhoneNumber(String pinPhoneNumber) { this.pinPhoneNumber = pinPhoneNumber; }\r\n    public Date getCreationTimestamp() { return creationTimestamp; }\r\n    public void setCreationTimestamp(Date creationTimestamp) { this.creationTimestamp = creationTimestamp; }\r\n\r\n    // --- Active Record Methods ---\r\n\r\n    public static void findById(String requestId, String userRole, final HelpRequestController.SingleRequestLoadCallback callback) {\r\n        FirebaseFirestore db = FirebaseFirestore.getInstance();\r\n        if (requestId == null || requestId.isEmpty()) {\r\n            if (callback != null) callback.onDataLoadFailed(\"Invalid Request ID provided.\");\r\n            return;\r\n        }\r\n\r\n        if (\"CSR\".equals(userRole)) {\r\n            db.collection(\"help_requests\").document(requestId).update(\"viewCount\", FieldValue.increment(1));\r\n        }\r\n\r\n        db.collection(\"help_requests\").document(requestId).get()\r\n            .addOnSuccessListener(requestDoc -> {\r\n                if (!requestDoc.exists()) {\r\n                    if (callback != null) callback.onDataLoadFailed(\"Request not found.\");\r\n                    return;\r\n                }\r\n                HelpRequest request = requestDoc.toObject(HelpRequest.class);\r\n                if (request == null) {\r\n                    if (callback != null) callback.onDataLoadFailed(\"Failed to parse request data.\");\r\n                    return;\r\n                }\r\n                request.setId(requestDoc.getId());\r\n\r\n                if (request.getSubmittedBy() != null && !request.getSubmittedBy().isEmpty()) {\r\n                    db.collection(\"users\").document(request.getSubmittedBy()).get()\r\n                        .addOnSuccessListener(pinUserDoc -> {\r\n                            if (pinUserDoc.exists()) {\r\n                                request.setPinName(pinUserDoc.getString(\"fullName\"));\r\n                                Object shortIdObj = pinUserDoc.get(\"shortId\");\r\n                                if (shortIdObj != null) {\r\n                                    request.setPinShortId(String.valueOf(shortIdObj));\r\n                                }\r\n                                request.setPinPhoneNumber(pinUserDoc.getString(\"phoneNumber\"));\r\n                            } else {\r\n                                request.setPinName(\"Unknown User\");\r\n                                request.setPinPhoneNumber(\"Not Available\");\r\n                            }\r\n                            if (callback != null) callback.onRequestLoaded(request);\r\n                        })\r\n                        .addOnFailureListener(e -> {\r\n                            request.setPinName(\"Error\");\r\n                            request.setPinPhoneNumber(\"Error\");\r\n                            if (callback != null) callback.onRequestLoaded(request);\r\n                        });\r\n                } else {\r\n                    request.setPinName(\"N/A\");\r\n                    request.setPinPhoneNumber(\"N/A\");\r\n                    if (callback != null) callback.onRequestLoaded(request);\r\n                }\r\n            })\r\n            .addOnFailureListener(e -> {\r\n                if (callback != null) callback.onDataLoadFailed(e.getMessage());\r\n            });\r\n    }\r\n\r\n    public void update(final HelpRequestController.UpdateCallback callback) {\r\n        FirebaseFirestore db = FirebaseFirestore.getInstance();\r\n        if (this.id == null || this.id.isEmpty()) {\r\n            if (callback != null) callback.onUpdateFailure(\"Cannot update request without an ID.\");\r\n            return;\r\n        }\r\n        db.collection(\"help_requests\").document(this.id).set(this)\r\n            .addOnSuccessListener(aVoid -> {\r\n                if (callback != null) callback.onUpdateSuccess();\r\n            })\r\n            .addOnFailureListener(e -> {\r\n                if (callback != null) callback.onUpdateFailure(e.getMessage());\r\n            });\r\n    }\r\n    \r\n    public static void getCategories(final HelpRequestController.CategoryListCallback callback) {\r\n        FirebaseFirestore.getInstance().collection(\"HelpCategories\").orderBy(\"name\").get()\r\n                .addOnSuccessListener(queryDocumentSnapshots -> {\r\n                    if (queryDocumentSnapshots != null) {\r\n                        List<Category> categories = new ArrayList<>();\r\n                        for (QueryDocumentSnapshot doc : queryDocumentSnapshots) {\r\n                            Category category = doc.toObject(Category.class);\r\n                            category.setId(doc.getId());\r\n                            categories.add(category);\r\n                        }\r\n                        if (callback != null) callback.onCategoriesLoaded(categories);\r\n                    }\r\n                })\r\n                .addOnFailureListener(e -> {\r\n                    if (callback != null) callback.onDataLoadFailed(e.getMessage());\r\n                });\r\n    }\r\n\r\n    public static void cancelRequest(String requestId, final HelpRequestController.DeleteCallback callback) {\r\n        if (requestId == null || requestId.isEmpty()) {\r\n            if (callback != null) callback.onDeleteFailure(\"Invalid Request ID.\");\r\n            return;\r\n        }\r\n        FirebaseFirestore.getInstance().collection(\"help_requests\").document(requestId).update(\"status\", \"Cancelled\")\r\n                .addOnSuccessListener(aVoid -> { if (callback != null) callback.onDeleteSuccess(); })\r\n                .addOnFailureListener(e -> { if (callback != null) callback.onDeleteFailure(e.getMessage()); });\r\n    }\r\n\r\n    public static Query getFilteredHelpRequestsQuery(String statusFilter) {\r\n        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();\r\n        if (currentUser == null) return null;\r\n        String pinId = currentUser.getUid();\r\n        Query query = FirebaseFirestore.getInstance().collection(\"help_requests\").whereEqualTo(\"submittedBy\", pinId);\r\n\r\n        if (\"History\".equalsIgnoreCase(statusFilter)) {\r\n            query = query.whereIn(\"status\", Arrays.asList(\"Completed\", \"Cancelled\"));\r\n        } else if (\"Active\".equalsIgnoreCase(statusFilter)) {\r\n            query = query.whereIn(\"status\", Arrays.asList(\"Open\", \"In-progress\"));\r\n        } else if (statusFilter != null && !statusFilter.isEmpty() && !\"All\".equalsIgnoreCase(statusFilter)) {\r\n            query = query.whereEqualTo(\"status\", statusFilter);\r\n        }\r\n\r\n        return query.orderBy(\"creationTimestamp\", Query.Direction.DESCENDING);\r\n    }\r\n\r\n    public static Query getMatchHistoryQuery(String category, Date fromDate, Date toDate) {\r\n        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();\r\n        if (currentUser == null) return null;\r\n        String pinId = currentUser.getUid();\r\n\r\n        Query query = FirebaseFirestore.getInstance().collection(\"help_requests\")\r\n                .whereEqualTo(\"submittedBy\", pinId)\r\n                .whereIn(\"status\", Arrays.asList(\"Completed\", \"Cancelled\"));\r\n\r\n        if (category != null && !category.isEmpty() && !\"All\".equalsIgnoreCase(category)) {\r\n            query = query.whereEqualTo(\"category\", category);\r\n        }\r\n        if (fromDate != null) {\r\n            query = query.whereGreaterThanOrEqualTo(\"creationTimestamp\", fromDate);\r\n        }\r\n        if (toDate != null) {\r\n            query = query.whereLessThanOrEqualTo(\"creationTimestamp\", toDate);\r\n        }\r\n\r\n        return query.orderBy(\"creationTimestamp\", Query.Direction.DESCENDING);\r\n    }\r\n\r\n    public static void getActiveHelpRequests(final HelpRequestController.HelpRequestsLoadCallback callback) {\r\n        FirebaseFirestore.getInstance().collection(\"help_requests\").whereEqualTo(\"status\", \"Open\")\r\n                .orderBy(\"creationTimestamp\", Query.Direction.DESCENDING).get()\r\n                .addOnCompleteListener(task -> {\r\n                    if (task.isSuccessful()) {\r\n                        List<HelpRequest> requestList = new ArrayList<>();\r\n                        for (QueryDocumentSnapshot document : task.getResult()) {\r\n                            HelpRequest request = document.toObject(HelpRequest.class);\r\n                            request.setId(document.getId());\r\n                            requestList.add(request);\r\n                        }\r\n                        if (callback != null) callback.onRequestsLoaded(requestList);\r\n                    } else {\r\n                        if (callback != null) callback.onDataLoadFailed(\"Failed to load active requests: \" + task.getException().getMessage());\r\n                    }\r\n                });\r\n    }\r\n\r\n    public static void getInProgressRequestsForCsr(final HelpRequestController.HelpRequestsLoadCallback callback) {\r\n        String currentCsrId = FirebaseAuth.getInstance().getUid();\r\n        if (currentCsrId == null) {\r\n            if (callback != null) callback.onDataLoadFailed(\"No user is currently logged in.\");\r\n            return;\r\n        }\r\n\r\n        FirebaseFirestore.getInstance().collection(\"help_requests\")\r\n                .whereEqualTo(\"status\", \"In-progress\")\r\n                .whereEqualTo(\"acceptedByCsrId\", currentCsrId)\r\n                .get()\r\n                .addOnCompleteListener(task -> {\r\n                    if (task.isSuccessful()) {\r\n                        List<HelpRequest> requests = new ArrayList<>();\r\n                        for (QueryDocumentSnapshot document : task.getResult()) {\r\n                            HelpRequest request = document.toObject(HelpRequest.class);\r\n                            request.setId(document.getId());\r\n                            requests.add(request);\r\n                        }\r\n                        Map<String, Integer> urgencyOrder = new HashMap<>();\r\n                        urgencyOrder.put(\"Critical\", 1);\r\n                        urgencyOrder.put(\"High\", 2);\r\n                        urgencyOrder.put(\"Medium\", 3);\r\n                        urgencyOrder.put(\"Low\", 4);\r\n                        Collections.sort(requests, (r1, r2) -> {\r\n                            int urgency1 = urgencyOrder.getOrDefault(r1.getUrgencyLevel(), 5);\r\n                            int urgency2 = urgencyOrder.getOrDefault(r2.getUrgencyLevel(), 5);\r\n                            return Integer.compare(urgency1, urgency2);\r\n                        });\r\n                        if (callback != null) callback.onRequestsLoaded(requests);\r\n                    } else {\r\n                        if (callback != null) callback.onDataLoadFailed(\"Failed to load your requests: \" + task.getException().getMessage());\r\n                    }\r\n                });\r\n    }\r\n\r\n    public static void getSavedHelpRequests(final HelpRequestController.HelpRequestsLoadCallback callback) {\r\n        String currentCsrId = FirebaseAuth.getInstance().getUid();\r\n        if (currentCsrId == null) {\r\n            if (callback != null) callback.onDataLoadFailed(\"No user is currently logged in.\");\r\n            return;\r\n        }\r\n        FirebaseFirestore.getInstance().collection(\"help_requests\").whereArrayContains(\"savedByCsrId\", currentCsrId).get()\r\n                .addOnCompleteListener(task -> {\r\n                    if (task.isSuccessful()) {\r\n                        List<HelpRequest> requestList = new ArrayList<>();\r\n                        for (QueryDocumentSnapshot document : task.getResult()) {\r\n                            HelpRequest request = document.toObject(HelpRequest.class);\r\n                            request.setId(document.getId());\r\n                            if (Arrays.asList(\"Open\", \"In-progress\").contains(request.getStatus())) {\r\n                                requestList.add(request);\r\n                            }\r\n                        }\r\n                        Collections.sort(requestList, (r1, r2) -> r2.getCreationTimestamp().compareTo(r1.getCreationTimestamp()));\r\n                        if (callback != null) callback.onRequestsLoaded(requestList);\r\n                    } else {\r\n                        if (callback != null) callback.onDataLoadFailed(\"Failed to load saved requests. Error: \" + task.getException().getMessage());\r\n                    }\r\n                });\r\n    }\r\n\r\n    public static void saveRequest(String requestId, final HelpRequestController.SaveCallback callback) {\r\n        String currentCsrId = FirebaseAuth.getInstance().getUid();\r\n        if (currentCsrId == null) {\r\n            if (callback != null) callback.onSaveFailure(\"No user is currently logged in.\");\r\n            return;\r\n        }\r\n        FirebaseFirestore.getInstance().collection(\"help_requests\").document(requestId).update(\"savedByCsrId\", FieldValue.arrayUnion(currentCsrId))\r\n                .addOnSuccessListener(aVoid -> { if (callback != null) callback.onSaveSuccess(); })\r\n                .addOnFailureListener(e -> { if (callback != null) callback.onSaveFailure(e.getMessage()); });\r\n    }\r\n    \r\n    public static void unsaveRequest(String requestId, final HelpRequestController.SaveCallback callback) {\r\n        String currentCsrId = FirebaseAuth.getInstance().getUid();\r\n        if (currentCsrId == null) {\r\n            if (callback != null) callback.onSaveFailure(\"No user is currently logged in.\");\r\n            return;\r\n        }\r\n        FirebaseFirestore.getInstance().collection(\"help_requests\").document(requestId).update(\"savedByCsrId\", FieldValue.arrayRemove(currentCsrId))\r\n                .addOnSuccessListener(aVoid -> { if (callback != null) callback.onSaveSuccess(); })\r\n                .addOnFailureListener(e -> { if (callback != null) callback.onSaveFailure(e.getMessage()); });\r\n    }\r\n\r\n    public static void getCompletedHistory(String companyId, Date fromDate, Date toDate, String category, final HelpRequestController.HelpRequestsLoadCallback callback) {\r\n        if (companyId == null || companyId.isEmpty()) {\r\n            if (callback != null) callback.onDataLoadFailed(\"Company ID is required to fetch history.\");\r\n            return;\r\n        }\r\n\r\n        Query query = FirebaseFirestore.getInstance().collection(\"help_requests\")\r\n                .whereEqualTo(\"status\", \"Completed\")\r\n                .whereEqualTo(\"companyId\", companyId);\r\n\r\n        if (fromDate != null) {\r\n            query = query.whereGreaterThanOrEqualTo(\"creationTimestamp\", fromDate);\r\n        }\r\n        if (toDate != null) {\r\n            Calendar c = Calendar.getInstance();\r\n            c.setTime(toDate);\r\n            c.set(Calendar.HOUR_OF_DAY, 23); c.set(Calendar.MINUTE, 59); c.set(Calendar.SECOND, 59);\r\n            query = query.whereLessThanOrEqualTo(\"creationTimestamp\", c.getTime());\r\n        }\r\n        if (category != null && !category.isEmpty() && !category.equalsIgnoreCase(\"All\")) {\r\n            query = query.whereEqualTo(\"category\", category);\r\n        }\r\n\r\n        query.orderBy(\"creationTimestamp\", Query.Direction.DESCENDING).get()\r\n            .addOnCompleteListener(task -> {\r\n                if (task.isSuccessful()) {\r\n                    List<HelpRequest> requests = new ArrayList<>();\r\n                    for (QueryDocumentSnapshot document : task.getResult()) {\r\n                        HelpRequest request = document.toObject(HelpRequest.class);\r\n                        request.setId(document.getId());\r\n                        requests.add(request);\r\n                    }\r\n                    if (callback != null) callback.onRequestsLoaded(requests);\r\n                } else {\r\n                    if (callback != null) callback.onDataLoadFailed(\"Query failed. Error: \" + task.getException().getMessage());\r\n                }\r\n            });\r\n    }\r\n\r\n    public static void searchShortlistedRequests(String keyword, String location, String category, final HelpRequestController.HelpRequestsLoadCallback callback) {\r\n        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();\r\n        if (currentUser == null) {\r\n            if (callback != null) callback.onDataLoadFailed(\"No user logged in.\");\r\n            return;\r\n        }\r\n        String currentCsrId = currentUser.getUid();\r\n\r\n        Query query = FirebaseFirestore.getInstance().collection(\"help_requests\").whereArrayContains(\"savedByCsrId\", currentCsrId);\r\n\r\n        if (category != null && !category.isEmpty() && !category.equalsIgnoreCase(\"All\")) {\r\n            query = query.whereEqualTo(\"category\", category);\r\n        }\r\n        if (location != null && !location.isEmpty() && !location.equalsIgnoreCase(\"All\")) {\r\n            query = query.whereEqualTo(\"region\", location);\r\n        }\r\n\r\n        query.get().addOnCompleteListener(task -> {\r\n            if (task.isSuccessful()) {\r\n                List<HelpRequest> requests = new ArrayList<>();\r\n                for (QueryDocumentSnapshot document : task.getResult()) {\r\n                    HelpRequest request = document.toObject(HelpRequest.class);\r\n                    request.setId(document.getId());\r\n                    requests.add(request);\r\n                }\r\n\r\n                if (keyword != null && !keyword.isEmpty()) {\r\n                    List<HelpRequest> filteredByKeyword = requests.stream()\r\n                            .filter(r -> r.getTitle().toLowerCase().contains(keyword.toLowerCase()) || r.getDescription().toLowerCase().contains(keyword.toLowerCase()))\r\n                            .collect(Collectors.toList());\r\n                    Collections.sort(filteredByKeyword, (r1, r2) -> r2.getCreationTimestamp().compareTo(r1.getCreationTimestamp()));\r\n                    if (callback != null) callback.onRequestsLoaded(filteredByKeyword);\r\n                } else {\r\n                    Collections.sort(requests, (r1, r2) -> r2.getCreationTimestamp().compareTo(r1.getCreationTimestamp()));\r\n                    if (callback != null) callback.onRequestsLoaded(requests);\r\n                }\r\n            } else {\r\n                if (callback != null) callback.onDataLoadFailed(\"Query failed. Error: \" + task.getException().getMessage());\r\n            }\r\n        });\r\n    }\r\n\r\n    public static void acceptRequest(String requestId, String companyId, String csrId, final HelpRequestController.UpdateCallback callback) {\r\n        if (csrId == null || csrId.isEmpty()) {\r\n            if (callback != null) callback.onUpdateFailure(\"Cannot accept request: User ID is invalid.\");\r\n            return;\r\n        }\r\n        Map<String, Object> updates = new HashMap<>();\r\n        updates.put(\"status\", \"In-progress\");\r\n        updates.put(\"acceptedByCsrId\", csrId);\r\n        updates.put(\"companyId\", companyId);\r\n        updates.put(\"savedByCsrId\", FieldValue.arrayUnion(csrId));\r\n\r\n        FirebaseFirestore.getInstance().collection(\"help_requests\").document(requestId).update(updates)\r\n                .addOnSuccessListener(aVoid -> { if (callback != null) callback.onUpdateSuccess(); })\r\n                .addOnFailureListener(e -> { if (callback != null) callback.onUpdateFailure(e.getMessage()); });\r\n    }\r\n\r\n    public static void releaseRequestByCsr(String requestId, final HelpRequestController.UpdateCallback callback) {\r\n        Map<String, Object> updates = new HashMap<>();\r\n        updates.put(\"status\", \"Open\");\r\n        updates.put(\"acceptedByCsrId\", FieldValue.delete());\r\n        updates.put(\"companyId\", FieldValue.delete());\r\n\r\n        FirebaseFirestore.getInstance().collection(\"help_requests\").document(requestId).update(updates)\r\n                .addOnSuccessListener(aVoid -> { if (callback != null) callback.onUpdateSuccess(); })\r\n                .addOnFailureListener(e -> { if (callback != null) callback.onUpdateFailure(e.getMessage()); });\r\n    }\r\n\r\n    public static void releaseRequestByPin(String requestId, final HelpRequestController.UpdateCallback callback) {\r\n        FirebaseFirestore db = FirebaseFirestore.getInstance();\r\n        db.collection(\"help_requests\").document(requestId).get().addOnSuccessListener(documentSnapshot -> {\r\n            if (!documentSnapshot.exists()) {\r\n                if (callback != null) callback.onUpdateFailure(\"Request not found.\");\r\n                return;\r\n            }\r\n            HelpRequest request = documentSnapshot.toObject(HelpRequest.class);\r\n            if (request == null) {\r\n                if (callback != null) callback.onUpdateFailure(\"Failed to read request data.\");\r\n                return;\r\n            }\r\n\r\n            String currentUrgency = request.getUrgencyLevel();\r\n            String newUrgency = currentUrgency;\r\n            switch (currentUrgency.toLowerCase()) {\r\n                case \"low\": newUrgency = \"Medium\"; break;\r\n                case \"medium\": newUrgency = \"High\"; break;\r\n                case \"high\": newUrgency = \"Critical\"; break;\r\n            }\r\n\r\n            Map<String, Object> updates = new HashMap<>();\r\n            updates.put(\"status\", \"Open\");\r\n            updates.put(\"urgencyLevel\", newUrgency);\r\n            updates.put(\"acceptedByCsrId\", FieldValue.delete());\r\n            updates.put(\"companyId\", FieldValue.delete());\r\n\r\n            db.collection(\"help_requests\").document(requestId).update(updates)\r\n                    .addOnSuccessListener(aVoid -> { if (callback != null) callback.onUpdateSuccess(); })\r\n                    .addOnFailureListener(e -> { if (callback != null) callback.onUpdateFailure(e.getMessage()); });\r\n        }).addOnFailureListener(e -> { if (callback != null) callback.onUpdateFailure(e.getMessage()); });\r\n    }\r\n\r\n    public static void updateRequestStatus(String requestId, String newStatus, final HelpRequestController.UpdateCallback callback) {\r\n        FirebaseFirestore.getInstance().collection(\"help_requests\").document(requestId).update(\"status\", newStatus)\r\n                .addOnSuccessListener(aVoid -> { if (callback != null) callback.onUpdateSuccess(); })\r\n                .addOnFailureListener(e -> { if (callback != null) callback.onUpdateFailure(e.getMessage()); });\r\n    }\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/csit314sdm/HelpRequest.java b/app/src/main/java/com/example/csit314sdm/HelpRequest.java
+--- a/app/src/main/java/com/example/csit314sdm/HelpRequest.java	(revision 2303334ec967028bb2a87b565d419c7928e2bddd)
++++ b/app/src/main/java/com/example/csit314sdm/HelpRequest.java	(date 1762507492994)
+@@ -4,6 +4,7 @@
+ import com.google.firebase.auth.FirebaseUser;
+ import com.google.firebase.firestore.FieldValue;
+ import com.google.firebase.firestore.FirebaseFirestore;
++import com.google.firebase.firestore.ListenerRegistration;
+ import com.google.firebase.firestore.Query;
+ import com.google.firebase.firestore.QueryDocumentSnapshot;
+ import com.google.firebase.firestore.ServerTimestamp;
+@@ -83,6 +84,44 @@
+ 
+     // --- Active Record Methods ---
+ 
++    public static ListenerRegistration listenForFiltered(String statusFilter, final HelpRequestController.HelpRequestsLoadCallback callback) {
++        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
++        if (currentUser == null) {
++            if (callback != null) callback.onDataLoadFailed("No authenticated user.");
++            return null;
++        }
++        String pinId = currentUser.getUid();
++
++        Query query = FirebaseFirestore.getInstance().collection("help_requests").whereEqualTo("submittedBy", pinId);
++
++        if ("History".equalsIgnoreCase(statusFilter)) {
++            query = query.whereIn("status", Arrays.asList("Completed", "Cancelled"));
++        } else if ("Active".equalsIgnoreCase(statusFilter)) {
++            query = query.whereIn("status", Arrays.asList("Open", "In-progress"));
++        } else if (statusFilter != null && !statusFilter.isEmpty() && !"All".equalsIgnoreCase(statusFilter)) {
++            query = query.whereEqualTo("status", statusFilter);
++        }
++
++        query = query.orderBy("creationTimestamp", Query.Direction.DESCENDING);
++
++        return query.addSnapshotListener((snapshots, e) -> {
++            if (e != null) {
++                if (callback != null) callback.onDataLoadFailed(e.getMessage());
++                return;
++            }
++
++            List<HelpRequest> requests = new ArrayList<>();
++            if (snapshots != null) {
++                for (QueryDocumentSnapshot doc : snapshots) {
++                    HelpRequest request = doc.toObject(HelpRequest.class);
++                    request.setId(doc.getId());
++                    requests.add(request);
++                }
++            }
++            if (callback != null) callback.onRequestsLoaded(requests);
++        });
++    }
++
+     public static void findById(String requestId, String userRole, final HelpRequestController.SingleRequestLoadCallback callback) {
+         FirebaseFirestore db = FirebaseFirestore.getInstance();
+         if (requestId == null || requestId.isEmpty()) {
+Index: app/src/main/java/com/example/csit314sdm/MyRequestsActivity.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.csit314sdm;\r\n\r\nimport android.content.Intent;\r\nimport android.os.Bundle;\r\nimport android.util.Log;\r\nimport android.view.View;\r\nimport android.widget.ArrayAdapter;\r\nimport android.widget.ProgressBar;\r\nimport android.widget.Spinner;\r\nimport android.widget.TextView;\r\nimport android.widget.Toast;\r\n\r\nimport androidx.appcompat.app.AlertDialog;\r\nimport androidx.appcompat.app.AppCompatActivity;\r\nimport androidx.recyclerview.widget.LinearLayoutManager;\r\nimport androidx.recyclerview.widget.RecyclerView;\r\n\r\nimport com.google.android.material.appbar.MaterialToolbar;\r\nimport com.google.firebase.firestore.ListenerRegistration;\r\nimport com.google.firebase.firestore.Query;\r\nimport com.google.firebase.firestore.QueryDocumentSnapshot;\r\n\r\nimport java.util.ArrayList;\r\nimport java.util.List;\r\n\r\npublic class MyRequestsActivity extends AppCompatActivity {\r\n\r\n    private static final String TAG = \"MyRequestsActivity\";\r\n\r\n    private RecyclerView recyclerView;\r\n    private PinMyRequestsAdapter adapter;\r\n    private List<HelpRequest> requestList;\r\n    private HelpRequestController controller;\r\n    private ProgressBar progressBar;\r\n    private TextView tvNoRequests;\r\n    private MaterialToolbar topAppBar;\r\n    private ListenerRegistration firestoreListener;\r\n\r\n    private String currentStatusFilter = \"All\";\r\n\r\n    @Override\r\n    protected void onCreate(Bundle savedInstanceState) {\r\n        super.onCreate(savedInstanceState);\r\n        setContentView(R.layout.activity_my_requests);\r\n\r\n        topAppBar = findViewById(R.id.topAppBar_my_requests);\r\n        recyclerView = findViewById(R.id.recycler_view_my_requests);\r\n        progressBar = findViewById(R.id.progressBar_my_requests);\r\n        tvNoRequests = findViewById(R.id.tv_no_requests);\r\n\r\n        controller = new HelpRequestController();\r\n\r\n        topAppBar.setNavigationOnClickListener(v -> finish());\r\n        topAppBar.setOnMenuItemClickListener(item -> {\r\n            if (item.getItemId() == R.id.action_filter_requests) {\r\n                showFilterDialog();\r\n                return true;\r\n            }\r\n            return false;\r\n        });\r\n\r\n        Intent intent = getIntent();\r\n        if (intent != null && intent.hasExtra(\"STATUS_FILTER\")) {\r\n            String filterValue = intent.getStringExtra(\"STATUS_FILTER\");\r\n            if (\"History\".equals(filterValue)) {\r\n\r\n                currentStatusFilter = \"History\";\r\n                topAppBar.setTitle(\"My History\");\r\n            } else if (\"Active\".equals(filterValue)) {\r\n\r\n                currentStatusFilter = \"Active\";\r\n                topAppBar.setTitle(\"My Active Requests\");\r\n            }\r\n        }\r\n\r\n\r\n        setupRecyclerView();\r\n    }\r\n\r\n    @Override\r\n    protected void onStart() {\r\n        super.onStart();\r\n\r\n        loadHelpRequestsWithListener();\r\n    }\r\n\r\n    @Override\r\n    protected void onStop() {\r\n        super.onStop();\r\n        if (firestoreListener != null) {\r\n            firestoreListener.remove();\r\n        }\r\n    }\r\n\r\n    private void setupRecyclerView() {\r\n\r\n        recyclerView.setLayoutManager(new LinearLayoutManager(this));\r\n        requestList = new ArrayList<>();\r\n        adapter = new PinMyRequestsAdapter(requestList, this, request -> {\r\n            Intent detailIntent = new Intent(MyRequestsActivity.this, HelpRequestDetailActivity.class);\r\n            detailIntent.putExtra(HelpRequestDetailActivity.EXTRA_REQUEST_ID, request.getId());\r\n            detailIntent.putExtra(\"user_role\", \"PIN\");\r\n            startActivity(detailIntent);\r\n        });\r\n        recyclerView.setAdapter(adapter);\r\n    }\r\n\r\n    private void loadHelpRequestsWithListener() {\r\n\r\n        progressBar.setVisibility(View.VISIBLE);\r\n        tvNoRequests.setVisibility(View.GONE);\r\n        recyclerView.setVisibility(View.GONE);\r\n\r\n        if (firestoreListener != null) {\r\n            firestoreListener.remove();\r\n        }\r\n\r\n        Query query = controller.getFilteredHelpRequestsQuery(currentStatusFilter);\r\n        if (query == null) { /* ... handle no user ... */ return; }\r\n\r\n        firestoreListener = query.addSnapshotListener((snapshots, e) -> {\r\n            progressBar.setVisibility(View.GONE);\r\n            if (e != null) { /* ... handle error ... */ return; }\r\n\r\n            requestList.clear();\r\n            if (snapshots != null) {\r\n                for (QueryDocumentSnapshot doc : snapshots) {\r\n                    HelpRequest request = doc.toObject(HelpRequest.class);\r\n                    request.setId(doc.getId());\r\n                    requestList.add(request);\r\n                }\r\n            }\r\n\r\n            if (requestList.isEmpty()) {\r\n                tvNoRequests.setText(\"No requests found matching your filter.\");\r\n                tvNoRequests.setVisibility(View.VISIBLE);\r\n            } else {\r\n                adapter.notifyDataSetChanged();\r\n                recyclerView.setVisibility(View.VISIBLE);\r\n            }\r\n        });\r\n    }\r\n\r\n    private void showFilterDialog() {\r\n\r\n        View dialogView = getLayoutInflater().inflate(R.layout.dialog_filter_requests, null);\r\n        Spinner statusSpinner = dialogView.findViewById(R.id.spinner_status);\r\n        ArrayAdapter<CharSequence> statusAdapter = ArrayAdapter.createFromResource(this,\r\n                R.array.status_filter_options, android.R.layout.simple_spinner_item);\r\n        statusAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);\r\n        statusSpinner.setAdapter(statusAdapter);\r\n\r\n        new AlertDialog.Builder(this)\r\n                .setTitle(\"Filter Requests by Status\")\r\n                .setView(dialogView)\r\n                .setPositiveButton(\"Apply\", (dialog, which) -> {\r\n                    currentStatusFilter = statusSpinner.getSelectedItem().toString();\r\n                    topAppBar.setTitle(\"My Help Requests\");\r\n                    loadHelpRequestsWithListener();\r\n                })\r\n                .setNegativeButton(\"Cancel\", null)\r\n                .show();\r\n    }\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/csit314sdm/MyRequestsActivity.java b/app/src/main/java/com/example/csit314sdm/MyRequestsActivity.java
+--- a/app/src/main/java/com/example/csit314sdm/MyRequestsActivity.java	(revision 2303334ec967028bb2a87b565d419c7928e2bddd)
++++ b/app/src/main/java/com/example/csit314sdm/MyRequestsActivity.java	(date 1762508471619)
+@@ -2,7 +2,6 @@
+ 
+ import android.content.Intent;
+ import android.os.Bundle;
+-import android.util.Log;
+ import android.view.View;
+ import android.widget.ArrayAdapter;
+ import android.widget.ProgressBar;
+@@ -17,8 +16,6 @@
+ 
+ import com.google.android.material.appbar.MaterialToolbar;
+ import com.google.firebase.firestore.ListenerRegistration;
+-import com.google.firebase.firestore.Query;
+-import com.google.firebase.firestore.QueryDocumentSnapshot;
+ 
+ import java.util.ArrayList;
+ import java.util.List;
+@@ -63,24 +60,20 @@
+         if (intent != null && intent.hasExtra("STATUS_FILTER")) {
+             String filterValue = intent.getStringExtra("STATUS_FILTER");
+             if ("History".equals(filterValue)) {
+-
+                 currentStatusFilter = "History";
+                 topAppBar.setTitle("My History");
+             } else if ("Active".equals(filterValue)) {
+-
+                 currentStatusFilter = "Active";
+                 topAppBar.setTitle("My Active Requests");
+             }
+         }
+ 
+-
+         setupRecyclerView();
+     }
+ 
+     @Override
+     protected void onStart() {
+         super.onStart();
+-
+         loadHelpRequestsWithListener();
+     }
+ 
+@@ -93,7 +86,6 @@
+     }
+ 
+     private void setupRecyclerView() {
+-
+         recyclerView.setLayoutManager(new LinearLayoutManager(this));
+         requestList = new ArrayList<>();
+         adapter = new PinMyRequestsAdapter(requestList, this, request -> {
+@@ -106,7 +98,6 @@
+     }
+ 
+     private void loadHelpRequestsWithListener() {
+-
+         progressBar.setVisibility(View.VISIBLE);
+         tvNoRequests.setVisibility(View.GONE);
+         recyclerView.setVisibility(View.GONE);
+@@ -115,34 +106,35 @@
+             firestoreListener.remove();
+         }
+ 
+-        Query query = controller.getFilteredHelpRequestsQuery(currentStatusFilter);
+-        if (query == null) { /* ... handle no user ... */ return; }
+-
+-        firestoreListener = query.addSnapshotListener((snapshots, e) -> {
+-            progressBar.setVisibility(View.GONE);
+-            if (e != null) { /* ... handle error ... */ return; }
+-
+-            requestList.clear();
+-            if (snapshots != null) {
+-                for (QueryDocumentSnapshot doc : snapshots) {
+-                    HelpRequest request = doc.toObject(HelpRequest.class);
+-                    request.setId(doc.getId());
+-                    requestList.add(request);
+-                }
+-            }
++        firestoreListener = controller.listenForFilteredRequests(currentStatusFilter, new HelpRequestController.HelpRequestsLoadCallback() {
++            @Override
++            public void onRequestsLoaded(List<HelpRequest> requests) {
++                progressBar.setVisibility(View.GONE);
++                requestList.clear();
++                requestList.addAll(requests);
+ 
+-            if (requestList.isEmpty()) {
+-                tvNoRequests.setText("No requests found matching your filter.");
+-                tvNoRequests.setVisibility(View.VISIBLE);
+-            } else {
+-                adapter.notifyDataSetChanged();
+-                recyclerView.setVisibility(View.VISIBLE);
++                if (requestList.isEmpty()) {
++                    tvNoRequests.setText("No requests found matching your filter.");
++                    tvNoRequests.setVisibility(View.VISIBLE);
++                    recyclerView.setVisibility(View.GONE);
++                } else {
++                    adapter.notifyDataSetChanged();
++                    recyclerView.setVisibility(View.VISIBLE);
++                    tvNoRequests.setVisibility(View.GONE);
++                }
++            }
++
++            @Override
++            public void onDataLoadFailed(String errorMessage) {
++                progressBar.setVisibility(View.GONE);
++                Toast.makeText(MyRequestsActivity.this, "Error: " + errorMessage, Toast.LENGTH_LONG).show();
++                tvNoRequests.setText(errorMessage);
++                tvNoRequests.setVisibility(View.VISIBLE);
+             }
+         });
+     }
+ 
+     private void showFilterDialog() {
+-
+         View dialogView = getLayoutInflater().inflate(R.layout.dialog_filter_requests, null);
+         Spinner statusSpinner = dialogView.findViewById(R.id.spinner_status);
+         ArrayAdapter<CharSequence> statusAdapter = ArrayAdapter.createFromResource(this,
+Index: app/src/main/java/com/example/csit314sdm/HelpRequestController.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.csit314sdm;\r\n\r\nimport com.google.firebase.firestore.Query;\r\nimport java.util.Date;\r\nimport java.util.List;\r\n\r\npublic class HelpRequestController {\r\n\r\n    // --- Callbacks (interfaces for the Boundary layer to implement) ---\r\n    public interface HelpRequestsLoadCallback { void onRequestsLoaded(List<HelpRequest> requests); void onDataLoadFailed(String errorMessage); }\r\n    public interface SingleRequestLoadCallback { void onRequestLoaded(HelpRequest request); void onDataLoadFailed(String errorMessage); }\r\n    public interface UpdateCallback { void onUpdateSuccess(); void onUpdateFailure(String errorMessage); }\r\n    public interface DeleteCallback { void onDeleteSuccess(); void onDeleteFailure(String errorMessage); }\r\n    public interface SaveCallback { void onSaveSuccess(); void onSaveFailure(String errorMessage); }\r\n    public interface CategoryListCallback { void onCategoriesLoaded(List<Category> categories); void onDataLoadFailed(String errorMessage); }\r\n\r\n    // --- Constructor (now empty) ---\r\n    public HelpRequestController() {}\r\n\r\n    // --- Dispatcher Methods (delegating calls to the HelpRequest Active Record) ---\r\n\r\n    public void getHelpRequestById(String requestId, String userRole, final SingleRequestLoadCallback callback) {\r\n        HelpRequest.findById(requestId, userRole, callback);\r\n    }\r\n\r\n    public void updateHelpRequest(HelpRequest request, final UpdateCallback callback) {\r\n        request.update(callback);\r\n    }\r\n\r\n    public void getCategories(final CategoryListCallback callback) {\r\n        HelpRequest.getCategories(callback);\r\n    }\r\n\r\n    public void cancelRequest(String requestId, final DeleteCallback callback) {\r\n        HelpRequest.cancelRequest(requestId, callback);\r\n    }\r\n\r\n    public Query getFilteredHelpRequestsQuery(String statusFilter) {\r\n        return HelpRequest.getFilteredHelpRequestsQuery(statusFilter);\r\n    }\r\n\r\n    public Query getMatchHistoryQuery(String category, Date fromDate, Date toDate) {\r\n        return HelpRequest.getMatchHistoryQuery(category, fromDate, toDate);\r\n    }\r\n\r\n    public void getActiveHelpRequests(final HelpRequestsLoadCallback callback) {\r\n        HelpRequest.getActiveHelpRequests(callback);\r\n    }\r\n\r\n    public void getInProgressRequestsForCsr(final HelpRequestsLoadCallback callback) {\r\n        HelpRequest.getInProgressRequestsForCsr(callback);\r\n    }\r\n\r\n    public void getSavedHelpRequests(final HelpRequestsLoadCallback callback) {\r\n        HelpRequest.getSavedHelpRequests(callback);\r\n    }\r\n\r\n    public void saveRequest(String requestId, final SaveCallback callback) {\r\n        HelpRequest.saveRequest(requestId, callback);\r\n    }\r\n\r\n    public void unsaveRequest(String requestId, final SaveCallback callback) {\r\n        HelpRequest.unsaveRequest(requestId, callback);\r\n    }\r\n\r\n    public void getCompletedHistory(String companyId, Date fromDate, Date toDate, String category, final HelpRequestsLoadCallback callback) {\r\n        HelpRequest.getCompletedHistory(companyId, fromDate, toDate, category, callback);\r\n    }\r\n\r\n    public void searchShortlistedRequests(String keyword, String location, String category, final HelpRequestsLoadCallback callback) {\r\n        HelpRequest.searchShortlistedRequests(keyword, location, category, callback);\r\n    }\r\n\r\n    public void acceptRequest(String requestId, String companyId, String csrId, final UpdateCallback callback) {\r\n        HelpRequest.acceptRequest(requestId, companyId, csrId, callback);\r\n    }\r\n\r\n    public void releaseRequestByCsr(String requestId, final UpdateCallback callback) {\r\n        HelpRequest.releaseRequestByCsr(requestId, callback);\r\n    }\r\n\r\n    public void releaseRequestByPin(String requestId, final UpdateCallback callback) {\r\n        HelpRequest.releaseRequestByPin(requestId, callback);\r\n    }\r\n\r\n    public void updateRequestStatus(String requestId, String newStatus, final UpdateCallback callback) {\r\n        HelpRequest.updateRequestStatus(requestId, newStatus, callback);\r\n    }\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/csit314sdm/HelpRequestController.java b/app/src/main/java/com/example/csit314sdm/HelpRequestController.java
+--- a/app/src/main/java/com/example/csit314sdm/HelpRequestController.java	(revision 2303334ec967028bb2a87b565d419c7928e2bddd)
++++ b/app/src/main/java/com/example/csit314sdm/HelpRequestController.java	(date 1762508156429)
+@@ -1,5 +1,6 @@
+ package com.example.csit314sdm;
+ 
++import com.google.firebase.firestore.ListenerRegistration;
+ import com.google.firebase.firestore.Query;
+ import java.util.Date;
+ import java.util.List;
+@@ -14,11 +15,15 @@
+     public interface SaveCallback { void onSaveSuccess(); void onSaveFailure(String errorMessage); }
+     public interface CategoryListCallback { void onCategoriesLoaded(List<Category> categories); void onDataLoadFailed(String errorMessage); }
+ 
+-    // --- Constructor (now empty) ---
++    // --- Constructor (empty) ---
+     public HelpRequestController() {}
+ 
+     // --- Dispatcher Methods (delegating calls to the HelpRequest Active Record) ---
+ 
++    public ListenerRegistration listenForFilteredRequests(String statusFilter, final HelpRequestsLoadCallback callback) {
++        return HelpRequest.listenForFiltered(statusFilter, callback);
++    }
++
+     public void getHelpRequestById(String requestId, String userRole, final SingleRequestLoadCallback callback) {
+         HelpRequest.findById(requestId, userRole, callback);
+     }
+@@ -35,10 +40,6 @@
+         HelpRequest.cancelRequest(requestId, callback);
+     }
+ 
+-    public Query getFilteredHelpRequestsQuery(String statusFilter) {
+-        return HelpRequest.getFilteredHelpRequestsQuery(statusFilter);
+-    }
+-
+     public Query getMatchHistoryQuery(String category, Date fromDate, Date toDate) {
+         return HelpRequest.getMatchHistoryQuery(category, fromDate, toDate);
+     }
+Index: .idea/shelf/Uncommitted_changes_before_Update_at_2025_11_1_21_36__Changes_.xml
+===================================================================
+diff --git a/.idea/shelf/Uncommitted_changes_before_Update_at_2025_11_1_21_36__Changes_.xml b/.idea/shelf/Uncommitted_changes_before_Update_at_2025_11_1_21_36__Changes_.xml
+deleted file mode 100644
+--- a/.idea/shelf/Uncommitted_changes_before_Update_at_2025_11_1_21_36__Changes_.xml	(revision 2303334ec967028bb2a87b565d419c7928e2bddd)
++++ /dev/null	(revision 2303334ec967028bb2a87b565d419c7928e2bddd)
+@@ -1,4 +0,0 @@
+-<changelist name="Uncommitted_changes_before_Update_at_2025_11_1_21_36_[Changes]" date="1762004178709" recycled="true" deleted="true">
+-  <option name="PATH" value="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_2025_11_1_21_36_[Changes]/shelved.patch" />
+-  <option name="DESCRIPTION" value="Uncommitted changes before Update at 2025/11/1 21:36 [Changes]" />
+-</changelist>
+\ No newline at end of file
+Index: .idea/shelf/Uncommitted_changes_before_Update_at_2025_11_1_21_36_[Changes]/shelved.patch
+===================================================================
+diff --git a/.idea/shelf/Uncommitted_changes_before_Update_at_2025_11_1_21_36_[Changes]/shelved.patch b/.idea/shelf/Uncommitted_changes_before_Update_at_2025_11_1_21_36_[Changes]/shelved.patch
+deleted file mode 100644
+--- a/.idea/shelf/Uncommitted_changes_before_Update_at_2025_11_1_21_36_[Changes]/shelved.patch	(revision 2303334ec967028bb2a87b565d419c7928e2bddd)
++++ /dev/null	(revision 2303334ec967028bb2a87b565d419c7928e2bddd)
+@@ -1,40 +0,0 @@
+-Index: .idea/misc.xml
+-IDEA additional info:
+-Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+-<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"ExternalStorageConfigurationManager\" enabled=\"true\" />\r\n  <component name=\"ProjectRootManager\" version=\"2\" languageLevel=\"JDK_21\" project-jdk-name=\"jbr-21\" project-jdk-type=\"JavaSDK\">\r\n    <output url=\"file://$PROJECT_DIR$/build/classes\" />\r\n  </component>\r\n  <component name=\"ProjectType\">\r\n    <option name=\"id\" value=\"Android\" />\r\n  </component>\r\n  <component name=\"VisualizationToolProject\">\r\n    <option name=\"state\">\r\n      <ProjectState>\r\n        <option name=\"scale\" value=\"0.26554260253906253\" />\r\n      </ProjectState>\r\n    </option>\r\n  </component>\r\n</project>
+-Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+-<+>UTF-8
+-===================================================================
+-diff --git a/.idea/misc.xml b/.idea/misc.xml
+---- a/.idea/misc.xml	(revision 6ad4100fdc4b956d06063ef022456d731f67e9e2)
+-+++ b/.idea/misc.xml	(date 1761989240367)
+-@@ -1,7 +1,7 @@
+- <?xml version="1.0" encoding="UTF-8"?>
+- <project version="4">
+-   <component name="ExternalStorageConfigurationManager" enabled="true" />
+--  <component name="ProjectRootManager" version="2" languageLevel="JDK_21" project-jdk-name="jbr-21" project-jdk-type="JavaSDK">
+-+  <component name="ProjectRootManager" version="2" languageLevel="JDK_21" default="true" project-jdk-name="jbr-21" project-jdk-type="JavaSDK">
+-     <output url="file://$PROJECT_DIR$/build/classes" />
+-   </component>
+-   <component name="ProjectType">
+-Index: .idea/deploymentTargetSelector.xml
+-IDEA additional info:
+-Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+-<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"deploymentTargetSelector\">\r\n    <selectionStates>\r\n      <SelectionState runConfigName=\"app\">\r\n        <option name=\"selectionMode\" value=\"DROPDOWN\" />\r\n      </SelectionState>\r\n      <SelectionState runConfigName=\"CreateRequestActivity\">\r\n        <option name=\"selectionMode\" value=\"DROPDOWN\" />\r\n      </SelectionState>\r\n    </selectionStates>\r\n  </component>\r\n</project>
+-Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+-<+>UTF-8
+-===================================================================
+-diff --git a/.idea/deploymentTargetSelector.xml b/.idea/deploymentTargetSelector.xml
+---- a/.idea/deploymentTargetSelector.xml	(revision 6ad4100fdc4b956d06063ef022456d731f67e9e2)
+-+++ b/.idea/deploymentTargetSelector.xml	(date 1761989421768)
+-@@ -5,9 +5,6 @@
+-       <SelectionState runConfigName="app">
+-         <option name="selectionMode" value="DROPDOWN" />
+-       </SelectionState>
+--      <SelectionState runConfigName="CreateRequestActivity">
+--        <option name="selectionMode" value="DROPDOWN" />
+--      </SelectionState>
+-     </selectionStates>
+-   </component>
+- </project>
+-\ No newline at end of file

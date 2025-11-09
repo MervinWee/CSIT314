@@ -59,8 +59,8 @@ public class LoginActivity extends AppCompatActivity {
                     Intent intent = new Intent(LoginActivity.this, PlatformDashboardActivity.class);
                     startActivity(intent);
                     finish();
-                } else if ("PIN".equals(userRole)) {
-                    Intent intent = new Intent(LoginActivity.this, PinProfileActivity.class); 
+                } else if ("PIN".equals(userRole)) { // Corrected the redirection for PIN user
+                    Intent intent = new Intent(LoginActivity.this, PINHomeScreenActivity.class);
                     startActivity(intent);
                     finish();
                 } else {
