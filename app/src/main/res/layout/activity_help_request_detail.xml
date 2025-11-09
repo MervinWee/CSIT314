@@ -115,59 +115,64 @@
                 android:layout_marginTop="4dp"
                 tools:text="Medium"/>
 
-            <!-- START: THIS IS THE NEW, UNIFIED BLOCK FOR PIN DETAILS -->
-            <!-- This whole layout will be hidden or shown from the Java code -->
-            <LinearLayout
+            <!-- ** THE FIX IS HERE: Changed LinearLayout to MaterialCardView ** -->
+            <com.google.android.material.card.MaterialCardView
                 android:id="@+id/layoutPinContactInfo"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
                 android:layout_marginTop="16dp"
                 android:visibility="gone"
+                app:cardElevation="4dp"
+                app:contentPadding="16dp"
                 tools:visibility="visible">
 
-                <TextView
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Person-in-Need Details"
-                    android:textAppearance="?attr/textAppearanceTitleMedium"
-                    android:textStyle="bold" />
+                    android:orientation="vertical">
 
-                <!-- PIN Name -->
-                <TextView
-                    android:id="@+id/tvDetailPinName"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:drawableStart="@android:drawable/ic_menu_myplaces"
-                    android:drawablePadding="8dp"
-                    android:gravity="center_vertical"
-                    tools:text="John Doe" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Person-in-Need Details"
+                        android:textAppearance="?attr/textAppearanceTitleMedium"
+                        android:textStyle="bold" />
 
-                <!-- PIN Phone Number -->
-                <TextView
-                    android:id="@+id/tvDetailPinPhone"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:drawableStart="@android:drawable/ic_menu_call"
-                    android:drawablePadding="8dp"
-                    android:gravity="center_vertical"
-                    tools:text="+65 9123 4567" />
+                    <!-- PIN Name -->
+                    <TextView
+                        android:id="@+id/tvDetailPinName"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:drawableStart="@android:drawable/ic_menu_myplaces"
+                        android:drawablePadding="8dp"
+                        android:gravity="center_vertical"
+                        tools:text="John Doe" />
 
-                <!-- PIN ID -->
-                <TextView
-                    android:id="@+id/tvDetailPinId"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:drawableStart="@android:drawable/ic_menu_info_details"
-                    android:drawablePadding="8dp"
-                    android:gravity="center_vertical"
-                    tools:text="PIN ID: 1234" />
+                    <!-- PIN Phone Number -->
+                    <TextView
+                        android:id="@+id/tvDetailPinPhone"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:drawableStart="@android:drawable/ic_menu_call"
+                        android:drawablePadding="8dp"
+                        android:gravity="center_vertical"
+                        tools:text="+65 9123 4567" />
 
-            </LinearLayout>
-            <!-- END: NEW PIN DETAILS BLOCK -->
+                    <!-- PIN ID -->
+                    <TextView
+                        android:id="@+id/tvDetailPinId"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:drawableStart="@android:drawable/ic_menu_info_details"
+                        android:drawablePadding="8dp"
+                        android:gravity="center_vertical"
+                        tools:text="PIN ID: 1234" />
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
 
 
             <!-- View Count -->

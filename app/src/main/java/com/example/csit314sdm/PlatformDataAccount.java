@@ -38,7 +38,9 @@ public class PlatformDataAccount {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         usersRef = db.collection("users");
         requestsRef = db.collection("help_requests");
-        categoriesRef = db.collection("HelpCategories");
+        // ** THE FIX IS HERE **
+        // Changed "HelpCategories" to "categories" to match the security rules.
+        categoriesRef = db.collection("categories");
     }
 
     // --- Report Generation Methods ---

@@ -4,8 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="8dp"
-    app:cardCornerRadius="8dp"
+    android:layout_marginHorizontal="16dp"
+    android:layout_marginVertical="8dp"
     app:cardElevation="4dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -13,43 +13,28 @@
         android:layout_height="wrap_content"
         android:padding="16dp">
 
-        <ImageView
-            android:id="@+id/ivPinProfile"
-            android:layout_width="60dp"
-            android:layout_height="60dp"
-            android:src="@drawable/ic_profile"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
         <TextView
-            android:id="@+id/tvPinName"
+            android:id="@+id/tvMatchName"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:text="PIN Name"
-            android:textSize="18sp"
-            android:textStyle="bold"
+            android:textAppearance="?attr/textAppearanceHeadline6"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/ivPinProfile"
-            app:layout_constraintTop_toTopOf="@+id/ivPinProfile" />
+            tools:text="John Doe" />
 
         <TextView
-            android:id="@+id/tvMatchCount"
-            android:layout_width="wrap_content"
+            android:id="@+id/tvMatchEmail"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="Completed Requests: 5"
-            app:layout_constraintStart_toStartOf="@+id/tvPinName"
-            app:layout_constraintTop_toBottomOf="@+id/tvPinName" />
-
-        <TextView
-            android:id="@+id/tvLastInteraction"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="Last Interaction: 2 days ago"
-            app:layout_constraintStart_toStartOf="@+id/tvPinName"
-            app:layout_constraintTop_toBottomOf="@+id/tvMatchCount" />
+            android:textAppearance="?attr/textAppearanceBody2"
+            android:textColor="?android:attr/textColorSecondary"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tvMatchName"
+            app:layout_constraintEnd_toEndOf="parent"
+            tools:text="john.doe@example.com" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
+
 </com.google.android.material.card.MaterialCardView>

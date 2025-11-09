@@ -49,6 +49,48 @@ public class HelpRequestController {
         auth = FirebaseAuth.getInstance();
     }
 
+    public void getCompletedHistory(String companyId, Date fromDate, Date toDate, String category, final HelpRequestsLoadCallback callback) {
+        HelpRequest.getCompletedHistory(companyId, fromDate, toDate, category, new HelpRequest.HelpRequestsLoadCallback() {
+            @Override
+            public void onRequestsLoaded(List<HelpRequest> requests) {
+                callback.onRequestsLoaded(requests);
+            }
+
+            @Override
+            public void onDataLoadFailed(String errorMessage) {
+                callback.onDataLoadFailed(errorMessage);
+            }
+        });
+    }
+
+    public void searchShortlistedRequests(String keyword, String location, String category, final HelpRequestsLoadCallback callback) {
+        HelpRequest.searchShortlistedRequests(keyword, location, category, new HelpRequest.HelpRequestsLoadCallback() {
+            @Override
+            public void onRequestsLoaded(List<HelpRequest> requests) {
+                callback.onRequestsLoaded(requests);
+            }
+
+            @Override
+            public void onDataLoadFailed(String errorMessage) {
+                callback.onDataLoadFailed(errorMessage);
+            }
+        });
+    }
+
+    public void getSavedHelpRequests(final HelpRequestsLoadCallback callback) {
+        HelpRequest.getSavedHelpRequests(new HelpRequest.HelpRequestsLoadCallback() {
+            @Override
+            public void onRequestsLoaded(List<HelpRequest> requests) {
+                callback.onRequestsLoaded(requests);
+            }
+
+            @Override
+            public void onDataLoadFailed(String errorMessage) {
+                callback.onDataLoadFailed(errorMessage);
+            }
+        });
+    }
+
     public void getHelpRequestById(String requestId, String userRole, final SingleRequestLoadCallback callback) {
         if (requestId == null || requestId.isEmpty()) {
             if (callback != null) callback.onDataLoadFailed("Invalid Request ID provided.");
@@ -228,33 +270,6 @@ public class HelpRequestController {
                 });
     }
 
-
-    public void getSavedHelpRequests(final HelpRequestsLoadCallback callback) {
-        String currentCsrId = auth.getUid();
-        if (currentCsrId == null) {
-            if (callback != null) callback.onDataLoadFailed("No user is currently logged in.");
-            return;
-        }
-
-        db.collection("help_requests").whereArrayContains("savedByCsrId", currentCsrId).get()
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        List<HelpRequest> requestList = new ArrayList<>();
-                        for (QueryDocumentSnapshot document : task.getResult()) {
-                            HelpRequest request = document.toObject(HelpRequest.class);
-                            request.setId(document.getId());
-                            if (Arrays.asList("Open", "In-progress").contains(request.getStatus())) {
-                                requestList.add(request);
-                            }
-                        }
-                        Collections.sort(requestList, (r1, r2) -> r2.getCreationTimestamp().compareTo(r1.getCreationTimestamp()));
-                        if (callback != null) callback.onRequestsLoaded(requestList);
-                    } else {
-                        if (callback != null) callback.onDataLoadFailed("Failed to load saved requests. Error: " + task.getException().getMessage());
-                    }
-                });
-    }
-
     public void saveRequest(String requestId, final SaveCallback callback) {
         String currentCsrId = auth.getUid();
         if (currentCsrId == null) {
@@ -281,97 +296,6 @@ public class HelpRequestController {
                 }).addOnFailureListener(e -> {
                     if (callback != null) callback.onSaveFailure(e.getMessage());
                 });
-    }
-
-    public void getCompletedHistory(String companyId, Date fromDate, Date toDate, String category, final HelpRequestsLoadCallback callback) {
-        if (companyId == null || companyId.isEmpty()) {
-            if (callback != null) callback.onDataLoadFailed("Company ID is required to fetch history.");
-            return;
-        }
-
-        Query query = db.collection("help_requests")
-                .whereEqualTo("status", "Completed")
-                .whereEqualTo("companyId", companyId);
-
-        if (fromDate != null) {
-            query = query.whereGreaterThanOrEqualTo("creationTimestamp", fromDate);
-        }
-        if (toDate != null) {
-            Calendar c = Calendar.getInstance();
-            c.setTime(toDate);
-            c.set(Calendar.HOUR_OF_DAY, 23); c.set(Calendar.MINUTE, 59); c.set(Calendar.SECOND, 59);
-            query = query.whereLessThanOrEqualTo("creationTimestamp", c.getTime());
-        }
-        if (category != null && !category.isEmpty() && !category.equalsIgnoreCase("All")) {
-            query = query.whereEqualTo("category", category);
-        }
-
-        query = query.orderBy("creationTimestamp", Query.Direction.DESCENDING);
-
-        query.get().addOnCompleteListener(task -> {
-            if (task.isSuccessful()) {
-                List<HelpRequest> requests = new ArrayList<>();
-                for (QueryDocumentSnapshot document : task.getResult()) {
-                    HelpRequest request = document.toObject(HelpRequest.class);
-                    request.setId(document.getId());
-                    requests.add(request);
-                }
-                if (callback != null) callback.onRequestsLoaded(requests);
-            } else {
-                if (callback != null) callback.onDataLoadFailed("Query failed. Check logs for index requirements. Error: " + task.getException().getMessage());
-            }
-        });
-    }
-
-    public void searchShortlistedRequests(String keyword, String location, String category, final HelpRequestsLoadCallback callback) {
-        FirebaseUser currentUser = auth.getCurrentUser();
-        if (currentUser == null) {
-            if (callback != null) callback.onDataLoadFailed("No user logged in.");
-            return;
-        }
-        String currentCsrId = currentUser.getUid();
-
-        // --- START: THIS IS THE NEW, EFFICIENT LOGIC ---
-
-        // 1. Start with the base query: requests saved by the current CSR.
-        Query query = db.collection("help_requests").whereArrayContains("savedByCsrId", currentCsrId);
-
-        // 2. Dynamically add more filters ONLY if they are provided and not "All".
-        if (category != null && !category.isEmpty() && !category.equalsIgnoreCase("All")) {
-            query = query.whereEqualTo("category", category);
-        }
-        if (location != null && !location.isEmpty() && !location.equalsIgnoreCase("All")) {
-            query = query.whereEqualTo("region", location); // ** We will use a new "region" field
-        }
-
-        // 3. Execute the query
-        query.get().addOnCompleteListener(task -> {
-            if (task.isSuccessful()) {
-                List<HelpRequest> requests = new ArrayList<>();
-                for (QueryDocumentSnapshot document : task.getResult()) {
-                    HelpRequest request = document.toObject(HelpRequest.class);
-                    request.setId(document.getId());
-                    requests.add(request);
-                }
-
-                // 4. Perform the keyword search on the client-side (as full-text search is complex)
-                // This is a good compromise: we filter by structured data on the server, and by unstructured text on the client.
-                if (keyword != null && !keyword.isEmpty()) {
-                    List<HelpRequest> filteredByKeyword = requests.stream()
-                            .filter(r -> r.getTitle().toLowerCase().contains(keyword.toLowerCase()) || r.getDescription().toLowerCase().contains(keyword.toLowerCase()))
-                            .collect(Collectors.toList());
-                    // Sort the final list by date
-                    Collections.sort(filteredByKeyword, (r1, r2) -> r2.getCreationTimestamp().compareTo(r1.getCreationTimestamp()));
-                    if (callback != null) callback.onRequestsLoaded(filteredByKeyword);
-                } else {
-                    // If no keyword, just return the results from the server query
-                    Collections.sort(requests, (r1, r2) -> r2.getCreationTimestamp().compareTo(r1.getCreationTimestamp()));
-                    if (callback != null) callback.onRequestsLoaded(requests);
-                }
-            } else {
-                if (callback != null) callback.onDataLoadFailed("Query failed. Error: " + task.getException().getMessage());
-            }
-        });
     }
 
     // --- START: THIS IS THE FIX ---
