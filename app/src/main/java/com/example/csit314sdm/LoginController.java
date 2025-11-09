@@ -8,7 +8,6 @@ public class LoginController {
     }
 
     public void checkForExistingSession(final LoginCallback callback) {
-        // Correctly wrap the controller's callback in the entity's callback
         User.checkForExistingSession(new User.LoginCallback() {
             @Override
             public void onLoginSuccess(String userRole) {
@@ -36,4 +35,10 @@ public class LoginController {
         });
     }
 
+    // ** THE FIX IS HERE **
+    // Added the missing logoutUser() method.
+    public void logoutUser() {
+        // It correctly delegates the call to the User entity.
+        User.logoutUser();
+    }
 }

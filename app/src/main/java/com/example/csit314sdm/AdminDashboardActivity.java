@@ -60,17 +60,19 @@ public class AdminDashboardActivity extends AppCompatActivity {
         }
 
         if (btnAdminLogout != null) {
+            // ** THE FIX IS HERE **
+            // The logout operation is now synchronous from the UI's perspective.
+            // We no longer need a callback.
             btnAdminLogout.setOnClickListener(v -> {
-                logoutController.logout(new LogoutController.LogoutCallback() {
-                    @Override
-                    public void onLogoutComplete() {
-                        Toast.makeText(AdminDashboardActivity.this, "You have been logged out.", Toast.LENGTH_SHORT).show();
-                        Intent intent = new Intent(AdminDashboardActivity.this, loginPage.class); // Corrected to loginPage
-                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                        startActivity(intent);
-                        finish();
-                    }
-                });
+                // 1. Call the simple logout method on the controller.
+                logoutController.logoutUser();
+
+                // 2. Immediately handle the UI changes.
+                Toast.makeText(AdminDashboardActivity.this, "You have been logged out.", Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(AdminDashboardActivity.this, LoginActivity.class); // Corrected to LoginActivity.class
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+                finish();
             });
         }
     }

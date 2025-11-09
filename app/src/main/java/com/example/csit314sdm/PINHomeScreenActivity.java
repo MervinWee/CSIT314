@@ -51,6 +51,7 @@ public class PINHomeScreenActivity extends AppCompatActivity {
     private SimpleRequestAdapter requestAdapter;
     private List<HelpRequest> helpRequestList;
     private ListenerRegistration requestListener;
+    private LogoutController logoutController; // Added LogoutController
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,6 +60,7 @@ public class PINHomeScreenActivity extends AppCompatActivity {
 
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
+        logoutController = new LogoutController(); // Initialized controller
 
         initializeUI();
         setupListeners();
@@ -70,11 +72,7 @@ public class PINHomeScreenActivity extends AppCompatActivity {
         super.onResume();
         FirebaseUser currentUser = mAuth.getCurrentUser();
         if (currentUser == null) {
-            // If user is somehow null, just navigate to login
-            Intent intent = new Intent(this, loginPage.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            startActivity(intent);
-            finish();
+            handleLogout(); // Correctly handle if user becomes null
             return;
         }
         loadUserData(currentUser.getUid());
@@ -86,7 +84,7 @@ public class PINHomeScreenActivity extends AppCompatActivity {
         super.onPause();
         if (requestListener != null) {
             requestListener.remove();
-            requestListener = null; // Set to null after removing to prevent reuse
+            requestListener = null;
         }
     }
 
@@ -133,15 +131,7 @@ public class PINHomeScreenActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        btnLogout.setOnClickListener(view -> {
-            LogoutController logoutController = new LogoutController(requestListener);
-            logoutController.logout(() -> {
-                Intent intent = new Intent(PINHomeScreenActivity.this, loginPage.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                startActivity(intent);
-                finish();
-            });
-        });
+        btnLogout.setOnClickListener(view -> handleLogout());
     }
 
     private void setupNavigationDrawer() {
@@ -160,13 +150,7 @@ public class PINHomeScreenActivity extends AppCompatActivity {
             } else if (id == R.id.nav_settings) {
                 startActivity(new Intent(this, PINSettingsActivity.class));
             } else if (id == R.id.nav_logout) {
-                LogoutController logoutController = new LogoutController(requestListener);
-                logoutController.logout(() -> {
-                    Intent intent = new Intent(PINHomeScreenActivity.this, loginPage.class);
-                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                    startActivity(intent);
-                    finish();
-                });
+                handleLogout();
             }
             drawerLayout.closeDrawer(GravityCompat.START);
             return true;
@@ -196,6 +180,24 @@ public class PINHomeScreenActivity extends AppCompatActivity {
                         }
                     });
         }
+    }
+
+    private void handleLogout() {
+        // 1. Detach any active listeners to prevent memory leaks.
+        if (requestListener != null) {
+            requestListener.remove();
+            requestListener = null;
+        }
+
+        // 2. Call the simple logout method on the controller.
+        logoutController.logoutUser();
+
+        // 3. Immediately handle the UI changes.
+        Toast.makeText(this, "You have been logged out.", Toast.LENGTH_SHORT).show();
+        Intent intent = new Intent(this, LoginActivity.class); // Corrected to LoginActivity.class
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
     }
 
     private void loadUserData(String userId) {

@@ -3,6 +3,7 @@ package com.example.csit314sdm;
 import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Button;
+import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 public class PlatformDashboardActivity extends AppCompatActivity {
@@ -16,7 +17,9 @@ public class PlatformDashboardActivity extends AppCompatActivity {
         setContentView(R.layout.activity_platform_dashboard);
 
         platformDataAccount = new PlatformDataAccount();
-        logoutController = new LogoutController(platformDataAccount);
+        // ** THE FIX IS HERE **
+        // The constructor for LogoutController now takes no arguments.
+        logoutController = new LogoutController();
 
         Button btnManageCategories = findViewById(R.id.btnManageCategories);
         Button btnPlatformLogout = findViewById(R.id.btnPlatformLogout);
@@ -44,15 +47,17 @@ public class PlatformDashboardActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
+        // ** AND THE FIX IS HERE **
         btnPlatformLogout.setOnClickListener(v -> {
-            logoutController.logout(new LogoutController.LogoutCallback() {
-                @Override
-                public void onLogoutComplete() {
-                    Intent intent = new Intent(PlatformDashboardActivity.this, loginPage.class);
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                    startActivity(intent);
-                }
-            });
+            // 1. Call the simple logout method.
+            logoutController.logoutUser();
+
+            // 2. Handle UI changes directly.
+            Toast.makeText(this, "You have been logged out.", Toast.LENGTH_SHORT).show();
+            Intent intent = new Intent(PlatformDashboardActivity.this, LoginActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+            finish();
         });
     }
 }

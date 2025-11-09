@@ -51,6 +51,8 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
     private CategoryController categoryController;
     private HelpRequestController controller;
     private UserManagementController userManagementController;
+    private LoginController loginController;
+    private LogoutController logoutController;
     private HelpRequestAdapter adapter;
     private String currentCsrId;
     private boolean isShowingSaved = false;
@@ -72,16 +74,14 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
         controller = new HelpRequestController();
         userManagementController = new UserManagementController();
         categoryController = new CategoryController();
+        loginController = new LoginController();
+        logoutController = new LogoutController();
 
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser != null) {
             currentCsrId = currentUser.getUid();
         } else {
-            // If user is somehow null, just navigate to login without cleanup
-            Intent intent = new Intent(this, loginPage.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            startActivity(intent);
-            finish();
+            handleLogout();
             return;
         }
 
@@ -90,6 +90,45 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
         setupListeners();
         loadUserDetails();
         askNotificationPermission();
+    }
+
+    private void setupNavigationDrawer() {
+        navigationView.setNavigationItemSelectedListener(item -> {
+            int itemId = item.getItemId();
+
+            if (itemId == R.id.nav_my_requests) {
+                Intent intent = new Intent(CSRHomeScreenActivity.this, MyInProgressRequestsActivity.class);
+                startActivity(intent);
+            } else if (itemId == R.id.nav_history) {
+                Intent intent = new Intent(CSRHomeScreenActivity.this, HistoryActivity.class);
+                startActivity(intent);
+            } else if (itemId == R.id.nav_settings) {
+                Intent intent = new Intent(CSRHomeScreenActivity.this, CSRSettingsActivity.class);
+                startActivity(intent);
+            } else if (itemId == R.id.nav_logout) {
+                handleLogout();
+            }
+
+            drawerLayout.closeDrawer(GravityCompat.START);
+            return true;
+        });
+
+        btnDrawer.setOnClickListener(v -> {
+            if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+                drawerLayout.closeDrawer(GravityCompat.START);
+            } else {
+                drawerLayout.openDrawer(GravityCompat.START);
+            }
+        });
+    }
+
+    private void handleLogout() {
+        logoutController.logoutUser(currentCsrId);
+        Toast.makeText(this, "You have been logged out.", Toast.LENGTH_SHORT).show();
+        Intent intent = new Intent(CSRHomeScreenActivity.this, LoginActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
     }
 
     @Override
@@ -207,42 +246,6 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
                 return true;
             }
             return false;
-        });
-    }
-
-    private void setupNavigationDrawer() {
-        navigationView.setNavigationItemSelectedListener(item -> {
-            int itemId = item.getItemId();
-
-            if (itemId == R.id.nav_my_requests) {
-                Intent intent = new Intent(CSRHomeScreenActivity.this, MyInProgressRequestsActivity.class);
-                startActivity(intent);
-            } else if (itemId == R.id.nav_history) {
-                Intent intent = new Intent(CSRHomeScreenActivity.this, HistoryActivity.class);
-                startActivity(intent);
-            } else if (itemId == R.id.nav_settings) {
-                Intent intent = new Intent(CSRHomeScreenActivity.this, CSRSettingsActivity.class);
-                startActivity(intent);
-            } else if (itemId == R.id.nav_logout) {
-                LogoutController logoutController = new LogoutController(currentCsrId);
-                logoutController.logout(() -> {
-                    Intent intent = new Intent(CSRHomeScreenActivity.this, loginPage.class);
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                    startActivity(intent);
-                    finish();
-                });
-            }
-
-            drawerLayout.closeDrawer(GravityCompat.START);
-            return true;
-        });
-
-        btnDrawer.setOnClickListener(v -> {
-            if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
-                drawerLayout.closeDrawer(GravityCompat.START);
-            } else {
-                drawerLayout.openDrawer(GravityCompat.START);
-            }
         });
     }
 

@@ -19,13 +19,11 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // Corrected the layout file to the one that exists in your project
         setContentView(R.layout.loginpage);
 
         etEmail = findViewById(R.id.etEmail);
         etPassword = findViewById(R.id.etPassword);
         btnLogin = findViewById(R.id.btnLogin);
-        // This will now correctly find the ProgressBar in loginpage.xml
         progressBar = findViewById(R.id.progressBar);
 
         loginController = new LoginController();
@@ -42,7 +40,6 @@ public class LoginActivity extends AppCompatActivity {
         String email = etEmail.getText().toString().trim();
         String password = etPassword.getText().toString().trim();
 
-        // This line should no longer crash
         progressBar.setVisibility(View.VISIBLE);
         loginController.loginUser(email, password, new LoginController.LoginCallback() {
             @Override
@@ -58,12 +55,14 @@ public class LoginActivity extends AppCompatActivity {
                     Intent intent = new Intent(LoginActivity.this, CsrDashboardActivity.class);
                     startActivity(intent);
                     finish();
-                } else {
-                    // Handle other roles or show a generic dashboard
+                } else if ("Platform".equals(userRole)){
+                    Intent intent = new Intent(LoginActivity.this, PlatformDashboardActivity.class);
+                    startActivity(intent);
+                    finish();
+                }else {
+                    Toast.makeText(LoginActivity.this, "Invalid User Role", Toast.LENGTH_SHORT).show();
                 }
             }
-
-            @Override
             public void onLoginFailure(String errorMessage) {
                 progressBar.setVisibility(View.GONE);
                 Toast.makeText(LoginActivity.this, "Login Failed: " + errorMessage, Toast.LENGTH_LONG).show();

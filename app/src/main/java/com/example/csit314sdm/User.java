@@ -12,6 +12,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.PropertyName;
+import com.google.firebase.messaging.FirebaseMessaging;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -151,7 +152,21 @@ public class User {
         }
     }
     
-    // ... (rest of the file is unchanged, all other methods are preserved)
+    // --- Entity Methods (BCE Logic) ---
+
+    public static void logoutUser() {
+        FirebaseAuth.getInstance().signOut();
+    }
+
+    public static void logoutUser(String fcmTopicToUnsubscribe) {
+        if (fcmTopicToUnsubscribe != null && !fcmTopicToUnsubscribe.isEmpty()) {
+            FirebaseMessaging.getInstance().unsubscribeFromTopic(fcmTopicToUnsubscribe);
+        }
+        FirebaseAuth.getInstance().signOut();
+    }
+
+    // ... (rest of the file is unchanged)
+
      public static void createUser(String email, String password, String role, String companyId, final RegistrationCallback callback) {
         if (!isInputValid(email, password, callback)) {
             return;
@@ -290,7 +305,6 @@ public class User {
                         if (document.exists()) {
                             User user = document.toObject(User.class);
                             if (user != null) {
-                                // ** THE FIX IS HERE **
                                 if ("Active".equals(user.getAccountStatus())) {
                                     if (user.getRole() != null) {
                                         callback.onLoginSuccess(user.getRole());
@@ -299,9 +313,8 @@ public class User {
                                         mAuth.signOut();
                                     }
                                 } else {
-                                    // Account is suspended or has another status
                                     callback.onLoginFailure("This account has been suspended.");
-                                    mAuth.signOut(); // IMPORTANT: Sign out the user from Firebase Auth
+                                    mAuth.signOut();
                                 }
                             } else {
                                 callback.onLoginFailure("Failed to parse user data.");
@@ -309,16 +322,12 @@ public class User {
                             }
                         } else {
                             callback.onLoginFailure("User data not found.");
-                            mAuth.signOut(); // User exists in Auth but not in Firestore database
+                            mAuth.signOut();
                         }
                     } else {
                         callback.onLoginFailure("Failed to fetch user data.");
                     }
                 });
-    }
-
-    public static void logoutUser() {
-        FirebaseAuth.getInstance().signOut();
     }
 
     public static void fetchUserById(String userId, UserCallback<User> callback) {
