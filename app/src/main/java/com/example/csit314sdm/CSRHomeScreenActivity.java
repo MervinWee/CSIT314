@@ -77,7 +77,11 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
         if (currentUser != null) {
             currentCsrId = currentUser.getUid();
         } else {
-            handleLogout();
+            // If user is somehow null, just navigate to login without cleanup
+            Intent intent = new Intent(this, loginPage.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+            finish();
             return;
         }
 
@@ -220,7 +224,13 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
                 Intent intent = new Intent(CSRHomeScreenActivity.this, CSRSettingsActivity.class);
                 startActivity(intent);
             } else if (itemId == R.id.nav_logout) {
-                handleLogout();
+                LogoutController logoutController = new LogoutController(currentCsrId);
+                logoutController.logout(() -> {
+                    Intent intent = new Intent(CSRHomeScreenActivity.this, loginPage.class);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
+                    finish();
+                });
             }
 
             drawerLayout.closeDrawer(GravityCompat.START);
@@ -272,18 +282,6 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
 
         navHeaderName.setText(username != null && !username.isEmpty() ? username : "CSR Representative");
         navHeaderEmail.setText(user.getEmail());
-    }
-
-    private void handleLogout() {
-        if (currentCsrId != null && !currentCsrId.isEmpty()) {
-            FirebaseMessaging.getInstance().unsubscribeFromTopic(currentCsrId);
-        }
-
-        FirebaseAuth.getInstance().signOut();
-        Intent intent = new Intent(CSRHomeScreenActivity.this, loginPage.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        startActivity(intent);
-        finish();
     }
 
     private void loadUserDetails() {

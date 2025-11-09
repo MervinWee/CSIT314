@@ -70,7 +70,11 @@ public class PINHomeScreenActivity extends AppCompatActivity {
         super.onResume();
         FirebaseUser currentUser = mAuth.getCurrentUser();
         if (currentUser == null) {
-            logoutUser();
+            // If user is somehow null, just navigate to login
+            Intent intent = new Intent(this, loginPage.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+            finish();
             return;
         }
         loadUserData(currentUser.getUid());
@@ -82,6 +86,7 @@ public class PINHomeScreenActivity extends AppCompatActivity {
         super.onPause();
         if (requestListener != null) {
             requestListener.remove();
+            requestListener = null; // Set to null after removing to prevent reuse
         }
     }
 
@@ -128,7 +133,15 @@ public class PINHomeScreenActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        btnLogout.setOnClickListener(view -> logoutUser());
+        btnLogout.setOnClickListener(view -> {
+            LogoutController logoutController = new LogoutController(requestListener);
+            logoutController.logout(() -> {
+                Intent intent = new Intent(PINHomeScreenActivity.this, loginPage.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+                finish();
+            });
+        });
     }
 
     private void setupNavigationDrawer() {
@@ -147,7 +160,13 @@ public class PINHomeScreenActivity extends AppCompatActivity {
             } else if (id == R.id.nav_settings) {
                 startActivity(new Intent(this, PINSettingsActivity.class));
             } else if (id == R.id.nav_logout) {
-                logoutUser();
+                LogoutController logoutController = new LogoutController(requestListener);
+                logoutController.logout(() -> {
+                    Intent intent = new Intent(PINHomeScreenActivity.this, loginPage.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
+                    finish();
+                });
             }
             drawerLayout.closeDrawer(GravityCompat.START);
             return true;
@@ -176,12 +195,10 @@ public class PINHomeScreenActivity extends AppCompatActivity {
                             }
                         }
                     });
-            //
         }
     }
 
     private void loadUserData(String userId) {
-
         db.collection("users").document(userId).get()
                 .addOnSuccessListener(documentSnapshot -> {
                     if (documentSnapshot.exists()) {
@@ -189,7 +206,6 @@ public class PINHomeScreenActivity extends AppCompatActivity {
                         if (user != null) {
                             user.setId(documentSnapshot.getId()); // This prevents crashes
                             if (user.getFullName() != null && !user.getFullName().isEmpty()) {
-                                // Greet user by first name if available
                                 String[] names = user.getFullName().split(" ");
                                 tvWelcomeMessage.setText("Hello, " + names[0] + "!");
                             } else {
@@ -199,10 +215,12 @@ public class PINHomeScreenActivity extends AppCompatActivity {
                     }
                 })
                 .addOnFailureListener(e -> Log.e(TAG, "Error fetching user data", e));
-
     }
 
     private void loadAllRequestDataWithListener(String userId) {
+        if (requestListener != null) {
+            requestListener.remove();
+        }
         requestListener = db.collection("help_requests").whereEqualTo("submittedBy", userId)
                 .addSnapshotListener((queryDocumentSnapshots, error) -> {
                     if (error != null) {
@@ -236,26 +254,16 @@ public class PINHomeScreenActivity extends AppCompatActivity {
                     tvActiveRequests.setText("Active Requests\n(" + activeCount + ")");
                     tvCompleted.setText("History\n(" + completedCount + ")");
 
-
                     Collections.sort(openRequests, (r1, r2) -> {
                         if (r1.getCreationTimestamp() == null || r2.getCreationTimestamp() == null) return 0;
                         return r2.getCreationTimestamp().compareTo(r1.getCreationTimestamp());
                     });
-
 
                     int limit = Math.min(3, openRequests.size());
                     helpRequestList.clear();
                     helpRequestList.addAll(openRequests.subList(0, limit));
                     requestAdapter.notifyDataSetChanged();
                 });
-    }
-
-    private void logoutUser() {
-        mAuth.signOut();
-        Intent intent = new Intent(this, loginPage.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        startActivity(intent);
-        finish();
     }
 
     @Override
