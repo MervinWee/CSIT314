@@ -21,7 +21,7 @@ public class RegisterActivity extends AppCompatActivity {
     private ProgressDialog progressDialog;
 
 
-    private RegistrationController registrationController;
+    private CreateUserAccountController registrationController;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,7 +30,7 @@ public class RegisterActivity extends AppCompatActivity {
         setContentView(R.layout.activity_register);
 
 
-        registrationController = new RegistrationController();
+        registrationController = new CreateUserAccountController();
 
 
         initializeUI();
@@ -66,7 +66,7 @@ public class RegisterActivity extends AppCompatActivity {
         progressDialog.show();
 
 
-        registrationController.registerUser(email, password, userType, new RegistrationController.RegistrationCallback() {
+        registrationController.CreateUser(email, password, userType, null, null, null, null, new User.RegistrationCallback() {
             @Override
             public void onRegistrationSuccess(String returnedUserType) {
 

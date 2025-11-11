@@ -17,7 +17,7 @@ public class AdminCreateUserActivity extends AppCompatActivity {
     private ImageButton btnBack;
     private ProgressBar progressBar;
 
-    private RegistrationController registrationController;
+    private CreateUserAccountController CreateUserAccountController;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,7 +25,7 @@ public class AdminCreateUserActivity extends AppCompatActivity {
         setContentView(R.layout.activity_admin_create_user);
 
         try {
-            registrationController = new RegistrationController();
+            CreateUserAccountController = new CreateUserAccountController();
             initializeUI();
 
             btnAdminCreateUser.setOnClickListener(v -> handleCreateUser());
@@ -79,7 +79,7 @@ public class AdminCreateUserActivity extends AppCompatActivity {
             progressBar.setVisibility(View.VISIBLE);
             btnAdminCreateUser.setEnabled(false);
 
-            RegistrationController.RegistrationCallback callback = new RegistrationController.RegistrationCallback() {
+            User.RegistrationCallback callback = new User.RegistrationCallback() {
                 @Override
                 public void onRegistrationSuccess(String returnedUserType) {
                     progressBar.setVisibility(View.GONE);
@@ -101,7 +101,7 @@ public class AdminCreateUserActivity extends AppCompatActivity {
                 }
             };
 
-            registrationController.registerUser(email, password, "PIN", fullName, phoneNumber, dob, address, callback);
+            CreateUserAccountController.CreateUser(email, password, "PIN", fullName, phoneNumber, dob, address, callback);
 
         } catch (Exception e) {
             progressBar.setVisibility(View.GONE);
