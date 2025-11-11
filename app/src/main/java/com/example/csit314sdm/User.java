@@ -30,11 +30,11 @@ public class User {
     private String uid;
     private String fullName;
     private String phoneNumber;
-    private Object dob; // Changed to Object
+    private Object dob;
     private String role;
     private String accountStatus;
     private String address;
-    private Object shortId; // Changed to Object
+    private Object shortId;
     private Date creationDate;
     private String companyId;
 
@@ -48,7 +48,7 @@ public class User {
         void onLoginSuccess(String userRole);
         void onLoginFailure(String errorMessage);
     }
-    
+
     public interface UserDeleteCallback {
         void onDeleteSuccess();
         void onDeleteFailure(String errorMessage);
@@ -63,12 +63,12 @@ public class User {
         void onProfileSaveSuccess();
         void onProfileSaveFailure(String errorMessage);
     }
-    
+
     public interface UserCallback<T> {
         void onSuccess(T result);
         void onFailure(Exception e);
     }
-    
+
     private interface UniqueIdCallback {
         void onUniqueIdFound(String shortId);
         void onIdGenerationFailed(String errorMessage);
@@ -98,7 +98,6 @@ public class User {
     @PropertyName("phoneNumber")
     public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
 
-    // Smart getter for dob
     public String getDob() {
         if (dob instanceof String) {
             return (String) dob;
@@ -109,7 +108,7 @@ public class User {
         }
         return null;
     }
-    
+
     @PropertyName("dob")
     public void setDob(Object dob) { this.dob = dob; }
 
@@ -144,14 +143,14 @@ public class User {
     public String getCompanyId() { return companyId; }
     @PropertyName("companyId")
     public void setCompanyId(String companyId) { this.companyId = companyId; }
-    
-    @PropertyName("createdAt") // For Firestore's serverTimestamp
+
+    @PropertyName("createdAt")
     public void setCreatedAt(Date date) {
         if (this.creationDate == null) {
             this.creationDate = date;
         }
     }
-    
+
     // --- Entity Methods (BCE Logic) ---
 
     public static void logoutUser() {
@@ -165,20 +164,25 @@ public class User {
         FirebaseAuth.getInstance().signOut();
     }
 
-    // ... (rest of the file is unchanged)
-
-     public static void createUser(String email, String password, String role, String companyId, final RegistrationCallback callback) {
+    public static void createUser(String email, String password, String role, String companyId, final RegistrationCallback callback) {
         if (!isInputValid(email, password, callback)) {
             return;
         }
-        createUserWithSecondaryAuth(email, password, role, companyId, callback);
+        createUserWithSecondaryAuth(email, password, role, companyId, "", "", "", "", callback);
     }
-    
+
     public static void createUser(String email, String password, String role, final RegistrationCallback callback) {
         if (!isInputValid(email, password, callback)) {
             return;
         }
-        createUserWithSecondaryAuth(email, password, role, null, callback);
+        createUserWithSecondaryAuth(email, password, role, null, "", "", "", "", callback);
+    }
+
+    public static void createUser(String email, String password, String role, String companyId, String fullName, String phoneNumber, String dob, String address, final RegistrationCallback callback) {
+        if (!isInputValid(email, password, callback)) {
+            return;
+        }
+        createUserWithSecondaryAuth(email, password, role, companyId, fullName, phoneNumber, dob, address, callback);
     }
 
     private static boolean isInputValid(String email, String password, RegistrationCallback callback) {
@@ -193,7 +197,7 @@ public class User {
         return true;
     }
 
-    private static void createUserWithSecondaryAuth(String email, String password, String role, String companyId, final RegistrationCallback callback) {
+    private static void createUserWithSecondaryAuth(String email, String password, String role, String companyId, String fullName, String phoneNumber, String dob, String address, final RegistrationCallback callback) {
         try {
             FirebaseApp mainApp = FirebaseApp.getInstance();
             FirebaseFirestore db = FirebaseFirestore.getInstance();
@@ -205,7 +209,7 @@ public class User {
                         if (task.isSuccessful()) {
                             FirebaseUser firebaseUser = task.getResult().getUser();
                             if (firebaseUser != null) {
-                                saveUserDataToFirestore(db, firebaseUser, role, companyId, callback);
+                                saveUserDataToFirestore(db, firebaseUser, role, companyId, fullName, phoneNumber, dob, address, callback);
                             } else {
                                 callback.onRegistrationFailure("Secondary auth: Failed to get user after creation.");
                             }
@@ -219,7 +223,7 @@ public class User {
         }
     }
 
-    private static void saveUserDataToFirestore(FirebaseFirestore db, FirebaseUser firebaseUser, String role, String companyId, final RegistrationCallback callback) {
+    private static void saveUserDataToFirestore(FirebaseFirestore db, FirebaseUser firebaseUser, String role, String companyId, String fullName, String phoneNumber, String dob, String address, final RegistrationCallback callback) {
         generateUniqueShortId(db, new UniqueIdCallback() {
             @Override
             public void onUniqueIdFound(String shortId) {
@@ -230,10 +234,10 @@ public class User {
                 newUserMap.put("creationDate", FieldValue.serverTimestamp());
                 newUserMap.put("accountStatus", "Active");
                 newUserMap.put("shortId", shortId);
-                newUserMap.put("fullName", "");
-                newUserMap.put("phoneNumber", "");
-                newUserMap.put("dob", "");
-                newUserMap.put("address", "");
+                newUserMap.put("fullName", fullName);
+                newUserMap.put("phoneNumber", phoneNumber);
+                newUserMap.put("dob", dob);
+                newUserMap.put("address", address);
 
                 if (companyId != null && !companyId.isEmpty()) {
                     newUserMap.put("companyId", companyId);
@@ -364,7 +368,7 @@ public class User {
                     }
                 });
     }
-    
+
     public static void searchUsers(String searchText, String role, UserCallback<List<User>> callback) {
         Query query = FirebaseFirestore.getInstance().collection("users");
 
@@ -391,7 +395,7 @@ public class User {
                 })
                 .addOnFailureListener(callback::onFailure);
     }
-    
+
     public static void saveUserProfile(User user, String fullName, String contact, String dob, String address, final ProfileCallback callback) {
         if (user == null || user.getId() == null || user.getId().isEmpty()) {
             callback.onProfileSaveFailure("Invalid user or user ID provided.");
@@ -418,7 +422,20 @@ public class User {
                 .addOnSuccessListener(aVoid -> callback.onSuccess(null))
                 .addOnFailureListener(callback::onFailure);
     }
-    
+
+    public static void updateUserRole(String userId, String role, UserCallback<Void> callback) {
+        if (userId == null || userId.isEmpty()) {
+            callback.onFailure(new IllegalArgumentException("User ID cannot be empty."));
+            return;
+        }
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("role", role);
+
+        FirebaseFirestore.getInstance().collection("users").document(userId).update(updates)
+                .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                .addOnFailureListener(callback::onFailure);
+    }
+
     public static void suspendUserProfile(String userId, UserCallback<Void> callback) {
         FirebaseFirestore.getInstance().collection("users").document(userId).update("accountStatus", "Suspended")
                 .addOnSuccessListener(aVoid -> callback.onSuccess(null))

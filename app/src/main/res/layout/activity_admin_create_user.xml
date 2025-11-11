@@ -62,8 +62,7 @@
                 android:id="@+id/layoutFullName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Full Name"
-                android:visibility="gone">
+                android:hint="Full Name">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etFullName"
                     android:layout_width="match_parent"
@@ -105,8 +104,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:hint="Phone Number (Optional)"
-                android:visibility="gone">
+                android:hint="Phone Number (Optional)">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etPhoneNumber"
                     android:layout_width="match_parent"
@@ -119,13 +117,25 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:hint="Date of Birth (Optional)"
-                android:visibility="gone">
+                android:hint="Date of Birth (Optional)">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etDob"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="date"/>
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/layoutAddress"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:hint="Address (Optional)">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etAddress"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textPostalAddress"/>
             </com.google.android.material.textfield.TextInputLayout>
 
             <!-- Spinner for CreateUserAccountActivity -->

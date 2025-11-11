@@ -102,6 +102,9 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
             } else if (itemId == R.id.nav_history) {
                 Intent intent = new Intent(CSRHomeScreenActivity.this, HistoryActivity.class);
                 startActivity(intent);
+            } else if (itemId == R.id.nav_my_matches) {
+                Intent intent = new Intent(CSRHomeScreenActivity.this, MyMatchesActivity.class);
+                startActivity(intent);
             } else if (itemId == R.id.nav_settings) {
                 Intent intent = new Intent(CSRHomeScreenActivity.this, CSRSettingsActivity.class);
                 startActivity(intent);

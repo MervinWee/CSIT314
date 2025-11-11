@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"    xmlns:app="http://schemas.android.com/apk/res-auto"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
     android:layout_width="match_parent"
@@ -48,23 +49,21 @@
             android:orientation="vertical"
             android:padding="24dp">
 
-            <!-- START: THIS IS THE CORRECTED BLOCK -->
             <com.google.android.material.textfield.TextInputLayout
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:hint="Type to search user by email">  <!-- FIX: The hint is now on the parent layout -->
+                android:hint="Type to search user by email">
 
                 <AutoCompleteTextView
                     android:id="@+id/spinnerUserAccount"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="textEmailAddress"
-                    android:padding="16dp"/> <!-- The hint has been removed from here -->
+                    android:padding="16dp"/>
 
             </com.google.android.material.textfield.TextInputLayout>
-            <!-- END: CORRECTION COMPLETE -->
 
             <!-- Full Name Input -->
             <com.google.android.material.textfield.TextInputLayout
@@ -131,6 +130,12 @@
                     android:layout_height="wrap_content"
                     android:inputType="textPostalAddress" />
             </com.google.android.material.textfield.TextInputLayout>
+
+            <Spinner
+                android:id="@+id/spinnerRole"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="16dp" />
 
             <!-- Save Profile Button -->
             <Button

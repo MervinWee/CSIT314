@@ -1,6 +1,7 @@
 package com.example.csit314sdm;
 
 import java.util.List;
+import java.util.Map;
 
 public class UserProfileController {
 
@@ -27,8 +28,8 @@ public class UserProfileController {
             }
         });
     }
+
     public void getUserById(String userId, User.UserCallback<User> callback) {
-        // Delegate the call directly to the static method in the User class
         User.fetchUserById(userId, callback);
     }
 
@@ -42,6 +43,20 @@ public class UserProfileController {
             @Override
             public void onProfileSaveFailure(String errorMessage) {
                 callback.onProfileSaveFailure(errorMessage);
+            }
+        });
+    }
+
+    public void updateUserRole(String userId, String role, final ProfileCallback callback) {
+        User.updateUserRole(userId, role, new User.UserCallback<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                callback.onProfileSaveSuccess();
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                callback.onProfileSaveFailure(e.getMessage());
             }
         });
     }

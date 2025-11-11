@@ -16,29 +16,24 @@ public class AdminDashboardActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_admin_dashboard);
 
-        // Initialize the standard logout controller for users with no special cleanup needs.
         logoutController = new LogoutController();
 
-        // --- Find all the clickable cards from the layout ---
         MaterialCardView cardCreateUserAccount = findViewById(R.id.cardCreateUserAccount);
         MaterialCardView cardRetrieveUserAccount = findViewById(R.id.cardRetrieveUserAccount);
         MaterialCardView cardCreateUserProfile = findViewById(R.id.cardCreateUserProfile);
         MaterialCardView cardRetrieveUserProfile = findViewById(R.id.cardRetrieveUserProfile);
         Button btnAdminLogout = findViewById(R.id.btnAdminLogout);
 
-        // --- Set OnClick Listeners ---
-
-        // 1. Create User Account -> Navigates to the user creation page
         if (cardCreateUserAccount != null) {
             cardCreateUserAccount.setOnClickListener(v -> {
-                Intent intent = new Intent(AdminDashboardActivity.this, AdminCreateUserActivity.class);
+                Intent intent = new Intent(AdminDashboardActivity.this, CreateUserProfileActivity.class);
                 startActivity(intent);
             });
         }
 
         if (cardCreateUserProfile != null) {
             cardCreateUserProfile.setOnClickListener(v -> {
-                Intent intent = new Intent(AdminDashboardActivity.this, CreateUserProfileActivity.class);
+                Intent intent = new Intent(AdminDashboardActivity.this, AdminCreateUserActivity.class);
                 startActivity(intent);
             });
         }
@@ -60,16 +55,10 @@ public class AdminDashboardActivity extends AppCompatActivity {
         }
 
         if (btnAdminLogout != null) {
-            // ** THE FIX IS HERE **
-            // The logout operation is now synchronous from the UI's perspective.
-            // We no longer need a callback.
             btnAdminLogout.setOnClickListener(v -> {
-                // 1. Call the simple logout method on the controller.
                 logoutController.logoutUser();
-
-                // 2. Immediately handle the UI changes.
                 Toast.makeText(AdminDashboardActivity.this, "You have been logged out.", Toast.LENGTH_SHORT).show();
-                Intent intent = new Intent(AdminDashboardActivity.this, LoginActivity.class); // Corrected to LoginActivity.class
+                Intent intent = new Intent(AdminDashboardActivity.this, LoginActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 startActivity(intent);
                 finish();

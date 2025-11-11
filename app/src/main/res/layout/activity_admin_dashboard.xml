@@ -26,16 +26,15 @@
         android:text="Manage users and system settings"
         android:textSize="16sp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tvAdminTitle" />
+        app:layout_constraintTop_toBottomOf="@id/tvAdminTitle" />
 
-    <!-- ScrollView to handle multiple options on smaller screens -->
     <ScrollView
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginTop="24dp"
         android:layout_marginBottom="16dp"
         app:layout_constraintTop_toBottomOf="@id/tvAdminSubtitle"
-        app:layout_constraintBottom_toTopOf="@id/btnAdminLogout"
+        app:layout_constraintBottom_toTopOf="@+id/btnAdminLogout"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
@@ -44,7 +43,6 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Action Card for Creating a User Account -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardCreateUserAccount"
                 android:layout_width="match_parent"
@@ -57,37 +55,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Create User Account"
-                        android:textSize="20sp"
-                        android:textColor="?android:attr/textColorPrimary"
-                        android:fontFamily="sans-serif-medium"/>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="Create a new login for a user (Admin, PIN or CSR)."/>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- Action Card for Creating a User Profile -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardCreateUserProfile"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="4dp"
-                android:layout_marginBottom="16dp">
-                <!-- Contents are the same as before -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
+                    android:minHeight="110dp"
                     android:padding="16dp">
 
                     <TextView
@@ -106,7 +74,36 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- NEW: Action Card for Retrieving User Account -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardCreateUserProfile"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
+                android:layout_marginBottom="16dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:minHeight="110dp"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Create User Account"
+                        android:textSize="20sp"
+                        android:textColor="?android:attr/textColorPrimary"
+                        android:fontFamily="sans-serif-medium"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Create a new login for a user (PIN or CSR)."/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardRetrieveUserAccount"
                 android:layout_width="match_parent"
@@ -119,6 +116,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
+                    android:minHeight="110dp"
                     android:padding="16dp">
 
                     <TextView
@@ -137,10 +135,6 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-
-
-
-            <!-- NEW: Action Card for Retrieving User Profile -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardRetrieveUserProfile"
                 android:layout_width="match_parent"
@@ -153,7 +147,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:padding="16dp"
+                    android:minHeight="110dp">
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -171,14 +166,9 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-
-
         </LinearLayout>
 
-
     </ScrollView>
-
-
 
     <Button
         android:id="@+id/btnAdminLogout"
@@ -189,8 +179,5 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
-
-
-
 
 </androidx.constraintlayout.widget.ConstraintLayout>

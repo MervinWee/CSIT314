@@ -546,7 +546,7 @@ public class HelpRequest {
 
         FirebaseFirestore.getInstance().collection("help_requests")
             .whereEqualTo("acceptedByCsrId", currentCsrId)
-            .whereEqualTo("status", "In-progress")
+            .whereEqualTo("status", "Completed")
             .get()
             .addOnSuccessListener(queryDocumentSnapshots -> {
                 if (queryDocumentSnapshots.isEmpty()) {
@@ -568,10 +568,15 @@ public class HelpRequest {
                 }
 
                 FirebaseFirestore.getInstance().collection("users")
-                    .whereIn("uid", pinIds)
+                    .whereIn(com.google.firebase.firestore.FieldPath.documentId(), pinIds)
                     .get()
                     .addOnSuccessListener(userSnaps -> {
-                        List<User> matchedUsers = userSnaps.toObjects(User.class);
+                        List<User> matchedUsers = new ArrayList<>();
+                        for(QueryDocumentSnapshot doc : userSnaps){
+                            User user = doc.toObject(User.class);
+                            user.setId(doc.getId());
+                            matchedUsers.add(user);
+                        }
                         if (callback != null) callback.onMatchesLoaded(matchedUsers);
                     })
                     .addOnFailureListener(e -> {

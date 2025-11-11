@@ -12,15 +12,19 @@ import java.util.List;
 public class MyMatchesAdapter extends RecyclerView.Adapter<MyMatchesAdapter.MatchViewHolder> {
 
     private List<User> matches = new ArrayList<>();
-    private final OnMatchClickListener onMatchClickListener;
+    private final OnMatchClickListener listener;
 
-    // 1. Add an interface for click events
     public interface OnMatchClickListener {
         void onMatchClick(User user);
     }
 
-    public MyMatchesAdapter(OnMatchClickListener onMatchClickListener) {
-        this.onMatchClickListener = onMatchClickListener;
+    public MyMatchesAdapter(OnMatchClickListener listener) {
+        this.listener = listener;
+    }
+
+    public void setMatches(List<User> matches) {
+        this.matches = matches;
+        notifyDataSetChanged();
     }
 
     @NonNull
@@ -33,7 +37,7 @@ public class MyMatchesAdapter extends RecyclerView.Adapter<MyMatchesAdapter.Matc
     @Override
     public void onBindViewHolder(@NonNull MatchViewHolder holder, int position) {
         User user = matches.get(position);
-        holder.bind(user, onMatchClickListener);
+        holder.bind(user, listener);
     }
 
     @Override
@@ -41,26 +45,18 @@ public class MyMatchesAdapter extends RecyclerView.Adapter<MyMatchesAdapter.Matc
         return matches.size();
     }
 
-    public void setMatches(List<User> matches) {
-        this.matches = matches;
-        notifyDataSetChanged();
-    }
-
     static class MatchViewHolder extends RecyclerView.ViewHolder {
-        private final TextView tvMatchName;
-        private final TextView tvMatchEmail;
+        private TextView tvName, tvEmail;
 
-        MatchViewHolder(@NonNull View itemView) {
+        public MatchViewHolder(@NonNull View itemView) {
             super(itemView);
-            tvMatchName = itemView.findViewById(R.id.tvMatchName);
-            tvMatchEmail = itemView.findViewById(R.id.tvMatchEmail);
+            tvName = itemView.findViewById(R.id.tvName);
+            tvEmail = itemView.findViewById(R.id.tvEmail);
         }
 
-        // 2. Update bind to set the click listener
-        void bind(final User user, final OnMatchClickListener listener) {
-            tvMatchName.setText(user.getFullName());
-            tvMatchEmail.setText(user.getEmail());
-
+        public void bind(final User user, final OnMatchClickListener listener) {
+            tvName.setText(user.getFullName());
+            tvEmail.setText(user.getEmail());
             itemView.setOnClickListener(v -> listener.onMatchClick(user));
         }
     }
