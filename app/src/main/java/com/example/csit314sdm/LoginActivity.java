@@ -51,8 +51,8 @@ public class LoginActivity extends AppCompatActivity {
                     Intent intent = new Intent(LoginActivity.this, AdminDashboardActivity.class);
                     startActivity(intent);
                     finish();
-                } else if ("CSR".equals(userRole)) {
-                    Intent intent = new Intent(LoginActivity.this, CsrDashboardActivity.class);
+                } else if ("CSR".equalsIgnoreCase(userRole)) {
+                    Intent intent = new Intent(LoginActivity.this, CSRHomeScreenActivity.class);
                     startActivity(intent);
                     finish();
                 } else if ("Platform".equals(userRole)){
