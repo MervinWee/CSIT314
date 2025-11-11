@@ -58,7 +58,7 @@ public class CreateUserProfileActivity extends AppCompatActivity {
         etDateOfBirth.setEnabled(false);
         etAddress.setEnabled(false);
 
-        String[] userTypes = {"PIN", "CSR"};
+        String[] userTypes = {"PIN", "CSR", "User Admin", "Platform Manager"};
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, userTypes);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerRole.setAdapter(adapter);
