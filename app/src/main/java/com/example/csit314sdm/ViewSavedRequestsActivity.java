@@ -21,6 +21,7 @@ public final class ViewSavedRequestsActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private HelpRequestAdapter adapter;
     private HelpRequestController controller;
+    private ShortlistHelpRequestController shortlistController;
     private ProgressBar progressBar;
     private TextView tvNoResults;
 
@@ -43,6 +44,7 @@ public final class ViewSavedRequestsActivity extends AppCompatActivity {
         }
 
         controller = new HelpRequestController();
+        shortlistController = new ShortlistHelpRequestController();
         initializeUI();
         loadSavedRequests();
     }
@@ -70,17 +72,13 @@ public final class ViewSavedRequestsActivity extends AppCompatActivity {
         recyclerView.setVisibility(View.GONE);
         tvNoResults.setVisibility(View.GONE);
 
-        // --- START: THIS IS THE FIX ---
-        // The currentCsrId argument is removed from the call, as the controller
-        // now gets the ID internally.
-        controller.getSavedHelpRequests(new HelpRequestController.HelpRequestsLoadCallback() {
+        shortlistController.getSavedHelpRequests(new ShortlistHelpRequestController.HelpRequestsLoadCallback() {
             @Override
             public void onRequestsLoaded(List<HelpRequest> requests) {
                 runOnUiThread(() -> {
                     progressBar.setVisibility(View.GONE);
                     if (requests.isEmpty()) {
                         tvNoResults.setVisibility(View.VISIBLE);
-                        // Make sure to set a message when there are no results
                         tvNoResults.setText("You have no saved requests.");
                     } else {
                         recyclerView.setVisibility(View.VISIBLE);
@@ -99,6 +97,5 @@ public final class ViewSavedRequestsActivity extends AppCompatActivity {
                 });
             }
         });
-        // --- END: THIS IS THE FIX ---
     }
 }

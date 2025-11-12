@@ -30,6 +30,11 @@ public class HelpRequest {
         void onDataLoadFailed(String errorMessage);
     }
 
+    public interface HelpRequestsLoadCallback {
+        void onHelpRequestsLoaded(ArrayList<HelpRequest> helpRequests);
+        void onCancelled(String message);
+    }
+
     // --- Fields ---
     private String id;
     private String title, description, region, location, submittedBy, pinId, pinName, pinShortId;
@@ -222,6 +227,7 @@ public class HelpRequest {
 
         return query.orderBy("creationTimestamp", Query.Direction.DESCENDING);
     }
+
 
     public static Query getMatchHistoryQuery(String category, Date fromDate, Date toDate) {
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
