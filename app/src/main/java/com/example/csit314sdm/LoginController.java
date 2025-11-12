@@ -34,11 +34,4 @@ public class LoginController {
             }
         });
     }
-
-    // ** THE FIX IS HERE **
-    // Added the missing logoutUser() method.
-    public void logoutUser() {
-        // It correctly delegates the call to the User entity.
-        User.logoutUser();
-    }
 }

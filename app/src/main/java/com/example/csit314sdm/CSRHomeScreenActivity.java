@@ -50,7 +50,7 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
 
     private ViewCategoriesController viewCategoriesController;
     private HelpRequestController controller;
-    private UserManagementController userManagementController;
+    private RetrieveUserAccountController retrieveUserAccountController;
     private LoginController loginController;
     private LogoutController logoutController;
     private HelpRequestAdapter adapter;
@@ -72,7 +72,7 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
         setContentView(R.layout.activity_csrhome_screen);
 
         controller = new HelpRequestController();
-        userManagementController = new UserManagementController();
+        retrieveUserAccountController = new RetrieveUserAccountController();
         viewCategoriesController = new ViewCategoriesController();
         loginController = new LoginController();
         logoutController = new LogoutController();
@@ -299,7 +299,7 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
     }
 
     private void loadUserDetails() {
-        userManagementController.fetchUserById(currentCsrId, new UserManagementController.UserCallback<User>() {
+        retrieveUserAccountController.fetchUserById(currentCsrId, new RetrieveUserAccountController.UserCallback<User>() {
             @Override
             public void onSuccess(User user) {
                 runOnUiThread(() -> {
@@ -378,7 +378,7 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
 
     private void loadCompletedRequests() {
         showLoading(true);
-        userManagementController.fetchUserById(currentCsrId, new UserManagementController.UserCallback<User>() {
+        retrieveUserAccountController.fetchUserById(currentCsrId, new RetrieveUserAccountController.UserCallback<User>() {
             @Override
             public void onSuccess(User user) {
                 String companyId = user.getCompanyId();
