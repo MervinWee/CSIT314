@@ -120,7 +120,7 @@ public class UserDetailActivity extends AppCompatActivity {
             btnToggleSuspend.setVisibility(View.VISIBLE);
         } else if ("VIEW_ONLY".equals(launchMode)) {
             if (tvToolbarTitle != null) tvToolbarTitle.setText("User Account Details");
-            btnToggleEdit.setVisibility(View.GONE);
+            btnToggleEdit.setVisibility(View.VISIBLE);
             etFullName.setEnabled(false);
             etContact.setEnabled(false);
             spinnerRole.setEnabled(false);
@@ -181,8 +181,8 @@ public class UserDetailActivity extends AppCompatActivity {
             etContact.setEnabled(isEditMode);
             spinnerRole.setEnabled(false);
         } else {
-            etFullName.setEnabled(isEditMode);
-            etContact.setEnabled(isEditMode);
+            etFullName.setEnabled(false);
+            etContact.setEnabled(false);
             spinnerRole.setEnabled(isEditMode);
         }
 
