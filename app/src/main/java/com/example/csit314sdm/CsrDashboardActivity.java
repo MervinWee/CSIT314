@@ -37,7 +37,7 @@ public class CsrDashboardActivity extends AppCompatActivity implements HelpReque
     private AutoCompleteTextView spinnerLocation, spinnerCategory;
     private Button btnSearch;
 
-    private CategoryController categoryController;
+    private ViewCategoriesController viewCategoriesController;
 
     // --- Controllers ---
     private HelpRequestController controller;
@@ -52,7 +52,7 @@ public class CsrDashboardActivity extends AppCompatActivity implements HelpReque
 
         controller = new HelpRequestController();
         userProfileController = new UserProfileController();
-        categoryController = new CategoryController();
+        viewCategoriesController = new ViewCategoriesController();
 
         // Safely get the user ID once on creation
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
@@ -67,6 +67,14 @@ public class CsrDashboardActivity extends AppCompatActivity implements HelpReque
         setupNavigationDrawer();
         setupListeners();
         loadUserDetails();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (viewCategoriesController != null) {
+            viewCategoriesController.cleanup();
+        }
     }
 
     private void initializeUI() {
@@ -110,7 +118,7 @@ public class CsrDashboardActivity extends AppCompatActivity implements HelpReque
 
 
         // --- DYNAMICALLY LOAD CATEGORIES ---
-        categoryController.getAllCategories(new CategoryController.CategoryFetchCallback() {
+        viewCategoriesController.getAllCategories(new ViewCategoriesController.CategoryFetchCallback() {
             @Override
             public void onCategoriesFetched(List<Category> categories) {
                 runOnUiThread(() -> {

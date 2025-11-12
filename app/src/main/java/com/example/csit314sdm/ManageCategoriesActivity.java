@@ -25,7 +25,11 @@ public class ManageCategoriesActivity extends AppCompatActivity {
     private EditText etSearchCategory; // Added for search
     private CategoryAdapter categoryAdapter;
 
-    private CategoryController categoryController;
+    private CreateCategoryController createCategoryController;
+    private ViewCategoriesController viewCategoriesController;
+    private EditCategoryController editCategoryController;
+    private DeleteCategoryController deleteCategoryController;
+
     private Category selectedCategory = null;
     private List<Category> allCategories = new ArrayList<>(); // Added to hold the master list
 
@@ -34,7 +38,10 @@ public class ManageCategoriesActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_manage_categories);
 
-        categoryController = new CategoryController();
+        createCategoryController = new CreateCategoryController();
+        viewCategoriesController = new ViewCategoriesController();
+        editCategoryController = new EditCategoryController();
+        deleteCategoryController = new DeleteCategoryController();
 
         // Bind views
         rvCategories = findViewById(R.id.rvCategories);
@@ -46,7 +53,7 @@ public class ManageCategoriesActivity extends AppCompatActivity {
 
         setupRecyclerView();
 
-        categoryController.getAllCategories(new CategoryController.CategoryFetchCallback() {
+        viewCategoriesController.getAllCategories(new ViewCategoriesController.CategoryFetchCallback() {
             @Override
             public void onCategoriesFetched(List<Category> categories) {
                 allCategories.clear();
@@ -104,8 +111,8 @@ public class ManageCategoriesActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (categoryController != null) {
-            categoryController.cleanup();
+        if (viewCategoriesController != null) {
+            viewCategoriesController.cleanup();
         }
     }
 
@@ -155,22 +162,30 @@ public class ManageCategoriesActivity extends AppCompatActivity {
                 return;
             }
 
-            CategoryController.CategoryOperationCallback callback = new CategoryController.CategoryOperationCallback() {
-                @Override
-                public void onSuccess(String message) {
-                    Toast.makeText(ManageCategoriesActivity.this, message, Toast.LENGTH_SHORT).show();
-                }
-
-                @Override
-                public void onFailure(String errorMessage) {
-                    Toast.makeText(ManageCategoriesActivity.this, "Error: " + errorMessage, Toast.LENGTH_SHORT).show();
-                }
-            };
-
             if (isEditing) {
-                categoryController.updateCategory(existingCategory, name, description, callback);
+                editCategoryController.updateCategory(existingCategory, name, description, new EditCategoryController.CategoryOperationCallback() {
+                    @Override
+                    public void onSuccess(String message) {
+                        Toast.makeText(ManageCategoriesActivity.this, message, Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onFailure(String errorMessage) {
+                        Toast.makeText(ManageCategoriesActivity.this, "Error: " + errorMessage, Toast.LENGTH_SHORT).show();
+                    }
+                });
             } else {
-                categoryController.createCategory(name, description, callback);
+                createCategoryController.createCategory(name, description, new CreateCategoryController.CategoryOperationCallback() {
+                    @Override
+                    public void onSuccess(String message) {
+                        Toast.makeText(ManageCategoriesActivity.this, message, Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onFailure(String errorMessage) {
+                        Toast.makeText(ManageCategoriesActivity.this, "Error: " + errorMessage, Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
         });
         builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
@@ -182,7 +197,7 @@ public class ManageCategoriesActivity extends AppCompatActivity {
                 .setTitle("Delete Category")
                 .setMessage("Are you sure you want to delete '" + categoryToDelete.getName() + "'?")
                 .setPositiveButton("Delete", (dialog, which) -> {
-                    categoryController.deleteCategory(categoryToDelete, new CategoryController.CategoryOperationCallback() {
+                    deleteCategoryController.deleteCategory(categoryToDelete, new DeleteCategoryController.CategoryOperationCallback() {
                         @Override
                         public void onSuccess(String message) {
                             Toast.makeText(ManageCategoriesActivity.this, message, Toast.LENGTH_SHORT).show();

@@ -48,7 +48,7 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
     private AutoCompleteTextView spinnerLocation, spinnerCategory;
     private Button btnSearch;
 
-    private CategoryController categoryController;
+    private ViewCategoriesController viewCategoriesController;
     private HelpRequestController controller;
     private UserManagementController userManagementController;
     private LoginController loginController;
@@ -73,7 +73,7 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
 
         controller = new HelpRequestController();
         userManagementController = new UserManagementController();
-        categoryController = new CategoryController();
+        viewCategoriesController = new ViewCategoriesController();
         loginController = new LoginController();
         logoutController = new LogoutController();
 
@@ -90,6 +90,14 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
         setupListeners();
         loadUserDetails();
         askNotificationPermission();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (viewCategoriesController != null) {
+            viewCategoriesController.cleanup();
+        }
     }
 
     private void setupNavigationDrawer() {
@@ -189,7 +197,7 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
         spinnerLocation.setAdapter(locationAdapter);
         spinnerLocation.setText(locations[0], false);
 
-        categoryController.getAllCategories(new CategoryController.CategoryFetchCallback() {
+        viewCategoriesController.getAllCategories(new ViewCategoriesController.CategoryFetchCallback() {
             @Override
             public void onCategoriesFetched(List<Category> categories) {
                 runOnUiThread(() -> {
@@ -400,25 +408,12 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
 
             @Override
             public void onFailure(Exception e) {
-                showError("Cannot fetch history: Could not load your user profile.");
+                runOnUiThread(() -> {
+                    showLoading(false);
+                    showError("Could not load user profile to fetch history.");
+                });
             }
         });
-    }
-
-    private void showLoading(boolean isLoading) {
-        progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
-        if (isLoading) {
-            recyclerView.setVisibility(View.GONE);
-            tvNoResults.setVisibility(View.GONE);
-        }
-    }
-
-    private void showError(String message) {
-        tvNoResults.setText(message);
-        tvNoResults.setVisibility(View.VISIBLE);
-        recyclerView.setVisibility(View.GONE);
-        progressBar.setVisibility(View.GONE);
-        Toast.makeText(CSRHomeScreenActivity.this, message, Toast.LENGTH_LONG).show();
     }
 
     private void updateRecyclerView(List<HelpRequest> requests, String noResultsMessage) {
@@ -433,44 +428,43 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
         }
     }
 
-    @Override
-    public void onSaveClick(HelpRequest request, boolean isSaved) {
-        if (isSaved) {
-            controller.unsaveRequest(request.getId(), new HelpRequestController.SaveCallback() {
-                @Override
-                public void onSaveSuccess() {
-                    Toast.makeText(CSRHomeScreenActivity.this, "Request unsaved", Toast.LENGTH_SHORT).show();
-                    if (isShowingSaved) {
-                        loadSavedRequests();
-                    }
-                }
-
-                @Override
-                public void onSaveFailure(String errorMessage) {
-                    Toast.makeText(CSRHomeScreenActivity.this, "Failed to unsave: " + errorMessage, Toast.LENGTH_SHORT).show();
-                }
-            });
-        } else {
-            controller.saveRequest(request.getId(), new HelpRequestController.SaveCallback() {
-                @Override
-                public void onSaveSuccess() {
-                    Toast.makeText(CSRHomeScreenActivity.this, "Request saved to shortlist", Toast.LENGTH_SHORT).show();
-                }
-
-                @Override
-                public void onSaveFailure(String errorMessage) {
-                    Toast.makeText(CSRHomeScreenActivity.this, "Failed to save: " + errorMessage, Toast.LENGTH_SHORT).show();
-                }
-            });
+    private void showLoading(boolean isLoading) {
+        progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+        if (isLoading) {
+            recyclerView.setVisibility(View.GONE);
+            tvNoResults.setVisibility(View.GONE);
         }
     }
 
+    private void showError(String message) {
+        tvNoResults.setText(message);
+        tvNoResults.setVisibility(View.VISIBLE);
+        recyclerView.setVisibility(View.GONE);
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+    }
+
     @Override
-    public void onBackPressed() {
-        if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
-            drawerLayout.closeDrawer(GravityCompat.START);
+    public void onSaveClick(HelpRequest request, boolean isSaved) {
+        String action = isSaved ? "unsave" : "save";
+        HelpRequestController.SaveCallback callback = new HelpRequestController.SaveCallback() {
+            @Override
+            public void onSaveSuccess() {
+                Toast.makeText(CSRHomeScreenActivity.this, "Request " + (isSaved ? "unsaved" : "saved"), Toast.LENGTH_SHORT).show();
+                if (isShowingSaved) {
+                    loadSavedRequests();
+                }
+            }
+
+            @Override
+            public void onSaveFailure(String errorMessage) {
+                Toast.makeText(CSRHomeScreenActivity.this, "Failed to " + action + ": " + errorMessage, Toast.LENGTH_SHORT).show();
+            }
+        };
+
+        if (isSaved) {
+            controller.unsaveRequest(request.getId(), callback);
         } else {
-            super.onBackPressed();
+            controller.saveRequest(request.getId(), callback);
         }
     }
 }

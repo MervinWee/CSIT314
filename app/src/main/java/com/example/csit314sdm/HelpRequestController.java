@@ -14,8 +14,12 @@ public class HelpRequestController {
     public interface SaveCallback { void onSaveSuccess(); void onSaveFailure(String errorMessage); }
     public interface CategoryListCallback { void onCategoriesLoaded(List<Category> categories); void onDataLoadFailed(String errorMessage); }
 
+    private final ViewCategoriesController viewCategoriesController;
+
     // --- Constructor (now empty) ---
-    public HelpRequestController() {}
+    public HelpRequestController() {
+        this.viewCategoriesController = new ViewCategoriesController();
+    }
 
     // --- Dispatcher Methods (delegating calls to the HelpRequest Active Record) ---
 
@@ -28,7 +32,17 @@ public class HelpRequestController {
     }
 
     public void getCategories(final CategoryListCallback callback) {
-        HelpRequest.getCategories(callback);
+        viewCategoriesController.getAllCategories(new ViewCategoriesController.CategoryFetchCallback() {
+            @Override
+            public void onCategoriesFetched(List<Category> categories) {
+                if (callback != null) callback.onCategoriesLoaded(categories);
+            }
+
+            @Override
+            public void onFailure(String errorMessage) {
+                if (callback != null) callback.onDataLoadFailed(errorMessage);
+            }
+        });
     }
 
     public void cancelRequest(String requestId, final DeleteCallback callback) {

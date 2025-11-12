@@ -23,7 +23,7 @@ public class MyCompletedRequestsActivity extends AppCompatActivity {
 
     private MyCompletedRequestsController controller;
     private HelpRequestAdapter adapter; // We can reuse the existing HelpRequestAdapter
-    private CategoryController categoryController;
+    private ViewCategoriesController viewCategoriesController;
     private RecyclerView recyclerView;
     private ProgressBar progressBar;
     private TextView tvNoResults;
@@ -37,12 +37,20 @@ public class MyCompletedRequestsActivity extends AppCompatActivity {
         setContentView(R.layout.activity_my_completed_requests);
 
         controller = new MyCompletedRequestsController();
-        categoryController = new CategoryController();
+        viewCategoriesController = new ViewCategoriesController();
 
         initializeUI();
         setupListeners();
         populateFilterSpinners();
         performSearch(); // Initial search with no filters
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (viewCategoriesController != null) {
+            viewCategoriesController.cleanup();
+        }
     }
 
     private void initializeUI() {
@@ -84,7 +92,7 @@ public class MyCompletedRequestsActivity extends AppCompatActivity {
         spinnerLocation.setAdapter(locationAdapter);
         spinnerLocation.setText(locations[0], false);
 
-        categoryController.getAllCategories(new CategoryController.CategoryFetchCallback() {
+        viewCategoriesController.getAllCategories(new ViewCategoriesController.CategoryFetchCallback() {
             @Override
             public void onCategoriesFetched(List<Category> categories) {
                 runOnUiThread(() -> {
@@ -105,7 +113,7 @@ public class MyCompletedRequestsActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(String errorMessage) {
-                // Handle failure
+                runOnUiThread(() -> Toast.makeText(MyCompletedRequestsActivity.this, "Failed to load categories: " + errorMessage, Toast.LENGTH_SHORT).show());
             }
         });
     }
@@ -120,30 +128,34 @@ public class MyCompletedRequestsActivity extends AppCompatActivity {
         controller.searchMyCompletedRequests(keyword, location, category, new HelpRequestController.HelpRequestsLoadCallback() {
             @Override
             public void onRequestsLoaded(List<HelpRequest> requests) {
-                showLoading(false);
-                if (requests == null || requests.isEmpty()) {
-                    tvNoResults.setVisibility(View.VISIBLE);
-                    recyclerView.setVisibility(View.GONE);
-                } else {
-                    tvNoResults.setVisibility(View.GONE);
-                    recyclerView.setVisibility(View.VISIBLE);
-                    adapter.setRequests(requests);
-                }
+                runOnUiThread(() -> {
+                    showLoading(false);
+                    if (requests == null || requests.isEmpty()) {
+                        tvNoResults.setVisibility(View.VISIBLE);
+                        recyclerView.setVisibility(View.GONE);
+                    } else {
+                        tvNoResults.setVisibility(View.GONE);
+                        recyclerView.setVisibility(View.VISIBLE);
+                        adapter.setRequests(requests);
+                    }
+                });
             }
 
             @Override
             public void onDataLoadFailed(String errorMessage) {
-                showLoading(false);
-                tvNoResults.setVisibility(View.VISIBLE);
-                tvNoResults.setText("Error: " + errorMessage);
-                Toast.makeText(MyCompletedRequestsActivity.this, "Failed to load requests: " + errorMessage, Toast.LENGTH_LONG).show();
+                runOnUiThread(() -> {
+                    showLoading(false);
+                    tvNoResults.setVisibility(View.VISIBLE);
+                    tvNoResults.setText("Error: " + errorMessage);
+                    Toast.makeText(MyCompletedRequestsActivity.this, "Failed to load requests: " + errorMessage, Toast.LENGTH_LONG).show();
+                });
             }
         });
     }
 
     private void showLoading(boolean isLoading) {
         progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
-        tvNoResults.setVisibility(isLoading ? View.GONE : View.VISIBLE);
+        tvNoResults.setVisibility(isLoading ? View.VISIBLE : View.GONE);
         recyclerView.setVisibility(isLoading ? View.GONE : View.VISIBLE);
     }
 }
