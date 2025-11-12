@@ -26,8 +26,7 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
     public static final String EXTRA_REQUEST_ID = "REQUEST_ID";
 
     private HelpRequestController detailController;
-    private UserManagementController userManagementController;
-    private RetrieveUserAccountController retrieveUserAccountController; // Added controller
+    private RetrieveUserAccountController retrieveUserAccountController;
     private MaterialToolbar topAppBar;
     private ProgressBar progressBar;
     private TextView tvRequestType, tvStatus, tvDescription, tvLocation, tvPreferredTime, tvUrgency, tvPostedDate;
@@ -55,8 +54,7 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
         }
 
         detailController = new HelpRequestController();
-        userManagementController = new UserManagementController();
-        retrieveUserAccountController = new RetrieveUserAccountController(); // Instantiated controller
+        retrieveUserAccountController = new RetrieveUserAccountController();
 
         initializeUI();
     }
@@ -362,7 +360,6 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
 
         String currentUserId = currentUser.getUid();
 
-        // Corrected to use RetrieveUserAccountController
         retrieveUserAccountController.fetchUserById(currentUserId, new RetrieveUserAccountController.UserCallback<User>() {
             @Override
             public void onSuccess(User user) {
@@ -385,23 +382,26 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
                             runOnUiThread(() -> {
                                 progressBar.setVisibility(View.GONE);
                                 btnAcceptRequest.setEnabled(true);
-                                Toast.makeText(HelpRequestDetailActivity.this, "Failed to accept request: " + errorMessage, Toast.LENGTH_LONG).show();
+                                Toast.makeText(HelpRequestDetailActivity.this, "Failed to accept: " + errorMessage, Toast.LENGTH_LONG).show();
                             });
                         }
                     });
-
                 } else {
-                    progressBar.setVisibility(View.GONE);
-                    btnAcceptRequest.setEnabled(true);
-                    Toast.makeText(HelpRequestDetailActivity.this, "Could not find your company information.", Toast.LENGTH_LONG).show();
+                    runOnUiThread(() -> {
+                        progressBar.setVisibility(View.GONE);
+                        btnAcceptRequest.setEnabled(true);
+                        Toast.makeText(HelpRequestDetailActivity.this, "Could not accept request: Company ID not found for your profile.", Toast.LENGTH_LONG).show();
+                    });
                 }
             }
 
             @Override
             public void onFailure(Exception e) {
-                progressBar.setVisibility(View.GONE);
-                btnAcceptRequest.setEnabled(true);
-                Toast.makeText(HelpRequestDetailActivity.this, "Failed to get user profile: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                runOnUiThread(() -> {
+                    progressBar.setVisibility(View.GONE);
+                    btnAcceptRequest.setEnabled(true);
+                    Toast.makeText(HelpRequestDetailActivity.this, "Failed to accept request: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                });
             }
         });
     }

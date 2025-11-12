@@ -41,8 +41,8 @@ public class HistoryActivity extends AppCompatActivity implements HelpRequestAda
     private ProgressBar progressBarHistory;
     private TextView tvNoHistoryResults;
 
+    private ViewCategoriesController viewCategoriesController;
     private HelpRequestController controller;
-    private ShortlistHelpRequestController shortlistController;
     private HelpRequestAdapter adapter;
     private List<HelpRequest> historyList = new ArrayList<>();
     private Calendar fromDateCalendar = Calendar.getInstance();
@@ -63,7 +63,7 @@ public class HistoryActivity extends AppCompatActivity implements HelpRequestAda
 
         initializeViews();
         controller = new HelpRequestController();
-        shortlistController = new ShortlistHelpRequestController();
+        viewCategoriesController = new ViewCategoriesController();
         setupRecyclerView();
         setupSpinners();
         setupDatePickers();
@@ -76,6 +76,14 @@ public class HistoryActivity extends AppCompatActivity implements HelpRequestAda
     public boolean onSupportNavigateUp() {
         onBackPressed();
         return true;
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (viewCategoriesController != null) {
+            viewCategoriesController.cleanup();
+        }
     }
 
     private void fetchCsrCompanyIdAndLoadHistory() {
@@ -176,10 +184,24 @@ public class HistoryActivity extends AppCompatActivity implements HelpRequestAda
     }
 
     private void setupSpinners() {
-        String[] categories = {"All", "Medical Transport", "Grocery Shopping Help", "Prescription Pickup", "Other"};
-        ArrayAdapter<String> categoryAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, categories);
-        spinnerCategory.setAdapter(categoryAdapter);
-        spinnerCategory.setText("All", false);
+        viewCategoriesController.getAllCategories(new ViewCategoriesController.CategoryFetchCallback() {
+            @Override
+            public void onCategoriesFetched(List<Category> categories) {
+                List<String> categoryNames = new ArrayList<>();
+                categoryNames.add("All");
+                for (Category category : categories) {
+                    categoryNames.add(category.getName());
+                }
+                ArrayAdapter<String> categoryAdapter = new ArrayAdapter<>(HistoryActivity.this, android.R.layout.simple_dropdown_item_1line, categoryNames);
+                spinnerCategory.setAdapter(categoryAdapter);
+                spinnerCategory.setText("All", false);
+            }
+
+            @Override
+            public void onFailure(String errorMessage) {
+                Toast.makeText(HistoryActivity.this, "Failed to load categories.", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void setupDatePickers() {
@@ -216,30 +238,30 @@ public class HistoryActivity extends AppCompatActivity implements HelpRequestAda
     public void onSaveClick(HelpRequest request, boolean isSaved) {
         if (isSaved) {
 
-            shortlistController.unsaveRequest(request.getId(), new ShortlistHelpRequestController.ShortlistCallback() {
+            controller.unsaveRequest(request.getId(), new HelpRequestController.SaveCallback() {
                 @Override
-                public void onShortlistSuccess() {
+                public void onSaveSuccess() {
                     Toast.makeText(HistoryActivity.this, "Request unsaved", Toast.LENGTH_SHORT).show();
                     fetchCsrCompanyIdAndLoadHistory();
                 }
 
                 @Override
-                public void onShortlistFailure(String errorMessage) {
+                public void onSaveFailure(String errorMessage) {
                     Toast.makeText(HistoryActivity.this, "Failed to unsave request: " + errorMessage, Toast.LENGTH_SHORT).show();
                 }
             });
 
         } else {
 
-            shortlistController.saveRequest(request.getId(), new ShortlistHelpRequestController.ShortlistCallback() {
+            controller.saveRequest(request.getId(), new HelpRequestController.SaveCallback() {
                 @Override
-                public void onShortlistSuccess() {
+                public void onSaveSuccess() {
                     Toast.makeText(HistoryActivity.this, "Request saved", Toast.LENGTH_SHORT).show();
                     fetchCsrCompanyIdAndLoadHistory();
                 }
 
                 @Override
-                public void onShortlistFailure(String errorMessage) {
+                public void onSaveFailure(String errorMessage) {
                     Toast.makeText(HistoryActivity.this, "Failed to save request: " + errorMessage, Toast.LENGTH_SHORT).show();
                 }
             });
