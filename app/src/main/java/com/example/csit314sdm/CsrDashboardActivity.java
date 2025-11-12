@@ -40,7 +40,7 @@ public class CsrDashboardActivity extends AppCompatActivity implements HelpReque
     private ViewCategoriesController viewCategoriesController;
 
     // --- Controllers ---
-    private HelpRequestController controller;
+    private ShortlistHelpRequestController controller;
     private UserProfileController userProfileController;
     private HelpRequestAdapter adapter;
     private String currentCsrId; // Added to store the user's ID safely
@@ -50,7 +50,7 @@ public class CsrDashboardActivity extends AppCompatActivity implements HelpReque
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_csr_dashboard);
 
-        controller = new HelpRequestController();
+        controller = new ShortlistHelpRequestController();
         userProfileController = new UserProfileController();
         viewCategoriesController = new ViewCategoriesController();
 
@@ -159,7 +159,7 @@ public class CsrDashboardActivity extends AppCompatActivity implements HelpReque
     private void setupListeners() {
         cardShortlisted.setOnClickListener(v -> {
             tvListTitle.setText("My Shortlisted Requests");
-            loadSavedRequests();
+            loadShortlistedRequests();
         });
 
         btnSearch.setOnClickListener(v -> performSearch());
@@ -182,7 +182,7 @@ public class CsrDashboardActivity extends AppCompatActivity implements HelpReque
         recyclerView.setVisibility(View.GONE);
         tvNoResults.setVisibility(View.GONE);
 
-        controller.searchShortlistedRequests(keyword, location, category, new HelpRequestController.HelpRequestsLoadCallback() {
+        controller.searchShortlistedRequests(keyword, location, category, new ShortlistHelpRequestController.HelpRequestsLoadCallback() {
             @Override
             public void onRequestsLoaded(List<HelpRequestEntity> requests) {
                 runOnUiThread(() -> {
@@ -214,7 +214,7 @@ public class CsrDashboardActivity extends AppCompatActivity implements HelpReque
             int itemId = item.getItemId();
 
             if (itemId == R.id.nav_my_requests) {
-                loadSavedRequests();
+                loadShortlistedRequests();
             } else if (itemId == R.id.nav_logout) {
                 handleLogout();
             } else if (itemId == R.id.nav_history) {
@@ -282,7 +282,7 @@ public class CsrDashboardActivity extends AppCompatActivity implements HelpReque
                 runOnUiThread(() -> {
                     setWelcomeMessage(user);
                     populateFilterSpinners();
-                    loadSavedRequests();
+                    loadShortlistedRequests();
                 });
             }
 
@@ -293,18 +293,18 @@ public class CsrDashboardActivity extends AppCompatActivity implements HelpReque
                     Toast.makeText(CsrDashboardActivity.this, "Could not load user profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                     // Still try to load other components so the app doesn't just sit blank
                     populateFilterSpinners();
-                    loadSavedRequests();
+                    loadShortlistedRequests();
                 });
             }
         });
     }
 
-    private void loadSavedRequests() {
+    private void loadShortlistedRequests() {
         progressBar.setVisibility(View.VISIBLE);
         recyclerView.setVisibility(View.GONE);
         tvNoResults.setVisibility(View.GONE);
 
-        controller.getSavedHelpRequests(new HelpRequestController.HelpRequestsLoadCallback() {
+        controller.getSavedHelpRequests(new ShortlistHelpRequestController.HelpRequestsLoadCallback() {
             @Override
             public void onRequestsLoaded(List<HelpRequestEntity> requests) {
                 runOnUiThread(() -> {
@@ -342,34 +342,30 @@ public class CsrDashboardActivity extends AppCompatActivity implements HelpReque
     @Override
     public void onSaveClick(HelpRequestEntity request, boolean isSaved) {
         if (isSaved) {
-
-            controller.unsaveRequest(request.getId(), new HelpRequestController.SaveCallback() {
+            controller.unsaveRequest(request.getId(), new ShortlistHelpRequestController.ShortlistCallback() {
                 @Override
-                public void onSaveSuccess() {
+                public void onShortlistSuccess() {
                     Toast.makeText(CsrDashboardActivity.this, "Request unsaved", Toast.LENGTH_SHORT).show();
-                    loadSavedRequests(); // Refresh the list
+                    loadShortlistedRequests(); // Refresh the list
                 }
 
                 @Override
-                public void onSaveFailure(String errorMessage) {
+                public void onShortlistFailure(String errorMessage) {
                     Toast.makeText(CsrDashboardActivity.this, "Failed to unsave: " + errorMessage, Toast.LENGTH_SHORT).show();
                 }
             });
-
         } else {
-
-            controller.saveRequest(request.getId(), new HelpRequestController.SaveCallback() {
+            controller.saveRequest(request.getId(), new ShortlistHelpRequestController.ShortlistCallback() {
                 @Override
-                public void onSaveSuccess() {
+                public void onShortlistSuccess() {
                     Toast.makeText(CsrDashboardActivity.this, "Request saved", Toast.LENGTH_SHORT).show();
                 }
 
                 @Override
-                public void onSaveFailure(String errorMessage) {
+                public void onShortlistFailure(String errorMessage) {
                     Toast.makeText(CsrDashboardActivity.this, "Failed to save: " + errorMessage, Toast.LENGTH_SHORT).show();
                 }
             });
-
         }
     }
 }

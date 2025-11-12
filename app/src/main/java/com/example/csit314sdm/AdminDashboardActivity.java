@@ -22,6 +22,7 @@ public class AdminDashboardActivity extends AppCompatActivity {
         MaterialCardView cardRetrieveUserAccount = findViewById(R.id.cardRetrieveUserAccount);
         MaterialCardView cardCreateUserProfile = findViewById(R.id.cardCreateUserProfile);
         MaterialCardView cardRetrieveUserProfile = findViewById(R.id.cardRetrieveUserProfile);
+        MaterialCardView cardCreateUserRole = findViewById(R.id.cardCreateUserRole);
         Button btnAdminLogout = findViewById(R.id.btnAdminLogout);
 
         if (cardCreateUserAccount != null) {
@@ -34,6 +35,13 @@ public class AdminDashboardActivity extends AppCompatActivity {
         if (cardCreateUserProfile != null) {
             cardCreateUserProfile.setOnClickListener(v -> {
                 Intent intent = new Intent(AdminDashboardActivity.this, AdminCreateUserActivity.class);
+                startActivity(intent);
+            });
+        }
+
+        if (cardCreateUserRole != null) {
+            cardCreateUserRole.setOnClickListener(v -> {
+                Intent intent = new Intent(AdminDashboardActivity.this, CreateUserRoleActivity.class);
                 startActivity(intent);
             });
         }

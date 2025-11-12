@@ -126,6 +126,9 @@
         <activity
             android:name=".WeeklyReportActivity"
             android:exported="false" />
+        <activity
+            android:name=".CreateUserRoleActivity"
+            android:exported="false" />
 
         <!-- Launcher Activity (The first screen that opens) -->
         <activity

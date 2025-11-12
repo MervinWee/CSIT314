@@ -5,6 +5,7 @@ import com.google.firebase.FirebaseApp;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.Exclude;
 import com.google.firebase.firestore.FieldValue;
@@ -430,6 +431,34 @@ public class User {
         FirebaseFirestore.getInstance().collection("users").document(userId).update(updates)
                 .addOnSuccessListener(aVoid -> callback.onSuccess(null))
                 .addOnFailureListener(callback::onFailure);
+    }
+
+    public static void createUserRole(String role, String description, String status, final UserCallback<Void> callback) {
+        if (role == null || role.trim().isEmpty() ||
+                description == null || description.trim().isEmpty() ||
+                status == null || status.isEmpty()) {
+            callback.onFailure(new IllegalArgumentException("Role name, description, and status cannot be empty."));
+            return;
+        }
+        //FirebaseFirestore.getInstance().collection("users").get()
+        final FirebaseFirestore db = FirebaseFirestore.getInstance();
+        final DocumentReference roleRef = db.collection("roles").document(role);
+
+        roleRef.get().addOnSuccessListener(documentSnapshot -> {
+            if (documentSnapshot.exists()) {
+                callback.onFailure(new Exception("Role '" + role + "' already exists."));
+            } else {
+                Map<String, Object> newRole = new HashMap<>();
+                newRole.put("role", role);
+                newRole.put("description", description);
+                newRole.put("status", status);
+                newRole.put("createdAt", FieldValue.serverTimestamp());
+
+                roleRef.set(newRole)
+                        .addOnSuccessListener(aVoid -> callback.onSuccess(null))
+                        .addOnFailureListener(callback::onFailure);
+            }
+        }).addOnFailureListener(callback::onFailure);
     }
 
 

@@ -47,7 +47,7 @@ public class LoginActivity extends AppCompatActivity {
                 progressBar.setVisibility(View.GONE);
                 Toast.makeText(LoginActivity.this, "Login Successful", Toast.LENGTH_SHORT).show();
 
-                if ("User Admin".equalsIgnoreCase(userRole)) {
+                if ("Admin".equalsIgnoreCase(userRole)) {
                     Intent intent = new Intent(LoginActivity.this, AdminDashboardActivity.class);
                     startActivity(intent);
                     finish();
