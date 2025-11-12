@@ -29,14 +29,14 @@ public class AdminDashboardActivity extends AppCompatActivity {
 
         if (cardCreateUserAccount != null) {
             cardCreateUserAccount.setOnClickListener(v -> {
-                Intent intent = new Intent(AdminDashboardActivity.this, CreateUserProfileActivity.class);
+                Intent intent = new Intent(AdminDashboardActivity.this, AdminCreateUserActivity.class);
                 startActivity(intent);
             });
         }
 
         if (cardCreateUserProfile != null) {
             cardCreateUserProfile.setOnClickListener(v -> {
-                Intent intent = new Intent(AdminDashboardActivity.this, AdminCreateUserActivity.class);
+                Intent intent = new Intent(AdminDashboardActivity.this, CreateUserRoleActivity.class);
                 startActivity(intent);
             });
         }
