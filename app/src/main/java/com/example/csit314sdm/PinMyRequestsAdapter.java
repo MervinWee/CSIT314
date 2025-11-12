@@ -10,19 +10,21 @@ import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.csit314sdm.entity.HelpRequest;
+
 import java.util.List;
 
 public class PinMyRequestsAdapter extends RecyclerView.Adapter<PinMyRequestsAdapter.ViewHolder> {
 
-    private final List<HelpRequestEntity> requests;
+    private final List<HelpRequest> requests;
     private final Context context;
     private final OnPinRequestClickListener clickListener;
 
     public interface OnPinRequestClickListener {
-        void onItemClicked(HelpRequestEntity request);
+        void onItemClicked(HelpRequest request);
     }
 
-    public PinMyRequestsAdapter(List<HelpRequestEntity> requests, Context context, OnPinRequestClickListener listener) {
+    public PinMyRequestsAdapter(List<HelpRequest> requests, Context context, OnPinRequestClickListener listener) {
         this.requests = requests;
         this.context = context;
         this.clickListener = listener;
@@ -37,7 +39,7 @@ public class PinMyRequestsAdapter extends RecyclerView.Adapter<PinMyRequestsAdap
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        HelpRequestEntity request = requests.get(position);
+        HelpRequest request = requests.get(position);
 
         holder.title.setText(request.getCategory());
         holder.status.setText(request.getStatus());

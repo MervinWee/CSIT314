@@ -10,20 +10,22 @@ import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.csit314sdm.entity.HelpRequest;
+
 import java.util.List;
 
 
 public class SimpleRequestAdapter extends RecyclerView.Adapter<SimpleRequestAdapter.SimpleViewHolder> {
 
-    private final List<HelpRequestEntity> requestList;
+    private final List<HelpRequest> requestList;
     private final Context context;
     private final OnItemClickListener clickListener;
 
     public interface OnItemClickListener {
-        void onItemClick(HelpRequestEntity request);
+        void onItemClick(HelpRequest request);
     }
 
-    public SimpleRequestAdapter(List<HelpRequestEntity> requestList, Context context, OnItemClickListener listener) {
+    public SimpleRequestAdapter(List<HelpRequest> requestList, Context context, OnItemClickListener listener) {
         this.requestList = requestList;
         this.context = context;
         this.clickListener = listener;
@@ -39,7 +41,7 @@ public class SimpleRequestAdapter extends RecyclerView.Adapter<SimpleRequestAdap
 
     @Override
     public void onBindViewHolder(@NonNull SimpleViewHolder holder, int position) {
-        HelpRequestEntity request = requestList.get(position);
+        HelpRequest request = requestList.get(position);
         holder.bind(request, clickListener);
 
 
@@ -83,7 +85,7 @@ public class SimpleRequestAdapter extends RecyclerView.Adapter<SimpleRequestAdap
         }
 
 
-        public void bind(final HelpRequestEntity request, final OnItemClickListener listener) {
+        public void bind(final HelpRequest request, final OnItemClickListener listener) {
             title.setText(request.getCategory());
             itemView.setOnClickListener(v -> listener.onItemClick(request));
         }

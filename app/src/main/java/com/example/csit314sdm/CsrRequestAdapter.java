@@ -7,23 +7,26 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.example.csit314sdm.entity.HelpRequest;
+
 import java.util.List;
 
 public class CsrRequestAdapter extends RecyclerView.Adapter<CsrRequestAdapter.RequestViewHolder> {
 
-    private List<HelpRequestEntity> requests;
+    private List<HelpRequest> requests;
     private OnItemClickListener listener;
 
     // Interface for click events
     public interface OnItemClickListener {
-        void onItemClick(HelpRequestEntity request);
+        void onItemClick(HelpRequest request);
     }
 
     public void setOnItemClickListener(OnItemClickListener listener) {
         this.listener = listener;
     }
 
-    public CsrRequestAdapter(List<HelpRequestEntity> requests) {
+    public CsrRequestAdapter(List<HelpRequest> requests) {
         this.requests = requests;
     }
 
@@ -37,7 +40,7 @@ public class CsrRequestAdapter extends RecyclerView.Adapter<CsrRequestAdapter.Re
 
     @Override
     public void onBindViewHolder(@NonNull RequestViewHolder holder, int position) {
-        HelpRequestEntity request = requests.get(position);
+        HelpRequest request = requests.get(position);
         holder.bind(request, listener);
     }
 
@@ -47,7 +50,7 @@ public class CsrRequestAdapter extends RecyclerView.Adapter<CsrRequestAdapter.Re
     }
 
 
-    public void setRequests(List<HelpRequestEntity> newRequests) {
+    public void setRequests(List<HelpRequest> newRequests) {
         this.requests = newRequests;
         notifyDataSetChanged();
     }
@@ -67,7 +70,7 @@ public class CsrRequestAdapter extends RecyclerView.Adapter<CsrRequestAdapter.Re
             tvRequestLocation = itemView.findViewById(R.id.tvRequestLocation);
         }
 
-        public void bind(final HelpRequestEntity request, final OnItemClickListener listener) {
+        public void bind(final HelpRequest request, final OnItemClickListener listener) {
             tvRequestTitle.setText(request.getTitle());
             tvRequestDescription.setText(request.getDescription());
             tvRequestLocation.setText(request.getLocation());

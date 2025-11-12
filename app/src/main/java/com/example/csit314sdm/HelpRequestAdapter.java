@@ -13,23 +13,25 @@ import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.csit314sdm.entity.HelpRequest;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class HelpRequestAdapter extends RecyclerView.Adapter<HelpRequestAdapter.RequestViewHolder> {
 
-    private List<HelpRequestEntity> requestList = new ArrayList<>();
+    private List<HelpRequest> requestList = new ArrayList<>();
     private final OnItemClickListener listener;
     private OnSaveClickListener saveClickListener;
     private String currentUserId;
     private Context context;
 
     public interface OnItemClickListener {
-        void onItemClick(HelpRequestEntity request);
+        void onItemClick(HelpRequest request);
     }
 
     public interface OnSaveClickListener {
-        void onSaveClick(HelpRequestEntity request, boolean isSaved);
+        void onSaveClick(HelpRequest request, boolean isSaved);
     }
 
     public HelpRequestAdapter(OnItemClickListener listener, String currentUserId) {
@@ -41,7 +43,7 @@ public class HelpRequestAdapter extends RecyclerView.Adapter<HelpRequestAdapter.
         this.saveClickListener = listener;
     }
 
-    public void setRequests(List<HelpRequestEntity> requests) {
+    public void setRequests(List<HelpRequest> requests) {
         this.requestList = requests;
         notifyDataSetChanged();
     }
@@ -81,7 +83,7 @@ public class HelpRequestAdapter extends RecyclerView.Adapter<HelpRequestAdapter.
             tvPinId = itemView.findViewById(R.id.tvPinId);
         }
 
-        public void bind(final HelpRequestEntity request, final OnItemClickListener listener,
+        public void bind(final HelpRequest request, final OnItemClickListener listener,
                          final OnSaveClickListener saveClickListener, String currentUserId, Context context) {
 
             tvCategory.setText(request.getCategory());
