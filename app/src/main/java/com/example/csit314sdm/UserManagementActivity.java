@@ -61,6 +61,8 @@ public class UserManagementActivity extends AppCompatActivity {
         adapter = new UserAdapter(user -> {
             Intent intent = new Intent(UserManagementActivity.this, UserDetailActivity.class);
             intent.putExtra("USER_ID", user.getId());
+            // Pass the mode to indicate account management
+            intent.putExtra("MODE", "ACCOUNT_DETAILS"); 
             startActivity(intent);
         });
         recyclerView.setAdapter(adapter);

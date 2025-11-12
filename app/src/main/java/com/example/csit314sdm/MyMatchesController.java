@@ -9,16 +9,21 @@ public class MyMatchesController {
         void onError(String message);
     }
 
+    // Responsible ONLY for retrieving CSR's matched PINs
     public void getMatchedPINs(String csrId, MatchedPINsCallback callback) {
         HelpRequest.getMatchesForCsr(new HelpRequest.MyMatchesCallback() {
             @Override
             public void onMatchesLoaded(List<User> matchedUsers) {
-                callback.onMatchedPINsReceived(matchedUsers);
+                if (callback != null) {
+                    callback.onMatchedPINsReceived(matchedUsers);
+                }
             }
 
             @Override
             public void onDataLoadFailed(String errorMessage) {
-                callback.onError(errorMessage);
+                if (callback != null) {
+                    callback.onError(errorMessage);
+                }
             }
         });
     }
