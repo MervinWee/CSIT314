@@ -431,6 +431,20 @@ public class User {
                 .addOnFailureListener(callback::onFailure);
     }
 
+
+    public static void suspendUserAccount(String userId, UserCallback<Void> callback) {
+        // The underlying implementation is the same as suspending a profile.
+        suspendUserProfile(userId, callback);
+    }
+
+    public static void reinstateUserAccount(String userId, UserCallback<Void> callback) {
+        // The underlying implementation is the same as reinstating a profile.
+        reinstateUserProfile(userId, callback);
+    }
+
+
+
+
     public static void suspendUserProfile(String userId, UserCallback<Void> callback) {
         FirebaseFirestore.getInstance().collection("users").document(userId).update("accountStatus", "Suspended")
                 .addOnSuccessListener(aVoid -> callback.onSuccess(null))
