@@ -42,6 +42,7 @@ public class HistoryActivity extends AppCompatActivity implements HelpRequestAda
     private TextView tvNoHistoryResults;
 
     private HelpRequestController controller;
+    private ShortlistHelpRequestController shortlistController;
     private HelpRequestAdapter adapter;
     private List<HelpRequest> historyList = new ArrayList<>();
     private Calendar fromDateCalendar = Calendar.getInstance();
@@ -62,6 +63,7 @@ public class HistoryActivity extends AppCompatActivity implements HelpRequestAda
 
         initializeViews();
         controller = new HelpRequestController();
+        shortlistController = new ShortlistHelpRequestController();
         setupRecyclerView();
         setupSpinners();
         setupDatePickers();
@@ -214,30 +216,30 @@ public class HistoryActivity extends AppCompatActivity implements HelpRequestAda
     public void onSaveClick(HelpRequest request, boolean isSaved) {
         if (isSaved) {
 
-            controller.unsaveRequest(request.getId(), new HelpRequestController.SaveCallback() {
+            shortlistController.unsaveRequest(request.getId(), new ShortlistHelpRequestController.ShortlistCallback() {
                 @Override
-                public void onSaveSuccess() {
+                public void onShortlistSuccess() {
                     Toast.makeText(HistoryActivity.this, "Request unsaved", Toast.LENGTH_SHORT).show();
                     fetchCsrCompanyIdAndLoadHistory();
                 }
 
                 @Override
-                public void onSaveFailure(String errorMessage) {
+                public void onShortlistFailure(String errorMessage) {
                     Toast.makeText(HistoryActivity.this, "Failed to unsave request: " + errorMessage, Toast.LENGTH_SHORT).show();
                 }
             });
 
         } else {
 
-            controller.saveRequest(request.getId(), new HelpRequestController.SaveCallback() {
+            shortlistController.saveRequest(request.getId(), new ShortlistHelpRequestController.ShortlistCallback() {
                 @Override
-                public void onSaveSuccess() {
+                public void onShortlistSuccess() {
                     Toast.makeText(HistoryActivity.this, "Request saved", Toast.LENGTH_SHORT).show();
                     fetchCsrCompanyIdAndLoadHistory();
                 }
 
                 @Override
-                public void onSaveFailure(String errorMessage) {
+                public void onShortlistFailure(String errorMessage) {
                     Toast.makeText(HistoryActivity.this, "Failed to save request: " + errorMessage, Toast.LENGTH_SHORT).show();
                 }
             });

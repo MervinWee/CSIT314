@@ -51,24 +51,8 @@ public class HelpRequestController {
         HelpRequest.getInProgressRequestsForCsr(callback);
     }
 
-    public void getSavedHelpRequests(final HelpRequestsLoadCallback callback) {
-        HelpRequest.getSavedHelpRequests(callback);
-    }
-
-    public void saveRequest(String requestId, final SaveCallback callback) {
-        HelpRequest.saveRequest(requestId, callback);
-    }
-
-    public void unsaveRequest(String requestId, final SaveCallback callback) {
-        HelpRequest.unsaveRequest(requestId, callback);
-    }
-
     public void getCompletedHistory(String companyId, Date fromDate, Date toDate, String category, final HelpRequestsLoadCallback callback) {
         HelpRequest.getCompletedHistory(companyId, fromDate, toDate, category, callback);
-    }
-
-    public void searchShortlistedRequests(String keyword, String location, String category, final HelpRequestsLoadCallback callback) {
-        HelpRequest.searchShortlistedRequests(keyword, location, category, callback);
     }
 
     public void acceptRequest(String requestId, String companyId, String csrId, final UpdateCallback callback) {

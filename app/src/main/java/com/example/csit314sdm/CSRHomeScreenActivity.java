@@ -50,6 +50,7 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
 
     private CategoryController categoryController;
     private HelpRequestController controller;
+    private ShortlistHelpRequestController shortlistController;
     private UserManagementController userManagementController;
     private RetrieveUserAccountController retrieveUserAccountController;
     private LoginController loginController;
@@ -73,6 +74,7 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
         setContentView(R.layout.activity_csrhome_screen);
 
         controller = new HelpRequestController();
+        shortlistController = new ShortlistHelpRequestController();
         userManagementController = new UserManagementController();
         retrieveUserAccountController = new RetrieveUserAccountController();
         categoryController = new CategoryController();
@@ -261,7 +263,7 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
 
         showLoading(true);
 
-        controller.searchShortlistedRequests(keyword, location, category, new HelpRequestController.HelpRequestsLoadCallback() {
+        shortlistController.searchShortlistedRequests(keyword, location, category, new ShortlistHelpRequestController.HelpRequestsLoadCallback() {
             @Override
             public void onRequestsLoaded(List<HelpRequest> requests) {
                 runOnUiThread(() -> {
@@ -279,7 +281,6 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
             }
         });
     }
-
     private void setWelcomeMessage(User user) {
         String username = user.getFullName();
         tvWelcome.setText("Hello, " + (username != null && !username.isEmpty() ? username : "User") + "!");
@@ -330,7 +331,7 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
 
     private void loadSavedRequests() {
         showLoading(true);
-        controller.getSavedHelpRequests(new HelpRequestController.HelpRequestsLoadCallback() {
+        shortlistController.getSavedHelpRequests(new ShortlistHelpRequestController.HelpRequestsLoadCallback() {
             @Override
             public void onRequestsLoaded(List<HelpRequest> requests) {
                 runOnUiThread(() -> {
@@ -408,60 +409,86 @@ public class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequ
     }
 
     private void showLoading(boolean isLoading) {
-        progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+        if (progressBar != null) {
+            progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+        }
         if (isLoading) {
-            recyclerView.setVisibility(View.GONE);
-            tvNoResults.setVisibility(View.GONE);
+            if (recyclerView != null) recyclerView.setVisibility(View.GONE);
+            if (tvNoResults != null) tvNoResults.setVisibility(View.GONE);
+        } else {
+            if (recyclerView != null) recyclerView.setVisibility(View.VISIBLE);
         }
     }
 
     private void showError(String message) {
-        tvNoResults.setText(message);
-        tvNoResults.setVisibility(View.VISIBLE);
-        recyclerView.setVisibility(View.GONE);
-        progressBar.setVisibility(View.GONE);
-        Toast.makeText(CSRHomeScreenActivity.this, message, Toast.LENGTH_LONG).show();
+        if (tvNoResults != null) {
+            tvNoResults.setText(message);
+            tvNoResults.setVisibility(View.VISIBLE);
+        }
+        if (recyclerView != null) recyclerView.setVisibility(View.GONE);
+        if (progressBar != null) progressBar.setVisibility(View.GONE);
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
     }
 
     private void updateRecyclerView(List<HelpRequest> requests, String noResultsMessage) {
-        if (requests.isEmpty()) {
-            tvNoResults.setText(noResultsMessage);
-            tvNoResults.setVisibility(View.VISIBLE);
-            recyclerView.setVisibility(View.GONE);
+        if (requests == null || requests.isEmpty()) {
+            if (tvNoResults != null) {
+                tvNoResults.setText(noResultsMessage);
+                tvNoResults.setVisibility(View.VISIBLE);
+            }
+            if (recyclerView != null) recyclerView.setVisibility(View.GONE);
         } else {
-            tvNoResults.setVisibility(View.GONE);
-            recyclerView.setVisibility(View.VISIBLE);
-            adapter.setRequests(requests);
+            if (tvNoResults != null) tvNoResults.setVisibility(View.GONE);
+            if (recyclerView != null) {
+                recyclerView.setVisibility(View.VISIBLE);
+                if (adapter != null) adapter.setRequests(requests);
+            }
         }
+        if (progressBar != null) progressBar.setVisibility(View.GONE);
     }
-
     @Override
-    public void onSaveClick(HelpRequest request, boolean isSaved) {
+    public void onSaveClick(HelpRequest helpRequest, boolean isSaved) {
+        showLoading(true);
         if (isSaved) {
-            controller.unsaveRequest(request.getId(), new HelpRequestController.SaveCallback() {
+            // Unsave the request
+            shortlistController.unsaveRequest(helpRequest.getId(), new ShortlistHelpRequestController.ShortlistCallback() {
                 @Override
-                public void onSaveSuccess() {
-                    Toast.makeText(CSRHomeScreenActivity.this, "Request unsaved", Toast.LENGTH_SHORT).show();
-                    if (isShowingSaved) {
-                        loadSavedRequests();
-                    }
+                public void onShortlistSuccess() {
+                    runOnUiThread(() -> {
+                        showLoading(false);
+                        Toast.makeText(CSRHomeScreenActivity.this, "Request unsaved", Toast.LENGTH_SHORT).show();
+                        // If the user is currently viewing the shortlisted requests, refresh the list
+                        if (isShowingSaved) {
+                            loadSavedRequests();
+                        }
+                    });
                 }
 
                 @Override
-                public void onSaveFailure(String errorMessage) {
-                    Toast.makeText(CSRHomeScreenActivity.this, "Failed to unsave: " + errorMessage, Toast.LENGTH_SHORT).show();
+                public void onShortlistFailure(String errorMessage) {
+                    runOnUiThread(() -> {
+                        showLoading(false);
+                        Toast.makeText(CSRHomeScreenActivity.this, "Failed to unsave: " + errorMessage, Toast.LENGTH_SHORT).show();
+                    });
                 }
             });
         } else {
-            controller.saveRequest(request.getId(), new HelpRequestController.SaveCallback() {
+            // Save the request
+            shortlistController.saveRequest(helpRequest.getId(), new ShortlistHelpRequestController.ShortlistCallback() {
                 @Override
-                public void onSaveSuccess() {
-                    Toast.makeText(CSRHomeScreenActivity.this, "Request saved to shortlist", Toast.LENGTH_SHORT).show();
+                public void onShortlistSuccess() {
+                    runOnUiThread(() -> {
+                        showLoading(false);
+                        Toast.makeText(CSRHomeScreenActivity.this, "Request saved to shortlist", Toast.LENGTH_SHORT).show();
+                    });
                 }
 
                 @Override
-                public void onSaveFailure(String errorMessage) {
-                    Toast.makeText(CSRHomeScreenActivity.this, "Failed to save: " + errorMessage, Toast.LENGTH_SHORT).show();
+                public void onShortlistFailure(String errorMessage) {
+                    runOnUiThread(() -> {
+                        showLoading(false);
+                        Toast.makeText(CSRHomeScreenActivity.this, "Failed to save: " + errorMessage, Toast.LENGTH_SHORT).show();
+                    });
                 }
             });
         }
