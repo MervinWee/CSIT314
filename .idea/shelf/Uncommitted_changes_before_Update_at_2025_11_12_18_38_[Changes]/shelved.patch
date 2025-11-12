@@ -1,0 +1,611 @@
+Index: app/src/main/java/com/example/csit314sdm/HistoryActivity.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.csit314sdm;\r\n\r\nimport android.app.DatePickerDialog;\r\nimport android.content.Intent;\r\nimport android.os.Bundle;\r\nimport android.util.Log;\r\nimport android.view.View;\r\nimport android.widget.ArrayAdapter;\r\nimport android.widget.AutoCompleteTextView;\r\nimport android.widget.Button;\r\nimport android.widget.ProgressBar;\r\nimport android.widget.TextView;\r\nimport android.widget.Toast;\r\n\r\nimport androidx.appcompat.app.ActionBar;\r\nimport androidx.appcompat.app.AppCompatActivity;\r\nimport androidx.recyclerview.widget.LinearLayoutManager;\r\nimport androidx.recyclerview.widget.RecyclerView;\r\n\r\nimport com.google.android.material.appbar.MaterialToolbar;\r\nimport com.google.android.material.textfield.TextInputEditText;\r\nimport com.google.firebase.auth.FirebaseAuth;\r\nimport com.google.firebase.auth.FirebaseUser;\r\nimport com.google.firebase.firestore.FirebaseFirestore;\r\n\r\nimport java.text.SimpleDateFormat;\r\nimport java.util.ArrayList;\r\nimport java.util.Calendar;\r\nimport java.util.Date;\r\nimport java.util.List;\r\nimport java.util.Locale;\r\n\r\npublic class HistoryActivity extends AppCompatActivity implements HelpRequestAdapter.OnSaveClickListener {\r\n\r\n    private static final String TAG = \"HistoryActivity\";\r\n\r\n    private TextInputEditText etDateFrom, etDateTo;\r\n    private AutoCompleteTextView spinnerCategory;\r\n    private Button btnApplyFilters;\r\n    private RecyclerView recyclerViewHistory;\r\n    private ProgressBar progressBarHistory;\r\n    private TextView tvNoHistoryResults;\r\n\r\n    private ViewCategoriesController viewCategoriesController;\r\n    private HelpRequestController controller;\r\n    private HelpRequestAdapter adapter;\r\n    private List<HelpRequest> historyList = new ArrayList<>();\r\n    private Calendar fromDateCalendar = Calendar.getInstance();\r\n    private Calendar toDateCalendar = Calendar.getInstance();\r\n    private Date fromDate, toDate;\r\n\r\n    @Override\r\n    protected void onCreate(Bundle savedInstanceState) {\r\n        super.onCreate(savedInstanceState);\r\n        setContentView(R.layout.activity_history);\r\n\r\n        MaterialToolbar toolbar = findViewById(R.id.toolbarHistory);\r\n        setSupportActionBar(toolbar);\r\n        ActionBar actionBar = getSupportActionBar();\r\n        if (actionBar != null) {\r\n            actionBar.setDisplayHomeAsUpEnabled(true);\r\n        }\r\n\r\n        initializeViews();\r\n        controller = new HelpRequestController();\r\n        viewCategoriesController = new ViewCategoriesController();\r\n        setupRecyclerView();\r\n        setupSpinners();\r\n        setupDatePickers();\r\n\r\n        btnApplyFilters.setOnClickListener(v -> fetchCsrCompanyIdAndLoadHistory());\r\n        fetchCsrCompanyIdAndLoadHistory();\r\n    }\r\n\r\n    @Override\r\n    public boolean onSupportNavigateUp() {\r\n        onBackPressed();\r\n        return true;\r\n    }\r\n\r\n    @Override\r\n    protected void onDestroy() {\r\n        super.onDestroy();\r\n        if (viewCategoriesController != null) {\r\n            viewCategoriesController.cleanup();\r\n        }\r\n    }\r\n\r\n    private void fetchCsrCompanyIdAndLoadHistory() {\r\n        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();\r\n        if (currentUser == null) {\r\n            Toast.makeText(this, \"No user is logged in.\", Toast.LENGTH_LONG).show();\r\n            return;\r\n        }\r\n\r\n        setLoadingState(true);\r\n\r\n        FirebaseFirestore.getInstance().collection(\"users\").document(currentUser.getUid()).get()\r\n                .addOnSuccessListener(documentSnapshot -> {\r\n                    if (documentSnapshot.exists()) {\r\n                        String companyId = documentSnapshot.getString(\"companyId\");\r\n                        if (companyId != null && !companyId.isEmpty()) {\r\n                            fetchHistory(companyId);\r\n                        } else {\r\n                            setLoadingState(false);\r\n                            Toast.makeText(HistoryActivity.this, \"Could not find company ID for this user.\", Toast.LENGTH_LONG).show();\r\n                        }\r\n                    } else {\r\n                        setLoadingState(false);\r\n                        Toast.makeText(HistoryActivity.this, \"User profile not found.\", Toast.LENGTH_LONG).show();\r\n                    }\r\n                })\r\n                .addOnFailureListener(e -> {\r\n                    setLoadingState(false);\r\n                    Toast.makeText(HistoryActivity.this, \"Failed to fetch user profile.\", Toast.LENGTH_LONG).show();\r\n                    Log.e(TAG, \"Error fetching user profile for companyId\", e);\r\n                });\r\n    }\r\n\r\n    private void fetchHistory(String companyId) {\r\n        String category = spinnerCategory.getText().toString();\r\n\r\n        controller.getCompletedHistory(companyId, fromDate, toDate, category, new HelpRequestController.HelpRequestsLoadCallback() {\r\n            @Override\r\n            public void onRequestsLoaded(List<HelpRequest> requests) {\r\n                runOnUiThread(() -> {\r\n                    setLoadingState(false);\r\n                    historyList.clear();\r\n                    historyList.addAll(requests);\r\n\r\n                    if (historyList.isEmpty()) {\r\n                        tvNoHistoryResults.setVisibility(View.VISIBLE);\r\n                        recyclerViewHistory.setVisibility(View.GONE);\r\n                    } else {\r\n                        tvNoHistoryResults.setVisibility(View.GONE);\r\n                        recyclerViewHistory.setVisibility(View.VISIBLE);\r\n                        adapter.setRequests(historyList);\r\n                    }\r\n                });\r\n            }\r\n\r\n            @Override\r\n            public void onDataLoadFailed(String errorMessage) {\r\n                runOnUiThread(() -> {\r\n                    setLoadingState(false);\r\n                    tvNoHistoryResults.setText(\"Error loading data. Check logs for index errors.\");\r\n                    tvNoHistoryResults.setVisibility(View.VISIBLE);\r\n                    Toast.makeText(HistoryActivity.this, errorMessage, Toast.LENGTH_LONG).show();\r\n                    Log.e(TAG, \"Error from getCompletedHistory: \" + errorMessage);\r\n                });\r\n            }\r\n        });\r\n    }\r\n\r\n    private void setLoadingState(boolean isLoading) {\r\n        if (isLoading) {\r\n            progressBarHistory.setVisibility(View.VISIBLE);\r\n            tvNoHistoryResults.setVisibility(View.GONE);\r\n            recyclerViewHistory.setVisibility(View.GONE);\r\n        } else {\r\n            progressBarHistory.setVisibility(View.GONE);\r\n        }\r\n    }\r\n\r\n    private void initializeViews() {\r\n        etDateFrom = findViewById(R.id.etDateFrom);\r\n        etDateTo = findViewById(R.id.etDateTo);\r\n        spinnerCategory = findViewById(R.id.spinnerHistoryCategory);\r\n        btnApplyFilters = findViewById(R.id.btnApplyFilters);\r\n        recyclerViewHistory = findViewById(R.id.recyclerViewHistory);\r\n        progressBarHistory = findViewById(R.id.progressBarHistory);\r\n        tvNoHistoryResults = findViewById(R.id.tvNoHistoryResults);\r\n    }\r\n\r\n    private void setupRecyclerView() {\r\n        recyclerViewHistory.setLayoutManager(new LinearLayoutManager(this));\r\n        adapter = new HelpRequestAdapter(request -> {\r\n            Intent intent = new Intent(HistoryActivity.this, HelpRequestDetailActivity.class);\r\n            intent.putExtra(HelpRequestDetailActivity.EXTRA_REQUEST_ID, request.getId());\r\n            startActivity(intent);\r\n        });\r\n        adapter.setOnSaveClickListener(this);\r\n        recyclerViewHistory.setAdapter(adapter);\r\n    }\r\n\r\n    private void setupSpinners() {\r\n        viewCategoriesController.getAllCategories(new ViewCategoriesController.CategoryFetchCallback() {\r\n            @Override\r\n            public void onCategoriesFetched(List<Category> categories) {\r\n                List<String> categoryNames = new ArrayList<>();\r\n                categoryNames.add(\"All\");\r\n                for (Category category : categories) {\r\n                    categoryNames.add(category.getName());\r\n                }\r\n                ArrayAdapter<String> categoryAdapter = new ArrayAdapter<>(HistoryActivity.this, android.R.layout.simple_dropdown_item_1line, categoryNames);\r\n                spinnerCategory.setAdapter(categoryAdapter);\r\n                spinnerCategory.setText(\"All\", false);\r\n            }\r\n\r\n            @Override\r\n            public void onFailure(String errorMessage) {\r\n                Toast.makeText(HistoryActivity.this, \"Failed to load categories.\", Toast.LENGTH_SHORT).show();\r\n            }\r\n        });\r\n    }\r\n\r\n    private void setupDatePickers() {\r\n        DatePickerDialog.OnDateSetListener fromDateListener = (view, year, month, dayOfMonth) -> {\r\n            fromDateCalendar.set(Calendar.YEAR, year);\r\n            fromDateCalendar.set(Calendar.MONTH, month);\r\n            fromDateCalendar.set(Calendar.DAY_OF_MONTH, dayOfMonth);\r\n            fromDate = fromDateCalendar.getTime();\r\n            updateLabel(etDateFrom, fromDateCalendar);\r\n        };\r\n\r\n        DatePickerDialog.OnDateSetListener toDateListener = (view, year, month, dayOfMonth) -> {\r\n            toDateCalendar.set(Calendar.YEAR, year);\r\n            toDateCalendar.set(Calendar.MONTH, month);\r\n            toDateCalendar.set(Calendar.DAY_OF_MONTH, dayOfMonth);\r\n            toDate = toDateCalendar.getTime();\r\n            updateLabel(etDateTo, toDateCalendar);\r\n        };\r\n\r\n        etDateFrom.setOnClickListener(v -> new DatePickerDialog(HistoryActivity.this, fromDateListener,\r\n                fromDateCalendar.get(Calendar.YEAR), fromDateCalendar.get(Calendar.MONTH), fromDateCalendar.get(Calendar.DAY_OF_MONTH)).show());\r\n\r\n        etDateTo.setOnClickListener(v -> new DatePickerDialog(HistoryActivity.this, toDateListener,\r\n                toDateCalendar.get(Calendar.YEAR), toDateCalendar.get(Calendar.MONTH), toDateCalendar.get(Calendar.DAY_OF_MONTH)).show());\r\n    }\r\n\r\n    private void updateLabel(TextInputEditText editText, Calendar calendar) {\r\n        String myFormat = \"dd/MM/yy\";\r\n        SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.US);\r\n        editText.setText(sdf.format(calendar.getTime()));\r\n    }\r\n\r\n    @Override\r\n    public void onSaveClick(HelpRequest request, boolean isSaved) {\r\n        if (isSaved) {\r\n\r\n            controller.unsaveRequest(request.getId(), new HelpRequestController.SaveCallback() {\r\n                @Override\r\n                public void onSaveSuccess() {\r\n                    Toast.makeText(HistoryActivity.this, \"Request unsaved\", Toast.LENGTH_SHORT).show();\r\n                    fetchCsrCompanyIdAndLoadHistory();\r\n                }\r\n\r\n                @Override\r\n                public void onSaveFailure(String errorMessage) {\r\n                    Toast.makeText(HistoryActivity.this, \"Failed to unsave request: \" + errorMessage, Toast.LENGTH_SHORT).show();\r\n                }\r\n            });\r\n\r\n        } else {\r\n\r\n            controller.saveRequest(request.getId(), new HelpRequestController.SaveCallback() {\r\n                @Override\r\n                public void onSaveSuccess() {\r\n                    Toast.makeText(HistoryActivity.this, \"Request saved\", Toast.LENGTH_SHORT).show();\r\n                    fetchCsrCompanyIdAndLoadHistory();\r\n                }\r\n\r\n                @Override\r\n                public void onSaveFailure(String errorMessage) {\r\n                    Toast.makeText(HistoryActivity.this, \"Failed to save request: \" + errorMessage, Toast.LENGTH_SHORT).show();\r\n                }\r\n            });\r\n\r\n        }\r\n    }\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/csit314sdm/HistoryActivity.java b/app/src/main/java/com/example/csit314sdm/HistoryActivity.java
+--- a/app/src/main/java/com/example/csit314sdm/HistoryActivity.java	(revision 81bccde500fab4a9be3728850ef7f5ac273379bf)
++++ b/app/src/main/java/com/example/csit314sdm/HistoryActivity.java	(date 1762943877024)
+@@ -43,6 +43,7 @@
+ 
+     private ViewCategoriesController viewCategoriesController;
+     private HelpRequestController controller;
++    private ShortlistHelpRequestController listController;
+     private HelpRequestAdapter adapter;
+     private List<HelpRequest> historyList = new ArrayList<>();
+     private Calendar fromDateCalendar = Calendar.getInstance();
+@@ -238,7 +239,7 @@
+     public void onSaveClick(HelpRequest request, boolean isSaved) {
+         if (isSaved) {
+ 
+-            controller.unsaveRequest(request.getId(), new HelpRequestController.SaveCallback() {
++            listController.unsaveRequest(request.getId(), new ShortlistHelpRequestController.SaveCallback() {
+                 @Override
+                 public void onSaveSuccess() {
+                     Toast.makeText(HistoryActivity.this, "Request unsaved", Toast.LENGTH_SHORT).show();
+@@ -253,7 +254,7 @@
+ 
+         } else {
+ 
+-            controller.saveRequest(request.getId(), new HelpRequestController.SaveCallback() {
++            listController.saveRequest(request.getId(), new ShortlistHelpRequestController.SaveCallback() {
+                 @Override
+                 public void onSaveSuccess() {
+                     Toast.makeText(HistoryActivity.this, "Request saved", Toast.LENGTH_SHORT).show();
+Index: app/src/main/res/layout/activity_admin_dashboard.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<androidx.constraintlayout.widget.ConstraintLayout xmlns:android=\"http://schemas.android.com/apk/res/android\"\r\n    xmlns:app=\"http://schemas.android.com/apk/res-auto\"\r\n    xmlns:tools=\"http://schemas.android.com/tools\"\r\n    android:id=\"@+id/main\"\r\n    android:layout_width=\"match_parent\"\r\n    android:layout_height=\"match_parent\"\r\n    android:padding=\"24dp\"\r\n    tools:context=\".AdminDashboardActivity\">\r\n\r\n    <TextView\r\n        android:id=\"@+id/tvAdminTitle\"\r\n        android:layout_width=\"wrap_content\"\r\n        android:layout_height=\"wrap_content\"\r\n        android:text=\"Admin Dashboard\"\r\n        android:textColor=\"?attr/colorPrimary\"\r\n        android:textSize=\"34sp\"\r\n        android:fontFamily=\"sans-serif-medium\"\r\n        app:layout_constraintStart_toStartOf=\"parent\"\r\n        app:layout_constraintTop_toTopOf=\"parent\" />\r\n\r\n    <TextView\r\n        android:id=\"@+id/tvAdminSubtitle\"\r\n        android:layout_width=\"wrap_content\"\r\n        android:layout_height=\"wrap_content\"\r\n        android:text=\"Manage users and system settings\"\r\n        android:textSize=\"16sp\"\r\n        app:layout_constraintStart_toStartOf=\"parent\"\r\n        app:layout_constraintTop_toBottomOf=\"@id/tvAdminTitle\" />\r\n\r\n    <ScrollView\r\n        android:layout_width=\"0dp\"\r\n        android:layout_height=\"0dp\"\r\n        android:layout_marginTop=\"24dp\"\r\n        android:layout_marginBottom=\"16dp\"\r\n        app:layout_constraintTop_toBottomOf=\"@id/tvAdminSubtitle\"\r\n        app:layout_constraintBottom_toTopOf=\"@+id/btnAdminLogout\"\r\n        app:layout_constraintStart_toStartOf=\"parent\"\r\n        app:layout_constraintEnd_toEndOf=\"parent\">\r\n\r\n        <LinearLayout\r\n            android:layout_width=\"match_parent\"\r\n            android:layout_height=\"wrap_content\"\r\n            android:orientation=\"vertical\">\r\n\r\n            <com.google.android.material.card.MaterialCardView\r\n                android:id=\"@+id/cardCreateUserAccount\"\r\n                android:layout_width=\"match_parent\"\r\n                android:layout_height=\"wrap_content\"\r\n                app:cardCornerRadius=\"16dp\"\r\n                app:cardElevation=\"4dp\"\r\n                android:layout_marginBottom=\"16dp\">\r\n\r\n                <LinearLayout\r\n                    android:layout_width=\"match_parent\"\r\n                    android:layout_height=\"wrap_content\"\r\n                    android:orientation=\"vertical\"\r\n                    android:minHeight=\"110dp\"\r\n                    android:padding=\"16dp\">\r\n\r\n                    <TextView\r\n                        android:layout_width=\"wrap_content\"\r\n                        android:layout_height=\"wrap_content\"\r\n                        android:text=\"Create User Profile\"\r\n                        android:textSize=\"20sp\"\r\n                        android:textColor=\"?android:attr/textColorPrimary\"\r\n                        android:fontFamily=\"sans-serif-medium\"/>\r\n\r\n                    <TextView\r\n                        android:layout_width=\"wrap_content\"\r\n                        android:layout_height=\"wrap_content\"\r\n                        android:layout_marginTop=\"4dp\"\r\n                        android:text=\"Add or edit detailed information for an existing user.\"/>\r\n                </LinearLayout>\r\n            </com.google.android.material.card.MaterialCardView>\r\n\r\n            <com.google.android.material.card.MaterialCardView\r\n                android:id=\"@+id/cardCreateUserProfile\"\r\n                android:layout_width=\"match_parent\"\r\n                android:layout_height=\"wrap_content\"\r\n                app:cardCornerRadius=\"16dp\"\r\n                app:cardElevation=\"4dp\"\r\n                android:layout_marginBottom=\"16dp\">\r\n                <LinearLayout\r\n                    android:layout_width=\"match_parent\"\r\n                    android:layout_height=\"wrap_content\"\r\n                    android:orientation=\"vertical\"\r\n                    android:minHeight=\"110dp\"\r\n                    android:padding=\"16dp\">\r\n\r\n                    <TextView\r\n                        android:layout_width=\"wrap_content\"\r\n                        android:layout_height=\"wrap_content\"\r\n                        android:text=\"Create User Account\"\r\n                        android:textSize=\"20sp\"\r\n                        android:textColor=\"?android:attr/textColorPrimary\"\r\n                        android:fontFamily=\"sans-serif-medium\"/>\r\n\r\n                    <TextView\r\n                        android:layout_width=\"wrap_content\"\r\n                        android:layout_height=\"wrap_content\"\r\n                        android:layout_marginTop=\"4dp\"\r\n                        android:text=\"Create a new login for a user (PIN or CSR).\"/>\r\n                </LinearLayout>\r\n            </com.google.android.material.card.MaterialCardView>\r\n\r\n            <com.google.android.material.card.MaterialCardView\r\n                android:id=\"@+id/cardRetrieveUserAccount\"\r\n                android:layout_width=\"match_parent\"\r\n                android:layout_height=\"wrap_content\"\r\n                app:cardCornerRadius=\"16dp\"\r\n                app:cardElevation=\"4dp\"\r\n                android:layout_marginBottom=\"16dp\">\r\n\r\n                <LinearLayout\r\n                    android:layout_width=\"match_parent\"\r\n                    android:layout_height=\"wrap_content\"\r\n                    android:orientation=\"vertical\"\r\n                    android:minHeight=\"110dp\"\r\n                    android:padding=\"16dp\">\r\n\r\n                    <TextView\r\n                        android:layout_width=\"wrap_content\"\r\n                        android:layout_height=\"wrap_content\"\r\n                        android:text=\"Retrieve User Profiles\"\r\n                        android:textSize=\"20sp\"\r\n                        android:textColor=\"?android:attr/textColorPrimary\"\r\n                        android:fontFamily=\"sans-serif-medium\"/>\r\n\r\n                    <TextView\r\n                        android:layout_width=\"wrap_content\"\r\n                        android:layout_height=\"wrap_content\"\r\n                        android:layout_marginTop=\"4dp\"\r\n                        android:text=\"View a list of all users and their roles.\"/>\r\n                </LinearLayout>\r\n            </com.google.android.material.card.MaterialCardView>\r\n\r\n            <com.google.android.material.card.MaterialCardView\r\n                android:id=\"@+id/cardRetrieveUserProfile\"\r\n                android:layout_width=\"match_parent\"\r\n                android:layout_height=\"wrap_content\"\r\n                app:cardCornerRadius=\"16dp\"\r\n                app:cardElevation=\"4dp\"\r\n                android:layout_marginBottom=\"16dp\">\r\n\r\n                <LinearLayout\r\n                    android:layout_width=\"match_parent\"\r\n                    android:layout_height=\"wrap_content\"\r\n                    android:orientation=\"vertical\"\r\n                    android:padding=\"16dp\"\r\n                    android:minHeight=\"110dp\">\r\n\r\n                    <TextView\r\n                        android:layout_width=\"wrap_content\"\r\n                        android:layout_height=\"wrap_content\"\r\n                        android:text=\"Retrieve User Accounts\"\r\n                        android:textSize=\"20sp\"\r\n                        android:textColor=\"?android:attr/textColorPrimary\"\r\n                        android:fontFamily=\"sans-serif-medium\"/>\r\n\r\n                    <TextView\r\n                        android:layout_width=\"wrap_content\"\r\n                        android:layout_height=\"wrap_content\"\r\n                        android:layout_marginTop=\"4dp\"\r\n                        android:text=\"Search and view detailed profiles of users.\"/>\r\n                </LinearLayout>\r\n            </com.google.android.material.card.MaterialCardView>\r\n\r\n        </LinearLayout>\r\n\r\n    </ScrollView>\r\n\r\n    <Button\r\n        android:id=\"@+id/btnAdminLogout\"\r\n        style=\"@style/Widget.Material3.Button.OutlinedButton\"\r\n        android:layout_width=\"0dp\"\r\n        android:layout_height=\"wrap_content\"\r\n        android:text=\"Logout\"\r\n        app:layout_constraintBottom_toBottomOf=\"parent\"\r\n        app:layout_constraintStart_toStartOf=\"parent\"\r\n        app:layout_constraintEnd_toEndOf=\"parent\" />\r\n\r\n</androidx.constraintlayout.widget.ConstraintLayout>\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/res/layout/activity_admin_dashboard.xml b/app/src/main/res/layout/activity_admin_dashboard.xml
+--- a/app/src/main/res/layout/activity_admin_dashboard.xml	(revision 81bccde500fab4a9be3728850ef7f5ac273379bf)
++++ b/app/src/main/res/layout/activity_admin_dashboard.xml	(date 1762937452027)
+@@ -58,6 +58,36 @@
+                     android:minHeight="110dp"
+                     android:padding="16dp">
+ 
++                    <TextView
++                        android:layout_width="wrap_content"
++                        android:layout_height="wrap_content"
++                        android:text="Create User Account"
++                        android:textSize="20sp"
++                        android:textColor="?android:attr/textColorPrimary"
++                        android:fontFamily="sans-serif-medium"/>
++
++                    <TextView
++                        android:layout_width="wrap_content"
++                        android:layout_height="wrap_content"
++                        android:layout_marginTop="4dp"
++                        android:text="Create a new login for a user (PIN or CSR)."/>
++                </LinearLayout>
++            </com.google.android.material.card.MaterialCardView>
++
++            <com.google.android.material.card.MaterialCardView
++                android:id="@+id/cardCreateUserProfile"
++                android:layout_width="match_parent"
++                android:layout_height="wrap_content"
++                app:cardCornerRadius="16dp"
++                app:cardElevation="4dp"
++                android:layout_marginBottom="16dp">
++                <LinearLayout
++                    android:layout_width="match_parent"
++                    android:layout_height="wrap_content"
++                    android:orientation="vertical"
++                    android:minHeight="110dp"
++                    android:padding="16dp">
++
+                     <TextView
+                         android:layout_width="wrap_content"
+                         android:layout_height="wrap_content"
+@@ -75,12 +105,13 @@
+             </com.google.android.material.card.MaterialCardView>
+ 
+             <com.google.android.material.card.MaterialCardView
+-                android:id="@+id/cardCreateUserProfile"
++                android:id="@+id/cardCreateUserRole"
+                 android:layout_width="match_parent"
+                 android:layout_height="wrap_content"
+                 app:cardCornerRadius="16dp"
+                 app:cardElevation="4dp"
+                 android:layout_marginBottom="16dp">
++
+                 <LinearLayout
+                     android:layout_width="match_parent"
+                     android:layout_height="wrap_content"
+@@ -91,7 +122,7 @@
+                     <TextView
+                         android:layout_width="wrap_content"
+                         android:layout_height="wrap_content"
+-                        android:text="Create User Account"
++                        android:text="Create User Role"
+                         android:textSize="20sp"
+                         android:textColor="?android:attr/textColorPrimary"
+                         android:fontFamily="sans-serif-medium"/>
+@@ -100,7 +131,7 @@
+                         android:layout_width="wrap_content"
+                         android:layout_height="wrap_content"
+                         android:layout_marginTop="4dp"
+-                        android:text="Create a new login for a user (PIN or CSR)."/>
++                        android:text="Define new roles and permissions for users."/>
+                 </LinearLayout>
+             </com.google.android.material.card.MaterialCardView>
+ 
+@@ -122,7 +153,7 @@
+                     <TextView
+                         android:layout_width="wrap_content"
+                         android:layout_height="wrap_content"
+-                        android:text="Retrieve User Profiles"
++                        android:text="Retrieve User Accounts"
+                         android:textSize="20sp"
+                         android:textColor="?android:attr/textColorPrimary"
+                         android:fontFamily="sans-serif-medium"/>
+@@ -131,7 +162,7 @@
+                         android:layout_width="wrap_content"
+                         android:layout_height="wrap_content"
+                         android:layout_marginTop="4dp"
+-                        android:text="View a list of all users and their roles."/>
++                        android:text="Search and view detailed profiles of users."/>
+                 </LinearLayout>
+             </com.google.android.material.card.MaterialCardView>
+ 
+@@ -153,7 +184,7 @@
+                     <TextView
+                         android:layout_width="wrap_content"
+                         android:layout_height="wrap_content"
+-                        android:text="Retrieve User Accounts"
++                        android:text="Retrieve User Profiles"
+                         android:textSize="20sp"
+                         android:textColor="?android:attr/textColorPrimary"
+                         android:fontFamily="sans-serif-medium"/>
+@@ -162,7 +193,7 @@
+                         android:layout_width="wrap_content"
+                         android:layout_height="wrap_content"
+                         android:layout_marginTop="4dp"
+-                        android:text="Search and view detailed profiles of users."/>
++                        android:text="View a list of all users and their roles."/>
+                 </LinearLayout>
+             </com.google.android.material.card.MaterialCardView>
+ 
+Index: app/src/main/java/com/example/csit314sdm/CsrDashboardActivity.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.csit314sdm;\r\n\r\nimport android.content.Intent;\r\nimport android.os.Bundle;\r\nimport android.view.View;\r\nimport android.view.inputmethod.EditorInfo;\r\nimport android.widget.ArrayAdapter;\r\nimport android.widget.AutoCompleteTextView;\r\nimport android.widget.Button;\r\nimport android.widget.ImageButton;\r\nimport android.widget.ProgressBar;\r\nimport android.widget.TextView;\r\nimport android.widget.Toast;\r\nimport androidx.appcompat.app.AppCompatActivity;\r\nimport androidx.core.view.GravityCompat;\r\nimport androidx.drawerlayout.widget.DrawerLayout;\r\nimport androidx.recyclerview.widget.LinearLayoutManager;\r\nimport androidx.recyclerview.widget.RecyclerView;\r\nimport com.google.android.material.card.MaterialCardView;\r\nimport com.google.android.material.navigation.NavigationView;\r\nimport com.google.android.material.textfield.TextInputEditText;\r\nimport com.google.firebase.auth.FirebaseAuth;\r\nimport com.google.firebase.auth.FirebaseUser;\r\nimport java.util.ArrayList;\r\nimport java.util.List;\r\n\r\npublic class CsrDashboardActivity extends AppCompatActivity implements HelpRequestAdapter.OnSaveClickListener {\r\n\r\n    private DrawerLayout drawerLayout;\r\n    private NavigationView navigationView;\r\n    private ImageButton btnDrawer;\r\n    private RecyclerView recyclerView;\r\n    private ProgressBar progressBar;\r\n    private TextView tvNoResults, tvListTitle, tvWelcome;\r\n    private MaterialCardView cardShortlisted;\r\n    private TextInputEditText etSearchKeyword;\r\n    private AutoCompleteTextView spinnerLocation, spinnerCategory;\r\n    private Button btnSearch;\r\n\r\n    private ViewCategoriesController viewCategoriesController;\r\n\r\n    // --- Controllers ---\r\n    private HelpRequestController controller;\r\n    private UserProfileController userProfileController;\r\n    private HelpRequestAdapter adapter;\r\n    private String currentCsrId; // Added to store the user's ID safely\r\n\r\n    @Override\r\n    protected void onCreate(Bundle savedInstanceState) {\r\n        super.onCreate(savedInstanceState);\r\n        setContentView(R.layout.activity_csr_dashboard);\r\n\r\n        controller = new HelpRequestController();\r\n        userProfileController = new UserProfileController();\r\n        viewCategoriesController = new ViewCategoriesController();\r\n\r\n        // Safely get the user ID once on creation\r\n        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();\r\n        if (currentUser != null) {\r\n            currentCsrId = currentUser.getUid();\r\n        } else {\r\n            handleLogout(); // If user is null, they shouldn't be here\r\n            return;\r\n        }\r\n\r\n        initializeUI();\r\n        setupNavigationDrawer();\r\n        setupListeners();\r\n        loadUserDetails();\r\n    }\r\n\r\n    @Override\r\n    protected void onDestroy() {\r\n        super.onDestroy();\r\n        if (viewCategoriesController != null) {\r\n            viewCategoriesController.cleanup();\r\n        }\r\n    }\r\n\r\n    private void initializeUI() {\r\n        // Drawer and Navigation\r\n        drawerLayout = findViewById(R.id.drawer_layout);\r\n        navigationView = findViewById(R.id.nav_view);\r\n        btnDrawer = findViewById(R.id.btnDrawer);\r\n\r\n        // Main content\r\n        recyclerView = findViewById(R.id.recyclerViewRequests);\r\n        progressBar = findViewById(R.id.progressBar);\r\n        tvNoResults = findViewById(R.id.tvNoResults);\r\n        tvListTitle = findViewById(R.id.tvListTitle);\r\n        tvWelcome = findViewById(R.id.tvWelcome);\r\n        cardShortlisted = findViewById(R.id.cardShortlisted);\r\n\r\n        // Search UI\r\n        etSearchKeyword = findViewById(R.id.etSearchKeyword);\r\n        spinnerLocation = findViewById(R.id.spinnerLocation);\r\n        spinnerCategory = findViewById(R.id.spinnerCategory);\r\n        btnSearch = findViewById(R.id.btnSearch);\r\n\r\n        // Setup RecyclerView\r\n        recyclerView.setLayoutManager(new LinearLayoutManager(this));\r\n        adapter = new HelpRequestAdapter(request -> {\r\n            Intent intent = new Intent(CsrDashboardActivity.this, HelpRequestDetailActivity.class);\r\n            intent.putExtra(HelpRequestDetailActivity.EXTRA_REQUEST_ID, request.getId());\r\n            intent.putExtra(\"user_role\", \"CSR\"); // Pass the role\r\n            startActivity(intent);\r\n        });\r\n        adapter.setOnSaveClickListener(this); // Set the save listener\r\n        recyclerView.setAdapter(adapter);\r\n    }\r\n\r\n    private void populateFilterSpinners() {\r\n        // --- Location spinner remains the same (hardcoded) ---\r\n        String[] locations = new String[]{\"All\", \"Anywhere\", \"North\", \"South\", \"East\", \"West\", \"Central\"};\r\n        ArrayAdapter<String> locationAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, locations);\r\n        spinnerLocation.setAdapter(locationAdapter);\r\n        spinnerLocation.setText(locations[0], false); // Set default value\r\n\r\n\r\n        // --- DYNAMICALLY LOAD CATEGORIES ---\r\n        viewCategoriesController.getAllCategories(new ViewCategoriesController.CategoryFetchCallback() {\r\n            @Override\r\n            public void onCategoriesFetched(List<Category> categories) {\r\n                runOnUiThread(() -> {\r\n                    List<String> categoryNames = new ArrayList<>();\r\n                    categoryNames.add(\"All\");\r\n                    for (Category category : categories) {\r\n                        categoryNames.add(category.getName());\r\n                    }\r\n                    ArrayAdapter<String> categoryAdapter = new ArrayAdapter<>(\r\n                            CsrDashboardActivity.this,\r\n                            android.R.layout.simple_dropdown_item_1line,\r\n                            categoryNames\r\n                    );\r\n                    spinnerCategory.setAdapter(categoryAdapter);\r\n                    spinnerCategory.setText(categoryNames.get(0), false);\r\n                });\r\n            }\r\n\r\n            @Override\r\n            public void onFailure(String errorMessage) {\r\n                runOnUiThread(() -> {\r\n                    Toast.makeText(CsrDashboardActivity.this, \"Could not load categories: \" + errorMessage, Toast.LENGTH_SHORT).show();\r\n                    // Provide a fallback with just \"All\" if loading fails\r\n                    List<String> fallbackCategories = new ArrayList<>();\r\n                    fallbackCategories.add(\"All\");\r\n                    ArrayAdapter<String> categoryAdapter = new ArrayAdapter<>(\r\n                            CsrDashboardActivity.this,\r\n                            android.R.layout.simple_dropdown_item_1line,\r\n                            fallbackCategories\r\n                    );\r\n                    spinnerCategory.setAdapter(categoryAdapter);\r\n                });\r\n            }\r\n        });\r\n    }\r\n\r\n\r\n    private void setupListeners() {\r\n        cardShortlisted.setOnClickListener(v -> {\r\n            tvListTitle.setText(\"My Shortlisted Requests\");\r\n            loadSavedRequests();\r\n        });\r\n\r\n        btnSearch.setOnClickListener(v -> performSearch());\r\n\r\n        etSearchKeyword.setOnEditorActionListener((v, actionId, event) -> {\r\n            if (actionId == EditorInfo.IME_ACTION_SEARCH) {\r\n                performSearch();\r\n                return true;\r\n            }\r\n            return false;\r\n        });\r\n    }\r\n\r\n    private void performSearch() {\r\n        String keyword = etSearchKeyword.getText().toString().trim();\r\n        String location = spinnerLocation.getText().toString();\r\n        String category = spinnerCategory.getText().toString();\r\n\r\n        progressBar.setVisibility(View.VISIBLE);\r\n        recyclerView.setVisibility(View.GONE);\r\n        tvNoResults.setVisibility(View.GONE);\r\n\r\n        controller.searchShortlistedRequests(keyword, location, category, new HelpRequestController.HelpRequestsLoadCallback() {\r\n            @Override\r\n            public void onRequestsLoaded(List<HelpRequest> requests) {\r\n                runOnUiThread(() -> {\r\n                    progressBar.setVisibility(View.GONE);\r\n                    if (requests.isEmpty()) {\r\n                        tvNoResults.setText(\"No matching requests found.\");\r\n                        tvNoResults.setVisibility(View.VISIBLE);\r\n                    } else {\r\n                        recyclerView.setVisibility(View.VISIBLE);\r\n                        adapter.setRequests(requests);\r\n                    }\r\n                });\r\n            }\r\n\r\n            @Override\r\n            public void onDataLoadFailed(String errorMessage) {\r\n                runOnUiThread(() -> {\r\n                    progressBar.setVisibility(View.GONE);\r\n                    tvNoResults.setText(errorMessage);\r\n                    tvNoResults.setVisibility(View.VISIBLE);\r\n                    Toast.makeText(CsrDashboardActivity.this, errorMessage, Toast.LENGTH_LONG).show();\r\n                });\r\n            }\r\n        });\r\n    }\r\n\r\n    private void setupNavigationDrawer() {\r\n        navigationView.setNavigationItemSelectedListener(item -> {\r\n            int itemId = item.getItemId();\r\n\r\n            if (itemId == R.id.nav_my_requests) {\r\n                loadSavedRequests();\r\n            } else if (itemId == R.id.nav_logout) {\r\n                handleLogout();\r\n            } else if (itemId == R.id.nav_history) {\r\n                Intent intent = new Intent(CsrDashboardActivity.this, HistoryActivity.class);\r\n                startActivity(intent);\r\n            } else if (itemId == R.id.nav_settings) {\r\n                Intent intent = new Intent(CsrDashboardActivity.this, CSRSettingsActivity.class);\r\n                startActivity(intent);\r\n            } else {\r\n                Toast.makeText(CsrDashboardActivity.this, \"Clicked: \" + item.getTitle(), Toast.LENGTH_SHORT).show();\r\n            }\r\n            drawerLayout.closeDrawer(GravityCompat.START);\r\n            return true;\r\n        });\r\n\r\n        btnDrawer.setOnClickListener(v -> {\r\n            if (drawerLayout.isDrawerOpen(GravityCompat.START)) {\r\n                drawerLayout.closeDrawer(GravityCompat.START);\r\n            } else {\r\n                drawerLayout.openDrawer(GravityCompat.START);\r\n            }\r\n        });\r\n    }\r\n\r\n    private void setWelcomeMessage(User user) {\r\n        String username = user.getFullName();\r\n        if (username != null && !username.isEmpty()) {\r\n            tvWelcome.setText(\"Hello, \" + username + \"!\");\r\n        } else {\r\n            tvWelcome.setText(\"Hello!\");\r\n        }\r\n        View headerView = navigationView.getHeaderView(0);\r\n        TextView navHeaderName = headerView.findViewById(R.id.nav_header_name);\r\n        TextView navHeaderEmail = headerView.findViewById(R.id.nav_header_email);\r\n\r\n        if (username != null && !username.isEmpty()) {\r\n            navHeaderName.setText(username);\r\n        } else {\r\n            navHeaderName.setText(\"CSR Representative\");\r\n        }\r\n        navHeaderEmail.setText(user.getEmail());\r\n    }\r\n\r\n    private void handleLogout() {\r\n        FirebaseAuth.getInstance().signOut();\r\n        Intent intent = new Intent(CsrDashboardActivity.this, loginPage.class);\r\n        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);\r\n        startActivity(intent);\r\n        finish();\r\n    }\r\n\r\n    private void loadUserDetails() {\r\n        if (currentCsrId == null) {\r\n            // If there's no user ID, we can't proceed.\r\n            Toast.makeText(this, \"Critical error: User is not logged in.\", Toast.LENGTH_LONG).show();\r\n            handleLogout(); // Log out the user as a safety measure.\r\n            return;\r\n        }\r\n\r\n        // Call the method with the correct callback interface from the User class\r\n        userProfileController.getUserById(currentCsrId, new User.UserCallback<User>() {\r\n            @Override\r\n            public void onSuccess(User user) {\r\n                // This is the success method\r\n                runOnUiThread(() -> {\r\n                    setWelcomeMessage(user);\r\n                    populateFilterSpinners();\r\n                    loadSavedRequests();\r\n                });\r\n            }\r\n\r\n            @Override\r\n            public void onFailure(Exception e) {\r\n                // This is the failure method\r\n                runOnUiThread(() -> {\r\n                    Toast.makeText(CsrDashboardActivity.this, \"Could not load user profile: \" + e.getMessage(), Toast.LENGTH_SHORT).show();\r\n                    // Still try to load other components so the app doesn't just sit blank\r\n                    populateFilterSpinners();\r\n                    loadSavedRequests();\r\n                });\r\n            }\r\n        });\r\n    }\r\n\r\n    private void loadSavedRequests() {\r\n        progressBar.setVisibility(View.VISIBLE);\r\n        recyclerView.setVisibility(View.GONE);\r\n        tvNoResults.setVisibility(View.GONE);\r\n\r\n        controller.getSavedHelpRequests(new HelpRequestController.HelpRequestsLoadCallback() {\r\n            @Override\r\n            public void onRequestsLoaded(List<HelpRequest> requests) {\r\n                runOnUiThread(() -> {\r\n                    progressBar.setVisibility(View.GONE);\r\n                    if (requests.isEmpty()) {\r\n                        tvNoResults.setText(\"You have no shortlisted requests.\");\r\n                        tvNoResults.setVisibility(View.VISIBLE);\r\n                    } else {\r\n                        recyclerView.setVisibility(View.VISIBLE);\r\n                        adapter.setRequests(requests);\r\n                    }\r\n                });\r\n            }\r\n            @Override\r\n            public void onDataLoadFailed(String errorMessage) {\r\n                runOnUiThread(() -> {\r\n                    progressBar.setVisibility(View.GONE);\r\n                    tvNoResults.setText(errorMessage);\r\n                    tvNoResults.setVisibility(View.VISIBLE);\r\n                    Toast.makeText(CsrDashboardActivity.this, errorMessage, Toast.LENGTH_LONG).show();\r\n                });\r\n            }\r\n        });\r\n    }\r\n\r\n    @Override\r\n    public void onBackPressed() {\r\n        if (drawerLayout.isDrawerOpen(GravityCompat.START)) {\r\n            drawerLayout.closeDrawer(GravityCompat.START);\r\n        } else {\r\n            super.onBackPressed();\r\n        }\r\n    }\r\n\r\n    @Override\r\n    public void onSaveClick(HelpRequest request, boolean isSaved) {\r\n        if (isSaved) {\r\n\r\n            controller.unsaveRequest(request.getId(), new HelpRequestController.SaveCallback() {\r\n                @Override\r\n                public void onSaveSuccess() {\r\n                    Toast.makeText(CsrDashboardActivity.this, \"Request unsaved\", Toast.LENGTH_SHORT).show();\r\n                    loadSavedRequests(); // Refresh the list\r\n                }\r\n\r\n                @Override\r\n                public void onSaveFailure(String errorMessage) {\r\n                    Toast.makeText(CsrDashboardActivity.this, \"Failed to unsave: \" + errorMessage, Toast.LENGTH_SHORT).show();\r\n                }\r\n            });\r\n\r\n        } else {\r\n\r\n            controller.saveRequest(request.getId(), new HelpRequestController.SaveCallback() {\r\n                @Override\r\n                public void onSaveSuccess() {\r\n                    Toast.makeText(CsrDashboardActivity.this, \"Request saved\", Toast.LENGTH_SHORT).show();\r\n                }\r\n\r\n                @Override\r\n                public void onSaveFailure(String errorMessage) {\r\n                    Toast.makeText(CsrDashboardActivity.this, \"Failed to save: \" + errorMessage, Toast.LENGTH_SHORT).show();\r\n                }\r\n            });\r\n\r\n        }\r\n    }\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/csit314sdm/CsrDashboardActivity.java b/app/src/main/java/com/example/csit314sdm/CsrDashboardActivity.java
+--- a/app/src/main/java/com/example/csit314sdm/CsrDashboardActivity.java	(revision 81bccde500fab4a9be3728850ef7f5ac273379bf)
++++ b/app/src/main/java/com/example/csit314sdm/CsrDashboardActivity.java	(date 1762940555943)
+@@ -40,7 +40,7 @@
+     private ViewCategoriesController viewCategoriesController;
+ 
+     // --- Controllers ---
+-    private HelpRequestController controller;
++    private ShortlistHelpRequestController controller;
+     private UserProfileController userProfileController;
+     private HelpRequestAdapter adapter;
+     private String currentCsrId; // Added to store the user's ID safely
+@@ -50,7 +50,7 @@
+         super.onCreate(savedInstanceState);
+         setContentView(R.layout.activity_csr_dashboard);
+ 
+-        controller = new HelpRequestController();
++        controller = new ShortlistHelpRequestController();
+         userProfileController = new UserProfileController();
+         viewCategoriesController = new ViewCategoriesController();
+ 
+@@ -159,7 +159,7 @@
+     private void setupListeners() {
+         cardShortlisted.setOnClickListener(v -> {
+             tvListTitle.setText("My Shortlisted Requests");
+-            loadSavedRequests();
++            loadShortlistedRequests();
+         });
+ 
+         btnSearch.setOnClickListener(v -> performSearch());
+@@ -182,7 +182,7 @@
+         recyclerView.setVisibility(View.GONE);
+         tvNoResults.setVisibility(View.GONE);
+ 
+-        controller.searchShortlistedRequests(keyword, location, category, new HelpRequestController.HelpRequestsLoadCallback() {
++        controller.searchShortlistedRequests(keyword, location, category, new ShortlistHelpRequestController.HelpRequestsLoadCallback() {
+             @Override
+             public void onRequestsLoaded(List<HelpRequest> requests) {
+                 runOnUiThread(() -> {
+@@ -214,7 +214,7 @@
+             int itemId = item.getItemId();
+ 
+             if (itemId == R.id.nav_my_requests) {
+-                loadSavedRequests();
++                loadShortlistedRequests();
+             } else if (itemId == R.id.nav_logout) {
+                 handleLogout();
+             } else if (itemId == R.id.nav_history) {
+@@ -282,7 +282,7 @@
+                 runOnUiThread(() -> {
+                     setWelcomeMessage(user);
+                     populateFilterSpinners();
+-                    loadSavedRequests();
++                    loadShortlistedRequests();
+                 });
+             }
+ 
+@@ -293,18 +293,18 @@
+                     Toast.makeText(CsrDashboardActivity.this, "Could not load user profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                     // Still try to load other components so the app doesn't just sit blank
+                     populateFilterSpinners();
+-                    loadSavedRequests();
++                    loadShortlistedRequests();
+                 });
+             }
+         });
+     }
+ 
+-    private void loadSavedRequests() {
++    private void loadShortlistedRequests() {
+         progressBar.setVisibility(View.VISIBLE);
+         recyclerView.setVisibility(View.GONE);
+         tvNoResults.setVisibility(View.GONE);
+ 
+-        controller.getSavedHelpRequests(new HelpRequestController.HelpRequestsLoadCallback() {
++        controller.getSavedHelpRequests(new ShortlistHelpRequestController.HelpRequestsLoadCallback() {
+             @Override
+             public void onRequestsLoaded(List<HelpRequest> requests) {
+                 runOnUiThread(() -> {
+@@ -342,34 +342,30 @@
+     @Override
+     public void onSaveClick(HelpRequest request, boolean isSaved) {
+         if (isSaved) {
+-
+-            controller.unsaveRequest(request.getId(), new HelpRequestController.SaveCallback() {
++            controller.unsaveRequest(request.getId(), new ShortlistHelpRequestController.ShortlistCallback() {
+                 @Override
+-                public void onSaveSuccess() {
++                public void onShortlistSuccess() {
+                     Toast.makeText(CsrDashboardActivity.this, "Request unsaved", Toast.LENGTH_SHORT).show();
+-                    loadSavedRequests(); // Refresh the list
++                    loadShortlistedRequests(); // Refresh the list
+                 }
+ 
+                 @Override
+-                public void onSaveFailure(String errorMessage) {
++                public void onShortlistFailure(String errorMessage) {
+                     Toast.makeText(CsrDashboardActivity.this, "Failed to unsave: " + errorMessage, Toast.LENGTH_SHORT).show();
+                 }
+             });
+-
+         } else {
+-
+-            controller.saveRequest(request.getId(), new HelpRequestController.SaveCallback() {
++            controller.saveRequest(request.getId(), new ShortlistHelpRequestController.ShortlistCallback() {
+                 @Override
+-                public void onSaveSuccess() {
++                public void onShortlistSuccess() {
+                     Toast.makeText(CsrDashboardActivity.this, "Request saved", Toast.LENGTH_SHORT).show();
+                 }
+ 
+                 @Override
+-                public void onSaveFailure(String errorMessage) {
++                public void onShortlistFailure(String errorMessage) {
+                     Toast.makeText(CsrDashboardActivity.this, "Failed to save: " + errorMessage, Toast.LENGTH_SHORT).show();
+                 }
+             });
+-
+         }
+     }
+ }
+Index: app/src/main/java/com/example/csit314sdm/AdminDashboardActivity.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.csit314sdm;\r\n\r\nimport android.content.Intent;\r\nimport android.os.Bundle;\r\nimport android.widget.Button;\r\nimport android.widget.Toast;\r\nimport androidx.appcompat.app.AppCompatActivity;\r\nimport com.google.android.material.card.MaterialCardView;\r\n\r\npublic class AdminDashboardActivity extends AppCompatActivity {\r\n\r\n    private LogoutController logoutController;\r\n\r\n    @Override\r\n    protected void onCreate(Bundle savedInstanceState) {\r\n        super.onCreate(savedInstanceState);\r\n        setContentView(R.layout.activity_admin_dashboard);\r\n\r\n        logoutController = new LogoutController();\r\n\r\n        MaterialCardView cardCreateUserAccount = findViewById(R.id.cardCreateUserAccount);\r\n        MaterialCardView cardRetrieveUserAccount = findViewById(R.id.cardRetrieveUserAccount);\r\n        MaterialCardView cardCreateUserProfile = findViewById(R.id.cardCreateUserProfile);\r\n        MaterialCardView cardRetrieveUserProfile = findViewById(R.id.cardRetrieveUserProfile);\r\n        Button btnAdminLogout = findViewById(R.id.btnAdminLogout);\r\n\r\n        if (cardCreateUserAccount != null) {\r\n            cardCreateUserAccount.setOnClickListener(v -> {\r\n                Intent intent = new Intent(AdminDashboardActivity.this, CreateUserProfileActivity.class);\r\n                startActivity(intent);\r\n            });\r\n        }\r\n\r\n        if (cardCreateUserProfile != null) {\r\n            cardCreateUserProfile.setOnClickListener(v -> {\r\n                Intent intent = new Intent(AdminDashboardActivity.this, AdminCreateUserActivity.class);\r\n                startActivity(intent);\r\n            });\r\n        }\r\n\r\n        if (cardRetrieveUserAccount != null) {\r\n            cardRetrieveUserAccount.setOnClickListener(v -> {\r\n                Intent intent = new Intent(AdminDashboardActivity.this, UserAccountsActivity.class);\r\n                intent.putExtra(\"MODE\", \"VIEW_ONLY\");\r\n                // This title is for the other screen and is correct.\r\n                intent.putExtra(\"SCREEN_TITLE\", \"All User Profiles\"); \r\n                startActivity(intent);\r\n            });\r\n        }\r\n\r\n        if (cardRetrieveUserProfile != null) {\r\n            cardRetrieveUserProfile.setOnClickListener(v -> {\r\n                Intent intent = new Intent(AdminDashboardActivity.this, UserManagementActivity.class);\r\n                // Corrected the title for this screen.\r\n                intent.putExtra(\"SCREEN_TITLE\", \"All User Accounts\");\r\n                startActivity(intent);\r\n            });\r\n        }\r\n\r\n        if (btnAdminLogout != null) {\r\n            btnAdminLogout.setOnClickListener(v -> {\r\n                logoutController.logoutUser();\r\n                Toast.makeText(AdminDashboardActivity.this, \"You have been logged out.\", Toast.LENGTH_SHORT).show();\r\n                Intent intent = new Intent(AdminDashboardActivity.this, LoginActivity.class);\r\n                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);\r\n                startActivity(intent);\r\n                finish();\r\n            });\r\n        }\r\n    }\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/csit314sdm/AdminDashboardActivity.java b/app/src/main/java/com/example/csit314sdm/AdminDashboardActivity.java
+--- a/app/src/main/java/com/example/csit314sdm/AdminDashboardActivity.java	(revision 81bccde500fab4a9be3728850ef7f5ac273379bf)
++++ b/app/src/main/java/com/example/csit314sdm/AdminDashboardActivity.java	(date 1762937979074)
+@@ -22,6 +22,7 @@
+         MaterialCardView cardRetrieveUserAccount = findViewById(R.id.cardRetrieveUserAccount);
+         MaterialCardView cardCreateUserProfile = findViewById(R.id.cardCreateUserProfile);
+         MaterialCardView cardRetrieveUserProfile = findViewById(R.id.cardRetrieveUserProfile);
++        MaterialCardView cardCreateUserRole = findViewById(R.id.cardCreateUserRole);
+         Button btnAdminLogout = findViewById(R.id.btnAdminLogout);
+ 
+         if (cardCreateUserAccount != null) {
+@@ -37,6 +38,13 @@
+                 startActivity(intent);
+             });
+         }
++
++        if (cardCreateUserRole != null) {
++            cardCreateUserRole.setOnClickListener(v -> {
++                Intent intent = new Intent(AdminDashboardActivity.this, CreateUserRoleActivity.class);
++                startActivity(intent);
++            });
++        }
+ 
+         if (cardRetrieveUserAccount != null) {
+             cardRetrieveUserAccount.setOnClickListener(v -> {
+Index: app/src/main/java/com/example/csit314sdm/CSRHomeScreenActivity.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.csit314sdm;\r\n\r\nimport android.Manifest;\r\nimport android.content.pm.PackageManager;\r\nimport android.os.Build;\r\nimport android.util.Log;\r\nimport androidx.activity.result.ActivityResultLauncher;\r\nimport androidx.activity.result.contract.ActivityResultContracts;\r\nimport androidx.core.content.ContextCompat;\r\nimport com.google.firebase.messaging.FirebaseMessaging;\r\nimport android.content.Intent;\r\nimport android.os.Bundle;\r\nimport android.view.View;\r\nimport android.view.inputmethod.EditorInfo;\r\nimport android.widget.ArrayAdapter;\r\nimport android.widget.AutoCompleteTextView;\r\nimport android.widget.Button;\r\nimport android.widget.ImageButton;\r\nimport android.widget.ProgressBar;\r\nimport android.widget.TextView;\r\nimport android.widget.Toast;\r\nimport androidx.annotation.NonNull;\r\nimport androidx.appcompat.app.AppCompatActivity;\r\nimport androidx.core.view.GravityCompat;\r\nimport androidx.drawerlayout.widget.DrawerLayout;\r\nimport androidx.recyclerview.widget.LinearLayoutManager;\r\nimport androidx.recyclerview.widget.RecyclerView;\r\nimport com.google.android.material.card.MaterialCardView;\r\nimport com.google.android.material.navigation.NavigationView;\r\nimport com.google.android.material.textfield.TextInputEditText;\r\nimport com.google.firebase.auth.FirebaseAuth;\r\nimport com.google.firebase.auth.FirebaseUser;\r\n\r\nimport java.util.ArrayList;\r\nimport java.util.List;\r\n\r\npublic class CSRHomeScreenActivity extends AppCompatActivity implements HelpRequestAdapter.OnSaveClickListener {\r\n\r\n    private DrawerLayout drawerLayout;\r\n    private NavigationView navigationView;\r\n    private ImageButton btnDrawer;\r\n    private RecyclerView recyclerView;\r\n    private ProgressBar progressBar;\r\n    private TextView tvNoResults, tvListTitle, tvWelcome;\r\n    private MaterialCardView cardActiveRequests, cardShortlisted, cardCompletedRequests;\r\n    private MaterialCardView cardMyInProgress;\r\n    private TextInputEditText etSearchKeyword;\r\n    private AutoCompleteTextView spinnerLocation, spinnerCategory;\r\n    private Button btnSearch;\r\n\r\n    private ViewCategoriesController viewCategoriesController;\r\n    private HelpRequestController controller;\r\n    private RetrieveUserAccountController retrieveUserAccountController;\r\n    private LoginController loginController;\r\n    private LogoutController logoutController;\r\n    private HelpRequestAdapter adapter;\r\n    private String currentCsrId;\r\n    private boolean isShowingSaved = false;\r\n\r\n    private final ActivityResultLauncher<String> requestPermissionLauncher =\r\n            registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {\r\n                if (isGranted) {\r\n                    Toast.makeText(this, \"Notifications permission granted\", Toast.LENGTH_SHORT).show();\r\n                } else {\r\n                    Toast.makeText(this, \"Notifications permission was denied. You will not receive reminders.\", Toast.LENGTH_LONG).show();\r\n                }\r\n            });\r\n\r\n    @Override\r\n    protected void onCreate(Bundle savedInstanceState) {\r\n        super.onCreate(savedInstanceState);\r\n        setContentView(R.layout.activity_csrhome_screen);\r\n\r\n        controller = new HelpRequestController();\r\n        retrieveUserAccountController = new RetrieveUserAccountController();\r\n        viewCategoriesController = new ViewCategoriesController();\r\n        loginController = new LoginController();\r\n        logoutController = new LogoutController();\r\n\r\n        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();\r\n        if (currentUser != null) {\r\n            currentCsrId = currentUser.getUid();\r\n        } else {\r\n            handleLogout();\r\n            return;\r\n        }\r\n\r\n        initializeUI();\r\n        setupNavigationDrawer();\r\n        setupListeners();\r\n        loadUserDetails();\r\n        askNotificationPermission();\r\n    }\r\n\r\n    @Override\r\n    protected void onDestroy() {\r\n        super.onDestroy();\r\n        if (viewCategoriesController != null) {\r\n            viewCategoriesController.cleanup();\r\n        }\r\n    }\r\n\r\n    private void setupNavigationDrawer() {\r\n        navigationView.setNavigationItemSelectedListener(item -> {\r\n            int itemId = item.getItemId();\r\n\r\n            if (itemId == R.id.nav_my_requests) {\r\n                Intent intent = new Intent(CSRHomeScreenActivity.this, MyInProgressRequestsActivity.class);\r\n                startActivity(intent);\r\n            } else if (itemId == R.id.nav_history) {\r\n                Intent intent = new Intent(CSRHomeScreenActivity.this, HistoryActivity.class);\r\n                startActivity(intent);\r\n            } else if (itemId == R.id.nav_my_matches) {\r\n                Intent intent = new Intent(CSRHomeScreenActivity.this, MyMatchesActivity.class);\r\n                startActivity(intent);\r\n            } else if (itemId == R.id.nav_settings) {\r\n                Intent intent = new Intent(CSRHomeScreenActivity.this, CSRSettingsActivity.class);\r\n                startActivity(intent);\r\n            } else if (itemId == R.id.nav_logout) {\r\n                handleLogout();\r\n            }\r\n\r\n            drawerLayout.closeDrawer(GravityCompat.START);\r\n            return true;\r\n        });\r\n\r\n        btnDrawer.setOnClickListener(v -> {\r\n            if (drawerLayout.isDrawerOpen(GravityCompat.START)) {\r\n                drawerLayout.closeDrawer(GravityCompat.START);\r\n            } else {\r\n                drawerLayout.openDrawer(GravityCompat.START);\r\n            }\r\n        });\r\n    }\r\n\r\n    private void handleLogout() {\r\n        logoutController.logoutUser(currentCsrId);\r\n        Toast.makeText(this, \"You have been logged out.\", Toast.LENGTH_SHORT).show();\r\n        Intent intent = new Intent(CSRHomeScreenActivity.this, LoginActivity.class);\r\n        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);\r\n        startActivity(intent);\r\n        finish();\r\n    }\r\n\r\n    @Override\r\n    protected void onResume() {\r\n        super.onResume();\r\n        if (isShowingSaved) {\r\n            loadSavedRequests();\r\n        } else {\r\n            loadActiveRequests();\r\n        }\r\n    }\r\n\r\n    private void askNotificationPermission() {\r\n        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {\r\n            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {\r\n                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS);\r\n            }\r\n        }\r\n    }\r\n\r\n    private void initializeUI() {\r\n        drawerLayout = findViewById(R.id.drawer_layout);\r\n        navigationView = findViewById(R.id.nav_view);\r\n        btnDrawer = findViewById(R.id.btnDrawer);\r\n\r\n        recyclerView = findViewById(R.id.recyclerViewRequests);\r\n        progressBar = findViewById(R.id.progressBar);\r\n        tvNoResults = findViewById(R.id.tvNoResults);\r\n        tvListTitle = findViewById(R.id.tvListTitle);\r\n        tvWelcome = findViewById(R.id.tvWelcome);\r\n        cardActiveRequests = findViewById(R.id.cardActiveRequests);\r\n        cardShortlisted = findViewById(R.id.cardShortlisted);\r\n        cardCompletedRequests = findViewById(R.id.cardCompletedRequests);\r\n        cardMyInProgress = findViewById(R.id.cardMyInProgress);\r\n\r\n        etSearchKeyword = findViewById(R.id.etSearchKeyword);\r\n        spinnerLocation = findViewById(R.id.spinnerLocation);\r\n        spinnerCategory = findViewById(R.id.spinnerCategory);\r\n        btnSearch = findViewById(R.id.btnSearch);\r\n\r\n        recyclerView.setLayoutManager(new LinearLayoutManager(this));\r\n        adapter = new HelpRequestAdapter(request -> {\r\n            Intent intent = new Intent(CSRHomeScreenActivity.this, HelpRequestDetailActivity.class);\r\n            intent.putExtra(HelpRequestDetailActivity.EXTRA_REQUEST_ID, request.getId());\r\n            intent.putExtra(\"user_role\", \"CSR\");\r\n            startActivity(intent);\r\n        });\r\n        adapter.setOnSaveClickListener(this);\r\n        recyclerView.setAdapter(adapter);\r\n    }\r\n\r\n    private void populateFilterSpinners() {\r\n        String[] locations = {\"All\", \"Anywhere\", \"North\", \"South\", \"East\", \"West\", \"Central\"};\r\n        ArrayAdapter<String> locationAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, locations);\r\n        spinnerLocation.setAdapter(locationAdapter);\r\n        spinnerLocation.setText(locations[0], false);\r\n\r\n        viewCategoriesController.getAllCategories(new ViewCategoriesController.CategoryFetchCallback() {\r\n            @Override\r\n            public void onCategoriesFetched(List<Category> categories) {\r\n                runOnUiThread(() -> {\r\n                    List<String> categoryNames = new ArrayList<>();\r\n                    categoryNames.add(\"All\");\r\n                    for (Category category : categories) {\r\n                        categoryNames.add(category.getName());\r\n                    }\r\n                    ArrayAdapter<String> categoryAdapter = new ArrayAdapter<>(\r\n                            CSRHomeScreenActivity.this,\r\n                            android.R.layout.simple_dropdown_item_1line,\r\n                            categoryNames\r\n                    );\r\n                    spinnerCategory.setAdapter(categoryAdapter);\r\n                    spinnerCategory.setText(categoryNames.get(0), false);\r\n                });\r\n            }\r\n\r\n            @Override\r\n            public void onFailure(String errorMessage) {\r\n                runOnUiThread(() -> {\r\n                    Toast.makeText(CSRHomeScreenActivity.this, \"Could not load categories: \" + errorMessage, Toast.LENGTH_SHORT).show();\r\n                });\r\n            }\r\n        });\r\n    }\r\n\r\n    private void setupListeners() {\r\n        cardMyInProgress.setOnClickListener(v -> {\r\n            Intent intent = new Intent(CSRHomeScreenActivity.this, MyInProgressRequestsActivity.class);\r\n            startActivity(intent);\r\n        });\r\n\r\n        cardActiveRequests.setOnClickListener(v -> {\r\n            tvListTitle.setText(\"Active Requests\");\r\n            isShowingSaved = false;\r\n            loadActiveRequests();\r\n        });\r\n\r\n        cardShortlisted.setOnClickListener(v -> {\r\n            tvListTitle.setText(\"Shortlisted Requests\");\r\n            isShowingSaved = true;\r\n            loadSavedRequests();\r\n        });\r\n\r\n        cardCompletedRequests.setOnClickListener(v -> {\r\n            tvListTitle.setText(\"Completed Requests\");\r\n            isShowingSaved = false;\r\n            loadCompletedRequests();\r\n        });\r\n\r\n        btnSearch.setOnClickListener(v -> performSearch());\r\n\r\n        etSearchKeyword.setOnEditorActionListener((v, actionId, event) -> {\r\n            if (actionId == EditorInfo.IME_ACTION_SEARCH) {\r\n                performSearch();\r\n                return true;\r\n            }\r\n            return false;\r\n        });\r\n    }\r\n\r\n    private void performSearch() {\r\n        String keyword = etSearchKeyword.getText().toString().trim();\r\n        String location = spinnerLocation.getText().toString();\r\n        String category = spinnerCategory.getText().toString();\r\n\r\n        showLoading(true);\r\n\r\n        controller.searchShortlistedRequests(keyword, location, category, new HelpRequestController.HelpRequestsLoadCallback() {\r\n            @Override\r\n            public void onRequestsLoaded(List<HelpRequest> requests) {\r\n                runOnUiThread(() -> {\r\n                    showLoading(false);\r\n                    updateRecyclerView(requests, \"No matching requests found.\");\r\n                });\r\n            }\r\n\r\n            @Override\r\n            public void onDataLoadFailed(String errorMessage) {\r\n                runOnUiThread(() -> {\r\n                    showLoading(false);\r\n                    showError(errorMessage);\r\n                });\r\n            }\r\n        });\r\n    }\r\n\r\n    private void setWelcomeMessage(User user) {\r\n        String username = user.getFullName();\r\n        tvWelcome.setText(\"Hello, \" + (username != null && !username.isEmpty() ? username : \"User\") + \"!\");\r\n\r\n        View headerView = navigationView.getHeaderView(0);\r\n        TextView navHeaderName = headerView.findViewById(R.id.nav_header_name);\r\n        TextView navHeaderEmail = headerView.findViewById(R.id.nav_header_email);\r\n\r\n        navHeaderName.setText(username != null && !username.isEmpty() ? username : \"CSR Representative\");\r\n        navHeaderEmail.setText(user.getEmail());\r\n    }\r\n\r\n    private void loadUserDetails() {\r\n        retrieveUserAccountController.fetchUserById(currentCsrId, new RetrieveUserAccountController.UserCallback<User>() {\r\n            @Override\r\n            public void onSuccess(User user) {\r\n                runOnUiThread(() -> {\r\n                    setWelcomeMessage(user);\r\n\r\n                    FirebaseMessaging.getInstance().subscribeToTopic(currentCsrId)\r\n                            .addOnCompleteListener(task -> {\r\n                                String msg = \"Subscribed to topic: \" + currentCsrId;\r\n                                if (!task.isSuccessful()) {\r\n                                    msg = \"Subscription to topic failed: \" + currentCsrId;\r\n                                }\r\n                                Log.d(\"FCM_TOPIC\", msg);\r\n                            });\r\n\r\n                    populateFilterSpinners();\r\n                    tvListTitle.setText(\"Active Requests\");\r\n                    isShowingSaved = false;\r\n                    loadActiveRequests();\r\n                });\r\n            }\r\n\r\n            @Override\r\n            public void onFailure(Exception e) {\r\n                runOnUiThread(() -> {\r\n                    Toast.makeText(CSRHomeScreenActivity.this, \"Could not load user profile.\", Toast.LENGTH_SHORT).show();\r\n                    populateFilterSpinners();\r\n                    tvListTitle.setText(\"Active Requests\");\r\n                    isShowingSaved = false;\r\n                    loadActiveRequests();\r\n                });\r\n            }\r\n        });\r\n    }\r\n\r\n    private void loadSavedRequests() {\r\n        showLoading(true);\r\n        controller.getSavedHelpRequests(new HelpRequestController.HelpRequestsLoadCallback() {\r\n            @Override\r\n            public void onRequestsLoaded(List<HelpRequest> requests) {\r\n                runOnUiThread(() -> {\r\n                    showLoading(false);\r\n                    updateRecyclerView(requests, \"You have no shortlisted requests.\");\r\n                });\r\n            }\r\n\r\n            @Override\r\n            public void onDataLoadFailed(String errorMessage) {\r\n                runOnUiThread(() -> {\r\n                    showLoading(false);\r\n                    showError(errorMessage);\r\n                });\r\n            }\r\n        });\r\n    }\r\n\r\n    private void loadActiveRequests() {\r\n        showLoading(true);\r\n        controller.getActiveHelpRequests(new HelpRequestController.HelpRequestsLoadCallback() {\r\n            @Override\r\n            public void onRequestsLoaded(List<HelpRequest> requests) {\r\n                runOnUiThread(() -> {\r\n                    showLoading(false);\r\n                    updateRecyclerView(requests, \"There are no new active requests at the moment.\");\r\n                });\r\n            }\r\n\r\n            @Override\r\n            public void onDataLoadFailed(String errorMessage) {\r\n                runOnUiThread(() -> {\r\n                    showLoading(false);\r\n                    showError(errorMessage);\r\n                });\r\n            }\r\n        });\r\n    }\r\n\r\n    private void loadCompletedRequests() {\r\n        showLoading(true);\r\n        retrieveUserAccountController.fetchUserById(currentCsrId, new RetrieveUserAccountController.UserCallback<User>() {\r\n            @Override\r\n            public void onSuccess(User user) {\r\n                String companyId = user.getCompanyId();\r\n                if (companyId == null || companyId.isEmpty()) {\r\n                    showError(\"Cannot fetch history: Your user profile is missing a Company ID.\");\r\n                    return;\r\n                }\r\n\r\n                controller.getCompletedHistory(companyId, null, null, \"All\", new HelpRequestController.HelpRequestsLoadCallback() {\r\n                    @Override\r\n                    public void onRequestsLoaded(List<HelpRequest> requests) {\r\n                        runOnUiThread(() -> {\r\n                            showLoading(false);\r\n                            updateRecyclerView(requests, \"You have no completed requests.\");\r\n                        });\r\n                    }\r\n\r\n                    @Override\r\n                    public void onDataLoadFailed(String errorMessage) {\r\n                        runOnUiThread(() -> {\r\n                            showLoading(false);\r\n                            showError(errorMessage);\r\n                        });\r\n                    }\r\n                });\r\n            }\r\n\r\n            @Override\r\n            public void onFailure(Exception e) {\r\n                runOnUiThread(() -> {\r\n                    showLoading(false);\r\n                    showError(\"Could not load user profile to fetch history.\");\r\n                });\r\n            }\r\n        });\r\n    }\r\n\r\n    private void updateRecyclerView(List<HelpRequest> requests, String noResultsMessage) {\r\n        if (requests.isEmpty()) {\r\n            tvNoResults.setText(noResultsMessage);\r\n            tvNoResults.setVisibility(View.VISIBLE);\r\n            recyclerView.setVisibility(View.GONE);\r\n        } else {\r\n            tvNoResults.setVisibility(View.GONE);\r\n            recyclerView.setVisibility(View.VISIBLE);\r\n            adapter.setRequests(requests);\r\n        }\r\n    }\r\n\r\n    private void showLoading(boolean isLoading) {\r\n        progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);\r\n        if (isLoading) {\r\n            recyclerView.setVisibility(View.GONE);\r\n            tvNoResults.setVisibility(View.GONE);\r\n        }\r\n    }\r\n\r\n    private void showError(String message) {\r\n        tvNoResults.setText(message);\r\n        tvNoResults.setVisibility(View.VISIBLE);\r\n        recyclerView.setVisibility(View.GONE);\r\n        Toast.makeText(this, message, Toast.LENGTH_LONG).show();\r\n    }\r\n\r\n    @Override\r\n    public void onSaveClick(HelpRequest request, boolean isSaved) {\r\n        String action = isSaved ? \"unsave\" : \"save\";\r\n        HelpRequestController.SaveCallback callback = new HelpRequestController.SaveCallback() {\r\n            @Override\r\n            public void onSaveSuccess() {\r\n                Toast.makeText(CSRHomeScreenActivity.this, \"Request \" + (isSaved ? \"unsaved\" : \"saved\"), Toast.LENGTH_SHORT).show();\r\n                if (isShowingSaved) {\r\n                    loadSavedRequests();\r\n                }\r\n            }\r\n\r\n            @Override\r\n            public void onSaveFailure(String errorMessage) {\r\n                Toast.makeText(CSRHomeScreenActivity.this, \"Failed to \" + action + \": \" + errorMessage, Toast.LENGTH_SHORT).show();\r\n            }\r\n        };\r\n\r\n        if (isSaved) {\r\n            controller.unsaveRequest(request.getId(), callback);\r\n        } else {\r\n            controller.saveRequest(request.getId(), callback);\r\n        }\r\n    }\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/csit314sdm/CSRHomeScreenActivity.java b/app/src/main/java/com/example/csit314sdm/CSRHomeScreenActivity.java
+--- a/app/src/main/java/com/example/csit314sdm/CSRHomeScreenActivity.java	(revision 81bccde500fab4a9be3728850ef7f5ac273379bf)
++++ b/app/src/main/java/com/example/csit314sdm/CSRHomeScreenActivity.java	(date 1762943595862)
+@@ -49,7 +49,8 @@
+     private Button btnSearch;
+ 
+     private ViewCategoriesController viewCategoriesController;
+-    private HelpRequestController controller;
++    private ShortlistHelpRequestController controller;
++    private HelpRequestController helpController;
+     private RetrieveUserAccountController retrieveUserAccountController;
+     private LoginController loginController;
+     private LogoutController logoutController;
+@@ -71,7 +72,7 @@
+         super.onCreate(savedInstanceState);
+         setContentView(R.layout.activity_csrhome_screen);
+ 
+-        controller = new HelpRequestController();
++        controller = new ShortlistHelpRequestController();
+         retrieveUserAccountController = new RetrieveUserAccountController();
+         viewCategoriesController = new ViewCategoriesController();
+         loginController = new LoginController();
+@@ -267,7 +268,7 @@
+ 
+         showLoading(true);
+ 
+-        controller.searchShortlistedRequests(keyword, location, category, new HelpRequestController.HelpRequestsLoadCallback() {
++        controller.searchShortlistedRequests(keyword, location, category, new ShortlistHelpRequestController.HelpRequestsLoadCallback() {
+             @Override
+             public void onRequestsLoaded(List<HelpRequest> requests) {
+                 runOnUiThread(() -> {
+@@ -336,7 +337,7 @@
+ 
+     private void loadSavedRequests() {
+         showLoading(true);
+-        controller.getSavedHelpRequests(new HelpRequestController.HelpRequestsLoadCallback() {
++        controller.getSavedHelpRequests(new ShortlistHelpRequestController.HelpRequestsLoadCallback() {
+             @Override
+             public void onRequestsLoaded(List<HelpRequest> requests) {
+                 runOnUiThread(() -> {
+@@ -357,7 +358,7 @@
+ 
+     private void loadActiveRequests() {
+         showLoading(true);
+-        controller.getActiveHelpRequests(new HelpRequestController.HelpRequestsLoadCallback() {
++        helpController.getActiveHelpRequests(new HelpRequestController.HelpRequestsLoadCallback() {
+             @Override
+             public void onRequestsLoaded(List<HelpRequest> requests) {
+                 runOnUiThread(() -> {
+@@ -387,7 +388,7 @@
+                     return;
+                 }
+ 
+-                controller.getCompletedHistory(companyId, null, null, "All", new HelpRequestController.HelpRequestsLoadCallback() {
++                helpController.getCompletedHistory(companyId, null, null, "All", new HelpRequestController.HelpRequestsLoadCallback() {
+                     @Override
+                     public void onRequestsLoaded(List<HelpRequest> requests) {
+                         runOnUiThread(() -> {
+@@ -462,9 +463,9 @@
+         };
+ 
+         if (isSaved) {
+-            controller.unsaveRequest(request.getId(), callback);
++            controller.unsaveRequest(request.getId(), (ShortlistHelpRequestController.ShortlistCallback)callback);
+         } else {
+-            controller.saveRequest(request.getId(), callback);
++            controller.saveRequest(request.getId(), (ShortlistHelpRequestController.ShortlistCallback) callback);
+         }
+     }
+ }
+Index: app/src/main/res/layout/activity_create_user_role.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/res/layout/activity_create_user_role.xml b/app/src/main/res/layout/activity_create_user_role.xml
+new file mode 100644
+--- /dev/null	(date 1762937896284)
++++ b/app/src/main/res/layout/activity_create_user_role.xml	(date 1762937896284)
+@@ -0,0 +1,127 @@
++<?xml version="1.0" encoding="utf-8"?>
++<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
++    xmlns:app="http://schemas.android.com/apk/res-auto"
++    xmlns:tools="http://schemas.android.com/tools"
++    android:layout_width="match_parent"
++    android:layout_height="match_parent"
++    tools:context=".CreateUserRoleActivity">
++
++    <!-- Header Bar -->
++    <androidx.constraintlayout.widget.ConstraintLayout
++        android:id="@+id/headerLayout"
++        android:layout_width="0dp"
++        android:layout_height="60dp"
++        android:background="?attr/colorPrimary"
++        app:layout_constraintTop_toTopOf="parent"
++        app:layout_constraintStart_toStartOf="parent"
++        app:layout_constraintEnd_toEndOf="parent">
++
++        <ImageButton
++            android:id="@+id/btnBack"
++            android:layout_width="50dp"
++            android:layout_height="50dp"
++            android:src="@drawable/ic_arrow_back"
++            android:background="?attr/selectableItemBackgroundBorderless"
++            android:contentDescription="Back"
++            app:layout_constraintStart_toStartOf="parent"
++            app:layout_constraintTop_toTopOf="parent"
++            app:layout_constraintBottom_toBottomOf="parent"
++            app:tint="@color/white" />
++
++        <TextView
++            android:id="@+id/tvHeaderTitle"
++            android:layout_width="wrap_content"
++            android:layout_height="wrap_content"
++            android:text="Create User Role"
++            android:textColor="@color/white"
++            android:textSize="20sp"
++            android:textStyle="bold"
++            app:layout_constraintTop_toTopOf="parent"
++            app:layout_constraintBottom_toBottomOf="parent"
++            app:layout_constraintStart_toEndOf="@id/btnBack"
++            android:layout_marginStart="16dp" />
++    </androidx.constraintlayout.widget.ConstraintLayout>
++
++    <ScrollView
++        android:layout_width="0dp"
++        android:layout_height="0dp"
++        app:layout_constraintTop_toBottomOf="@id/headerLayout"
++        app:layout_constraintBottom_toBottomOf="parent"
++        app:layout_constraintStart_toStartOf="parent"
++        app:layout_constraintEnd_toEndOf="parent">
++
++        <LinearLayout
++            android:layout_width="match_parent"
++            android:layout_height="wrap_content"
++            android:orientation="vertical"
++            android:padding="24dp">
++
++            <com.google.android.material.textfield.TextInputLayout
++                android:id="@+id/layoutRoleName"
++                android:layout_width="match_parent"
++                android:layout_height="wrap_content"
++                android:hint="Role Name">
++                <com.google.android.material.textfield.TextInputEditText
++                    android:id="@+id/etRoleName"
++                    android:layout_width="match_parent"
++                    android:layout_height="wrap_content"
++                    android:inputType="textCapWords" />
++            </com.google.android.material.textfield.TextInputLayout>
++
++            <com.google.android.material.textfield.TextInputLayout
++                android:id="@+id/layoutRoleDescription"
++                android:layout_width="match_parent"
++                android:layout_height="wrap_content"
++                android:layout_marginTop="16dp"
++                android:hint="Short Description">
++                <com.google.android.material.textfield.TextInputEditText
++                    android:id="@+id/etRoleDescription"
++                    android:layout_width="match_parent"
++                    android:layout_height="wrap_content"
++                    android:inputType="textMultiLine"
++                    android:minLines="3"
++                    android:gravity="top"/>
++            </com.google.android.material.textfield.TextInputLayout>
++            
++            <TextView
++                android:id="@+id/tvStatusLabel"
++                android:layout_width="wrap_content"
++                android:layout_height="wrap_content"
++                android:layout_marginTop="24dp"
++                android:text="Status"
++                android:textSize="12sp"
++                android:textColor="?android:attr/textColorSecondary"/>
++
++            <Spinner
++                android:id="@+id/spinnerStatus"
++                android:layout_width="match_parent"
++                android:layout_height="50dp"
++                android:layout_marginTop="4dp"
++                android:paddingStart="12dp"
++                android:paddingEnd="12dp"
++                android:entries="@array/role_status_options"
++                android:spinnerMode="dropdown"/>
++
++            <Button
++                android:id="@+id/btnCreateRole"
++                android:layout_width="match_parent"
++                android:layout_height="wrap_content"
++                android:layout_marginTop="32dp"
++                android:padding="12dp"
++                android:text="Create Role"
++                android:textSize="16sp" />
++
++        </LinearLayout>
++    </ScrollView>
++
++    <ProgressBar
++        android:id="@+id/progressBar"
++        android:layout_width="wrap_content"
++        android:layout_height="wrap_content"
++        android:visibility="gone"
++        app:layout_constraintTop_toTopOf="parent"
++        app:layout_constraintBottom_toBottomOf="parent"
++        app:layout_constraintStart_toStartOf="parent"
++        app:layout_constraintEnd_toEndOf="parent" />
++
++</androidx.constraintlayout.widget.ConstraintLayout>
+Index: app/src/main/java/com/example/csit314sdm/CreateUserRoleActivity.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/java/com/example/csit314sdm/CreateUserRoleActivity.java b/app/src/main/java/com/example/csit314sdm/CreateUserRoleActivity.java
+new file mode 100644
+--- /dev/null	(date 1762937945583)
++++ b/app/src/main/java/com/example/csit314sdm/CreateUserRoleActivity.java	(date 1762937945583)
+@@ -0,0 +1,53 @@
++package com.example.csit314sdm;
++
++import android.os.Bundle;
++import android.view.View;
++import android.widget.ArrayAdapter;
++import android.widget.Button;
++import android.widget.EditText;
++import android.widget.Spinner;
++import android.widget.Toast;
++
++import androidx.appcompat.app.AppCompatActivity;
++
++public class CreateUserRoleActivity extends AppCompatActivity {
++
++    private EditText etRoleName, etRoleDescription;
++    private Spinner spinnerStatus;
++    private Button btnCreateRole;
++
++    @Override
++    protected void onCreate(Bundle savedInstanceState) {
++        super.onCreate(savedInstanceState);
++        setContentView(R.layout.activity_create_user_role);
++
++        etRoleName = findViewById(R.id.etRoleName);
++        etRoleDescription = findViewById(R.id.etRoleDescription);
++        spinnerStatus = findViewById(R.id.spinnerStatus);
++        btnCreateRole = findViewById(R.id.btnCreateRole);
++
++        // Create an ArrayAdapter using the string array and a default spinner layout
++        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
++                R.array.role_status_options, android.R.layout.simple_spinner_item);
++        // Specify the layout to use when the list of choices appears
++        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
++        // Apply the adapter to the spinner
++        spinnerStatus.setAdapter(adapter);
++
++        btnCreateRole.setOnClickListener(new View.OnClickListener() {
++            @Override
++            public void onClick(View v) {
++                String roleName = etRoleName.getText().toString();
++                String roleDescription = etRoleDescription.getText().toString();
++                String status = spinnerStatus.getSelectedItem().toString();
++
++                if (roleName.isEmpty() || roleDescription.isEmpty()) {
++                    Toast.makeText(CreateUserRoleActivity.this, "Please fill in all fields", Toast.LENGTH_SHORT).show();
++                } else {
++                    // TODO: Implement the logic to create the user role in your database
++                    Toast.makeText(CreateUserRoleActivity.this, "Role Created: " + roleName, Toast.LENGTH_SHORT).show();
++                }
++            }
++        });
++    }
++}
+Index: app/src/main/res/values/strings.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><resources>\r\n    <string name=\"app_name\">CSIT314(SDM)</string>\r\n\r\n    <!-- This array provides the options for the role spinner in CreateUserAccountActivity -->\r\n    <string-array name=\"user_roles\">\r\n        <item>PIN</item>\r\n        <item>Admin</item>\r\n        <item>CSR</item>\r\n    </string-array>\r\n    <string-array name=\"request_types\">\r\n        <item>Medical Transport</item>\r\n        <item>Grocery Shopping Help</item>\r\n        <item>Prescription Pickup</item>\r\n        <item>Other</item>\r\n    </string-array>\r\n\r\n    <string name=\"pin_home_notifications_description\">Notifications</string>\r\n    <string name=\"pin_home_profile_description\">Profile</string>\r\n    <string name=\"pin_home_welcome_default\">Hello, User!</string>\r\n    <string name=\"pin_home_create_new_request\">Create New Request</string>\r\n    <string name=\"pin_home_active_requests\">Active Requests\\n(%d)</string>\r\n    <string name=\"pin_home_shortlisted_interests\">Shortlisted Interests\\n(%d)</string>\r\n    <string name=\"pin_home_completed_matches\">Completed\\nMatches</string>\r\n    <string name=\"pin_home_my_active_requests_title\">My Active Requests</string>\r\n    <string name=\"pin_home_logout\">Logout</string>\r\n    <string name=\"drawer_open\">Open navigation drawer</string>\r\n    <string name=\"drawer_close\">Close navigation drawer</string>\r\n\r\n</resources>\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/main/res/values/strings.xml b/app/src/main/res/values/strings.xml
+--- a/app/src/main/res/values/strings.xml	(revision 81bccde500fab4a9be3728850ef7f5ac273379bf)
++++ b/app/src/main/res/values/strings.xml	(date 1762937931639)
+@@ -14,6 +14,11 @@
+         <item>Other</item>
+     </string-array>
+ 
++    <string-array name="role_status_options">
++        <item>Active</item>
++        <item>Suspend</item>
++    </string-array>
++
+     <string name="pin_home_notifications_description">Notifications</string>
+     <string name="pin_home_profile_description">Profile</string>
+     <string name="pin_home_welcome_default">Hello, User!</string>

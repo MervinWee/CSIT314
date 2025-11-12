@@ -1,0 +1,834 @@
+Index: app/src/androidTest/java/com/example/csit314sdm/DeleteCategorySuccessTest.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/androidTest/java/com/example/csit314sdm/DeleteCategorySuccessTest.java b/app/src/androidTest/java/com/example/csit314sdm/DeleteCategorySuccessTest.java
+new file mode 100644
+--- /dev/null	(date 1762699859003)
++++ b/app/src/androidTest/java/com/example/csit314sdm/DeleteCategorySuccessTest.java	(date 1762699859003)
+@@ -0,0 +1,89 @@
++package com.example.csit314sdm;
++
++import org.junit.After;
++import org.junit.Before;
++import org.junit.Test;
++import org.junit.runner.RunWith;
++import static org.junit.Assert.*;
++
++import androidx.test.ext.junit.runners.AndroidJUnit4;
++
++import java.util.List;
++import java.util.concurrent.CountDownLatch;
++import java.util.concurrent.TimeUnit;
++
++@RunWith(AndroidJUnit4.class)
++public class DeleteCategorySuccessTest {
++    private PlatformDataAccount platformDataAccount;
++
++    @Test
++    public void testDeleteCategory_Success() throws InterruptedException {
++        platformDataAccount = new PlatformDataAccount();
++        final CountDownLatch finalLatch = new CountDownLatch(1);
++        final String categoryName = "Delete-Success-Test-" + System.currentTimeMillis();
++
++        // Step 1: Create a category specifically for this test.
++        platformDataAccount.createCategory(categoryName, "Category to be deleted", new PlatformDataAccount.FirebaseCallback() {
++            @Override
++            public void onSuccess(String createMessage) {
++                // Step 2: If creation is successful, find the category to get its full object/ID.
++                findAnddeleteCategory(categoryName, finalLatch);
++            }
++
++            @Override
++            public void onError(String message) {
++                fail("SETUP FAILED: Could not create the category to be deleted. Error: " + message);
++            }
++        });
++
++        // This test waits for the entire create-find-delete process to complete.
++        if (!finalLatch.await(30, TimeUnit.SECONDS)) {
++            fail("TIMEOUT: The test failed to create and delete the category within 30 seconds.");
++        }
++    }
++
++    private void findAnddeleteCategory(String categoryName, CountDownLatch finalLatch) {
++        platformDataAccount.listenForCategoryChanges(new PlatformDataAccount.CategoryListCallback() {
++            private boolean foundAndDeleting = false;
++
++            @Override
++            public void onDataLoaded(List<Category> categories) {
++                if (foundAndDeleting) return; // Ensure we only try to delete once.
++
++                for (Category cat : categories) {
++                    if (cat.getName().equals(categoryName)) {
++                        foundAndDeleting = true;
++                        platformDataAccount.detachCategoryListener();
++                        
++                        // Step 3: Once found, delete the category and verify success.
++                        platformDataAccount.deleteCategory(cat, new PlatformDataAccount.FirebaseCallback() {
++                            @Override
++                            public void onSuccess(String deleteMessage) {
++                                assertEquals("Category deleted successfully.", deleteMessage);
++                                finalLatch.countDown(); // SUCCESS! The test is complete.
++                            }
++
++                            @Override
++                            public void onError(String message) {
++                                fail("DELETION FAILED: The delete operation failed unexpectedly. Error: " + message);
++                            }
++                        });
++                        break;
++                    }
++                }
++            }
++
++            @Override
++            public void onError(String message) {
++                fail("FIND FAILED: Could not query categories to find the one to delete. Error: " + message);
++            }
++        });
++    }
++
++    @After
++    public void tearDown() {
++        if (platformDataAccount != null) {
++            platformDataAccount.cleanupAllListeners();
++        }
++    }
++}
+Index: app/src/androidTest/java/com/example/csit314sdm/DeleteCategoryFailingTest.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/androidTest/java/com/example/csit314sdm/DeleteCategoryFailingTest.java b/app/src/androidTest/java/com/example/csit314sdm/DeleteCategoryFailingTest.java
+new file mode 100644
+--- /dev/null	(date 1762698972713)
++++ b/app/src/androidTest/java/com/example/csit314sdm/DeleteCategoryFailingTest.java	(date 1762698972713)
+@@ -0,0 +1,41 @@
++package com.example.csit314sdm;
++
++import org.junit.Test;
++import org.junit.runner.RunWith;
++import static org.junit.Assert.*;
++
++import androidx.test.ext.junit.runners.AndroidJUnit4;
++
++import java.util.concurrent.CountDownLatch;
++import java.util.concurrent.TimeUnit;
++
++@RunWith(AndroidJUnit4.class)
++public class DeleteCategoryFailingTest {
++
++    @Test
++    public void testDeleteCategory_Failing() throws InterruptedException {
++        PlatformDataAccount platformDataAccount = new PlatformDataAccount();
++        final CountDownLatch latch = new CountDownLatch(1);
++
++        // 1. Create a category object with a null or empty ID to trigger the failure.
++        Category invalidCategory = new Category("Invalid", "This category has no ID");
++        invalidCategory.setId(""); // The ID is invalid.
++
++        platformDataAccount.deleteCategory(invalidCategory, new PlatformDataAccount.FirebaseCallback() {
++            @Override
++            public void onSuccess(String message) {
++                fail("This test was supposed to fail, but it unexpectedly succeeded.");
++                latch.countDown();
++            }
++
++            @Override
++            public void onError(String message) {
++                String expectedMessage = "An incorrect message to ensure the test fails.";
++                assertEquals(expectedMessage, message);
++                latch.countDown();
++            }
++        });
++
++        assertTrue("Timeout: The callback was not triggered within 10 seconds.", latch.await(10, TimeUnit.SECONDS));
++    }
++}
+Index: .idea/deploymentTargetSelector.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"deploymentTargetSelector\">\r\n    <selectionStates>\r\n      <SelectionState runConfigName=\"app\">\r\n        <option name=\"selectionMode\" value=\"DROPDOWN\" />\r\n        <DropdownSelection timestamp=\"2025-11-02T22:56:00.183974300Z\">\r\n          <Target type=\"DEFAULT_BOOT\">\r\n            <handle>\r\n              <DeviceId pluginId=\"LocalEmulator\" identifier=\"path=C:\\Users\\ASUS\\.android\\avd\\Pixel_9a.avd\" />\r\n            </handle>\r\n          </Target>\r\n        </DropdownSelection>\r\n        <DialogSelection />\r\n      </SelectionState>\r\n    </selectionStates>\r\n  </component>\r\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/deploymentTargetSelector.xml b/.idea/deploymentTargetSelector.xml
+--- a/.idea/deploymentTargetSelector.xml	(revision 4c4d411ea4a4ccac03fc2f49d5f0cd4d8038d296)
++++ b/.idea/deploymentTargetSelector.xml	(date 1762700521562)
+@@ -13,6 +13,21 @@
+         </DropdownSelection>
+         <DialogSelection />
+       </SelectionState>
++      <SelectionState runConfigName="EditCategoryFailingTest">
++        <option name="selectionMode" value="DROPDOWN" />
++      </SelectionState>
++      <SelectionState runConfigName="WeeklyReportSuccessTest">
++        <option name="selectionMode" value="DROPDOWN" />
++      </SelectionState>
++      <SelectionState runConfigName="MonthlyReportFailingTest">
++        <option name="selectionMode" value="DROPDOWN" />
++      </SelectionState>
++      <SelectionState runConfigName="MonthlyReportSuccessTest">
++        <option name="selectionMode" value="DROPDOWN" />
++      </SelectionState>
++      <SelectionState runConfigName="ViewCategoryFailingTest">
++        <option name="selectionMode" value="DROPDOWN" />
++      </SelectionState>
+     </selectionStates>
+   </component>
+ </project>
+\ No newline at end of file
+Index: .idea/androidTestResultsUserPreferences.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<project version=\"4\">\r\n  <component name=\"AndroidTestResultsUserPreferences\">\r\n    <option name=\"androidTestResultsTableState\">\r\n      <map>\r\n        <entry key=\"-1086465979\">\r\n          <value>\r\n            <AndroidTestResultsTableState>\r\n              <option name=\"preferredColumnWidths\">\r\n                <map>\r\n                  <entry key=\"Duration\" value=\"90\" />\r\n                  <entry key=\"Pixel_9\" value=\"120\" />\r\n                  <entry key=\"Tests\" value=\"360\" />\r\n                </map>\r\n              </option>\r\n            </AndroidTestResultsTableState>\r\n          </value>\r\n        </entry>\r\n        <entry key=\"-1073109418\">\r\n          <value>\r\n            <AndroidTestResultsTableState>\r\n              <option name=\"preferredColumnWidths\">\r\n                <map>\r\n                  <entry key=\"Duration\" value=\"90\" />\r\n                  <entry key=\"Pixel_9\" value=\"120\" />\r\n                  <entry key=\"Tests\" value=\"360\" />\r\n                </map>\r\n              </option>\r\n            </AndroidTestResultsTableState>\r\n          </value>\r\n        </entry>\r\n        <entry key=\"-343419002\">\r\n          <value>\r\n            <AndroidTestResultsTableState>\r\n              <option name=\"preferredColumnWidths\">\r\n                <map>\r\n                  <entry key=\"Duration\" value=\"90\" />\r\n                  <entry key=\"Pixel_9\" value=\"120\" />\r\n                  <entry key=\"Tests\" value=\"360\" />\r\n                </map>\r\n              </option>\r\n            </AndroidTestResultsTableState>\r\n          </value>\r\n        </entry>\r\n        <entry key=\"1349074853\">\r\n          <value>\r\n            <AndroidTestResultsTableState>\r\n              <option name=\"preferredColumnWidths\">\r\n                <map>\r\n                  <entry key=\"Duration\" value=\"90\" />\r\n                  <entry key=\"Pixel_9\" value=\"120\" />\r\n                  <entry key=\"Tests\" value=\"360\" />\r\n                </map>\r\n              </option>\r\n            </AndroidTestResultsTableState>\r\n          </value>\r\n        </entry>\r\n        <entry key=\"2092121830\">\r\n          <value>\r\n            <AndroidTestResultsTableState>\r\n              <option name=\"preferredColumnWidths\">\r\n                <map>\r\n                  <entry key=\"Duration\" value=\"90\" />\r\n                  <entry key=\"Pixel_9\" value=\"120\" />\r\n                  <entry key=\"Tests\" value=\"360\" />\r\n                </map>\r\n              </option>\r\n            </AndroidTestResultsTableState>\r\n          </value>\r\n        </entry>\r\n      </map>\r\n    </option>\r\n  </component>\r\n</project>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/androidTestResultsUserPreferences.xml b/.idea/androidTestResultsUserPreferences.xml
+--- a/.idea/androidTestResultsUserPreferences.xml	(revision 4c4d411ea4a4ccac03fc2f49d5f0cd4d8038d296)
++++ b/.idea/androidTestResultsUserPreferences.xml	(date 1762700486281)
+@@ -3,6 +3,84 @@
+   <component name="AndroidTestResultsUserPreferences">
+     <option name="androidTestResultsTableState">
+       <map>
++        <entry key="-2086500590">
++          <value>
++            <AndroidTestResultsTableState>
++              <option name="preferredColumnWidths">
++                <map>
++                  <entry key="Duration" value="90" />
++                  <entry key="Pixel_9" value="120" />
++                  <entry key="Tests" value="360" />
++                </map>
++              </option>
++            </AndroidTestResultsTableState>
++          </value>
++        </entry>
++        <entry key="-1882734031">
++          <value>
++            <AndroidTestResultsTableState>
++              <option name="preferredColumnWidths">
++                <map>
++                  <entry key="Duration" value="90" />
++                  <entry key="Pixel_9" value="120" />
++                  <entry key="Tests" value="360" />
++                </map>
++              </option>
++            </AndroidTestResultsTableState>
++          </value>
++        </entry>
++        <entry key="-1713910702">
++          <value>
++            <AndroidTestResultsTableState>
++              <option name="preferredColumnWidths">
++                <map>
++                  <entry key="Duration" value="90" />
++                  <entry key="Pixel_9" value="120" />
++                  <entry key="Tests" value="360" />
++                </map>
++              </option>
++            </AndroidTestResultsTableState>
++          </value>
++        </entry>
++        <entry key="-1582679721">
++          <value>
++            <AndroidTestResultsTableState>
++              <option name="preferredColumnWidths">
++                <map>
++                  <entry key="Duration" value="90" />
++                  <entry key="Pixel_9" value="120" />
++                  <entry key="Tests" value="360" />
++                </map>
++              </option>
++            </AndroidTestResultsTableState>
++          </value>
++        </entry>
++        <entry key="-1343453613">
++          <value>
++            <AndroidTestResultsTableState>
++              <option name="preferredColumnWidths">
++                <map>
++                  <entry key="Duration" value="90" />
++                  <entry key="Pixel_9" value="120" />
++                  <entry key="Tests" value="360" />
++                </map>
++              </option>
++            </AndroidTestResultsTableState>
++          </value>
++        </entry>
++        <entry key="-1139687054">
++          <value>
++            <AndroidTestResultsTableState>
++              <option name="preferredColumnWidths">
++                <map>
++                  <entry key="Duration" value="90" />
++                  <entry key="Pixel_9" value="120" />
++                  <entry key="Tests" value="360" />
++                </map>
++              </option>
++            </AndroidTestResultsTableState>
++          </value>
++        </entry>
+         <entry key="-1086465979">
+           <value>
+             <AndroidTestResultsTableState>
+@@ -17,6 +95,32 @@
+           </value>
+         </entry>
+         <entry key="-1073109418">
++          <value>
++            <AndroidTestResultsTableState>
++              <option name="preferredColumnWidths">
++                <map>
++                  <entry key="Duration" value="90" />
++                  <entry key="Pixel_9" value="120" />
++                  <entry key="Tests" value="360" />
++                </map>
++              </option>
++            </AndroidTestResultsTableState>
++          </value>
++        </entry>
++        <entry key="-839632744">
++          <value>
++            <AndroidTestResultsTableState>
++              <option name="preferredColumnWidths">
++                <map>
++                  <entry key="Duration" value="90" />
++                  <entry key="Pixel_9" value="120" />
++                  <entry key="Tests" value="360" />
++                </map>
++              </option>
++            </AndroidTestResultsTableState>
++          </value>
++        </entry>
++        <entry key="-348676703">
+           <value>
+             <AndroidTestResultsTableState>
+               <option name="preferredColumnWidths">
+@@ -30,6 +134,19 @@
+           </value>
+         </entry>
+         <entry key="-343419002">
++          <value>
++            <AndroidTestResultsTableState>
++              <option name="preferredColumnWidths">
++                <map>
++                  <entry key="Duration" value="90" />
++                  <entry key="Pixel_9" value="120" />
++                  <entry key="Tests" value="360" />
++                </map>
++              </option>
++            </AndroidTestResultsTableState>
++          </value>
++        </entry>
++        <entry key="1217924822">
+           <value>
+             <AndroidTestResultsTableState>
+               <option name="preferredColumnWidths">
+@@ -43,6 +160,19 @@
+           </value>
+         </entry>
+         <entry key="1349074853">
++          <value>
++            <AndroidTestResultsTableState>
++              <option name="preferredColumnWidths">
++                <map>
++                  <entry key="Duration" value="90" />
++                  <entry key="Pixel_9" value="120" />
++                  <entry key="Tests" value="360" />
++                </map>
++              </option>
++            </AndroidTestResultsTableState>
++          </value>
++        </entry>
++        <entry key="1838009617">
+           <value>
+             <AndroidTestResultsTableState>
+               <option name="preferredColumnWidths">
+Index: app/src/androidTest/java/com/example/csit314sdm/CreateCategorySuccessTest.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/androidTest/java/com/example/csit314sdm/CreateCategorySuccessTest.java b/app/src/androidTest/java/com/example/csit314sdm/CreateCategorySuccessTest.java
+new file mode 100644
+--- /dev/null	(date 1762695685235)
++++ b/app/src/androidTest/java/com/example/csit314sdm/CreateCategorySuccessTest.java	(date 1762695685235)
+@@ -0,0 +1,40 @@
++package com.example.csit314sdm;
++
++import org.junit.Test;
++import org.junit.runner.RunWith;
++import static org.junit.Assert.*;
++
++import androidx.test.ext.junit.runners.AndroidJUnit4;
++
++import java.util.concurrent.CountDownLatch;
++import java.util.concurrent.TimeUnit;
++
++@RunWith(AndroidJUnit4.class)
++public class CreateCategorySuccessTest {
++
++    @Test
++    public void testCreateCategory_Success() throws InterruptedException {
++        PlatformDataAccount platformDataAccount = new PlatformDataAccount();
++        final CountDownLatch latch = new CountDownLatch(1);
++        // Use a unique name to ensure the test passes
++        String categoryName = "Test Category " + System.currentTimeMillis();
++        String categoryDescription = "A test category description.";
++
++        platformDataAccount.createCategory(categoryName, categoryDescription, new PlatformDataAccount.FirebaseCallback() {
++            @Override
++            public void onSuccess(String message) {
++                assertNotNull(message);
++                assertFalse(message.isEmpty());
++                latch.countDown();
++            }
++
++            @Override
++            public void onError(String message) {
++                fail("Category creation failed with error: " + message);
++                latch.countDown();
++            }
++        });
++
++        assertTrue("Timeout waiting for category creation", latch.await(10, TimeUnit.SECONDS));
++    }
++}
+Index: app/src/androidTest/java/com/example/csit314sdm/EditCategoryFailingTest.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/androidTest/java/com/example/csit314sdm/EditCategoryFailingTest.java b/app/src/androidTest/java/com/example/csit314sdm/EditCategoryFailingTest.java
+new file mode 100644
+--- /dev/null	(date 1762700436906)
++++ b/app/src/androidTest/java/com/example/csit314sdm/EditCategoryFailingTest.java	(date 1762700436906)
+@@ -0,0 +1,44 @@
++package com.example.csit314sdm;
++
++import org.junit.Test;
++import org.junit.runner.RunWith;
++import static org.junit.Assert.*;
++
++import androidx.test.ext.junit.runners.AndroidJUnit4;
++
++import java.util.concurrent.CountDownLatch;
++import java.util.concurrent.TimeUnit;
++
++@RunWith(AndroidJUnit4.class)
++public class EditCategoryFailingTest {
++
++    @Test
++    public void testEditCategory_Failing_InvalidId() throws InterruptedException {
++        PlatformDataAccount platformDataAccount = new PlatformDataAccount();
++        final CountDownLatch latch = new CountDownLatch(1);
++
++        Category invalidCategory = new Category("Original Name", "Original Desc");
++        invalidCategory.setId(null);
++
++        String newName = "New Name";
++        String newDesc = "New Desc";
++
++        platformDataAccount.updateCategory(invalidCategory, newName, newDesc, new PlatformDataAccount.FirebaseCallback() {
++            @Override
++            public void onSuccess(String message) {
++                // This block should not run. If it does, the test should fail immediately.
++                fail("This test was expected to fail, but it succeeded.");
++                latch.countDown();
++            }
++
++            @Override
++            public void onError(String message) {
++                String incorrectExpectedMessage = "An incorrect message to guarantee the test fails.";
++                assertEquals(incorrectExpectedMessage, message);
++                latch.countDown();
++            }
++        });
++
++        assertTrue("Timeout waiting for the callback", latch.await(10, TimeUnit.SECONDS));
++    }
++}
+Index: app/src/androidTest/java/com/example/csit314sdm/EditCategorySuccessTest.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/androidTest/java/com/example/csit314sdm/EditCategorySuccessTest.java b/app/src/androidTest/java/com/example/csit314sdm/EditCategorySuccessTest.java
+new file mode 100644
+--- /dev/null	(date 1762697292078)
++++ b/app/src/androidTest/java/com/example/csit314sdm/EditCategorySuccessTest.java	(date 1762697292078)
+@@ -0,0 +1,89 @@
++package com.example.csit314sdm;
++
++import org.junit.After;
++import org.junit.Before;
++import org.junit.Test;
++import org.junit.runner.RunWith;
++import static org.junit.Assert.*;
++
++import androidx.test.ext.junit.runners.AndroidJUnit4;
++
++import java.util.List;
++import java.util.concurrent.CountDownLatch;
++import java.util.concurrent.TimeUnit;
++
++@RunWith(AndroidJUnit4.class)
++public class EditCategorySuccessTest {
++    private PlatformDataAccount platformDataAccount;
++    private final String originalName = "Edit Test Original " + System.currentTimeMillis();
++    private final String originalDesc = "Original description.";
++    private Category categoryToEdit;
++
++    @Before
++    public void setUp() throws InterruptedException {
++        platformDataAccount = new PlatformDataAccount();
++        final CountDownLatch setupLatch = new CountDownLatch(1);
++
++        platformDataAccount.createCategory(originalName, originalDesc, new PlatformDataAccount.FirebaseCallback() {
++            @Override
++            public void onSuccess(String message) {
++                // Find the created category to get its ID
++                platformDataAccount.listenForCategoryChanges(new PlatformDataAccount.CategoryListCallback() {
++                    @Override
++                    public void onDataLoaded(List<Category> categories) {
++                        for (Category cat : categories) {
++                            if (cat.getName().equals(originalName)) {
++                                categoryToEdit = cat;
++                                platformDataAccount.detachCategoryListener();
++                                setupLatch.countDown();
++                                break;
++                            }
++                        }
++                    }
++                    @Override
++                    public void onError(String message) { fail("Failed to load categories in setup"); }
++                });
++            }
++            @Override
++            public void onError(String message) {
++                if (message.contains("already exists")) {
++                    fail("Test setup error: category should be unique but already exists.");
++                } else {
++                    fail("Setup failed to create category: " + message);
++                }
++            }
++        });
++        assertTrue("Setup timeout", setupLatch.await(20, TimeUnit.SECONDS));
++        assertNotNull("Category to be edited was not found", categoryToEdit);
++    }
++
++    @Test
++    public void testEditCategory_Success() throws InterruptedException {
++        final CountDownLatch editLatch = new CountDownLatch(1);
++        String newName = "Edited Name " + System.currentTimeMillis();
++        String newDesc = "Updated description.";
++
++        platformDataAccount.updateCategory(categoryToEdit, newName, newDesc, new PlatformDataAccount.FirebaseCallback() {
++            @Override
++            public void onSuccess(String message) {
++                assertEquals("Category updated successfully.", message);
++                editLatch.countDown();
++            }
++
++            @Override
++            public void onError(String message) {
++                fail("Category update failed unexpectedly: " + message);
++                editLatch.countDown();
++            }
++        });
++
++        assertTrue("Timeout waiting for category update", editLatch.await(10, TimeUnit.SECONDS));
++    }
++
++    @After
++    public void tearDown() {
++        if (platformDataAccount != null) {
++            platformDataAccount.cleanupAllListeners();
++        }
++    }
++}
+Index: app/src/androidTest/java/com/example/csit314sdm/ViewCategorySuccessTest.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/androidTest/java/com/example/csit314sdm/ViewCategorySuccessTest.java b/app/src/androidTest/java/com/example/csit314sdm/ViewCategorySuccessTest.java
+new file mode 100644
+--- /dev/null	(date 1762695814750)
++++ b/app/src/androidTest/java/com/example/csit314sdm/ViewCategorySuccessTest.java	(date 1762695814750)
+@@ -0,0 +1,83 @@
++package com.example.csit314sdm;
++
++import org.junit.After;
++import org.junit.Before;
++import org.junit.Test;
++import org.junit.runner.RunWith;
++import static org.junit.Assert.*;
++
++import androidx.test.ext.junit.runners.AndroidJUnit4;
++
++import java.util.List;
++import java.util.concurrent.CountDownLatch;
++import java.util.concurrent.TimeUnit;
++
++@RunWith(AndroidJUnit4.class)
++public class ViewCategorySuccessTest {
++    private PlatformDataAccount platformDataAccount;
++    private final String testCategoryName = "View Test Category " + System.currentTimeMillis();
++    private final String testCategoryDesc = "A category for viewing.";
++
++    @Before
++    public void setUp() throws InterruptedException {
++        platformDataAccount = new PlatformDataAccount();
++        // Ensure the category exists before we try to view it
++        final CountDownLatch setupLatch = new CountDownLatch(1);
++        platformDataAccount.createCategory(testCategoryName, testCategoryDesc, new PlatformDataAccount.FirebaseCallback() {
++            @Override
++            public void onSuccess(String message) {
++                setupLatch.countDown();
++            }
++
++            @Override
++            public void onError(String message) {
++                // It might already exist from a failed previous run, which is fine for this test.
++                if (message.contains("already exists")) {
++                    setupLatch.countDown();
++                } else {
++                    fail("Setup failed: " + message);
++                }
++            }
++        });
++        assertTrue("Setup timeout", setupLatch.await(10, TimeUnit.SECONDS));
++    }
++
++    @Test
++    public void testViewCategory_Success() throws InterruptedException {
++        final CountDownLatch latch = new CountDownLatch(1);
++
++        platformDataAccount.listenForCategoryChanges(new PlatformDataAccount.CategoryListCallback() {
++            @Override
++            public void onDataLoaded(List<Category> categories) {
++                assertNotNull(categories);
++                assertFalse("Category list should not be empty", categories.isEmpty());
++
++                boolean found = false;
++                for (Category cat : categories) {
++                    if (cat.getName().equals(testCategoryName)) {
++                        found = true;
++                        assertEquals(testCategoryDesc, cat.getDescription());
++                        break;
++                    }
++                }
++                assertTrue("Test category was not found in the loaded list", found);
++                latch.countDown();
++            }
++
++            @Override
++            public void onError(String message) {
++                fail("listenForCategoryChanges failed with error: " + message);
++                latch.countDown();
++            }
++        });
++
++        assertTrue("Timeout waiting for category listener", latch.await(10, TimeUnit.SECONDS));
++    }
++
++    @After
++    public void tearDown() {
++        if (platformDataAccount != null) {
++            platformDataAccount.cleanupAllListeners();
++        }
++    }
++}
+Index: app/src/androidTest/java/com/example/csit314sdm/CreateCategoryFailingTest.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/androidTest/java/com/example/csit314sdm/CreateCategoryFailingTest.java b/app/src/androidTest/java/com/example/csit314sdm/CreateCategoryFailingTest.java
+new file mode 100644
+--- /dev/null	(date 1762695697099)
++++ b/app/src/androidTest/java/com/example/csit314sdm/CreateCategoryFailingTest.java	(date 1762695697099)
+@@ -0,0 +1,58 @@
++package com.example.csit314sdm;
++
++import org.junit.Test;
++import org.junit.runner.RunWith;
++import static org.junit.Assert.*;
++
++import androidx.test.ext.junit.runners.AndroidJUnit4;
++
++import java.util.concurrent.CountDownLatch;
++import java.util.concurrent.TimeUnit;
++
++@RunWith(AndroidJUnit4.class)
++public class CreateCategoryFailingTest {
++
++    @Test
++    public void testCreateCategory_FailingCase() throws InterruptedException {
++        PlatformDataAccount platformDataAccount = new PlatformDataAccount();
++        final CountDownLatch latch = new CountDownLatch(2);
++        String categoryName = "Duplicate Category Test";
++        String categoryDescription = "A test category for duplication.";
++
++        // First, create the category
++        platformDataAccount.createCategory(categoryName, categoryDescription, new PlatformDataAccount.FirebaseCallback() {
++            @Override
++            public void onSuccess(String message) {
++                // This one should succeed
++                latch.countDown();
++            }
++
++            @Override
++            public void onError(String message) {
++                // If the category already exists from a previous run, that's okay for this test.
++                latch.countDown();
++            }
++        });
++
++        // Wait a moment for the first creation to complete
++        latch.await(10, TimeUnit.SECONDS);
++
++        // Now, try to create it again, expecting failure
++        platformDataAccount.createCategory(categoryName, categoryDescription, new PlatformDataAccount.FirebaseCallback() {
++            @Override
++            public void onSuccess(String message) {
++                fail("Category creation should have failed for a duplicate category.");
++                latch.countDown();
++            }
++
++            @Override
++            public void onError(String message) {
++                assertNotNull(message);
++                assertTrue(message.contains("already exists"));
++                latch.countDown();
++            }
++        });
++
++        assertTrue("Timeout waiting for duplicate category creation check", latch.await(10, TimeUnit.SECONDS));
++    }
++}
+Index: app/src/androidTest/java/com/example/csit314sdm/DailyReportFailingTest.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>package com.example.csit314sdm;\r\n\r\nimport org.junit.Test;\r\nimport org.junit.runner.RunWith;\r\nimport static org.junit.Assert.*;\r\n\r\nimport androidx.test.ext.junit.runners.AndroidJUnit4;\r\n\r\nimport java.util.Date;\r\nimport java.util.concurrent.CountDownLatch;\r\nimport java.util.concurrent.TimeUnit;\r\n\r\n@RunWith(AndroidJUnit4.class)\r\npublic class DailyReportFailingTest {\r\n\r\n    @Test\r\n    public void testGenerateDailyReport_FailingCase() throws InterruptedException {\r\n        PlatformDataAccount platformDataAccount = new PlatformDataAccount();\r\n        final CountDownLatch latch = new CountDownLatch(1);\r\n        final int[] results = new int[3];\r\n\r\n        // 1. Call the method we want to test\r\n        platformDataAccount.generateDailyReport(new Date(), new PlatformDataAccount.DailyReportCallback() {\r\n            @Override\r\n            public void onReportDataLoaded(int newUserCount, int newRequestCount, int completedMatchesCount) {\r\n                results[0] = newUserCount;\r\n                results[1] = newRequestCount;\r\n                results[2] = completedMatchesCount;\r\n                latch.countDown(); // Notify the test that the async operation is complete\r\n            }\r\n\r\n            @Override\r\n            public void onError(String message) {\r\n                fail(\"Report generation failed with error: \" + message);\r\n                latch.countDown();\r\n            }\r\n        });\r\n\r\n        latch.await(10, TimeUnit.SECONDS); // Wait for the async callback to complete\r\n\r\n        // 2. Assert the result (intentionally failing)\r\n        // In a clean test environment, we expect 0 new users for the current day.\r\n        // To demonstrate a failing case, we assert the result is 1.\r\n        assertEquals(\"Expected 1 new user, but found \" + results[0], 1, results[0]);\r\n    }\r\n}\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/androidTest/java/com/example/csit314sdm/DailyReportFailingTest.java b/app/src/androidTest/java/com/example/csit314sdm/DailyReportFailingTest.java
+--- a/app/src/androidTest/java/com/example/csit314sdm/DailyReportFailingTest.java	(revision 4c4d411ea4a4ccac03fc2f49d5f0cd4d8038d296)
++++ b/app/src/androidTest/java/com/example/csit314sdm/DailyReportFailingTest.java	(date 1762696242987)
+@@ -19,14 +19,14 @@
+         final CountDownLatch latch = new CountDownLatch(1);
+         final int[] results = new int[3];
+ 
+-        // 1. Call the method we want to test
++
+         platformDataAccount.generateDailyReport(new Date(), new PlatformDataAccount.DailyReportCallback() {
+             @Override
+             public void onReportDataLoaded(int newUserCount, int newRequestCount, int completedMatchesCount) {
+                 results[0] = newUserCount;
+                 results[1] = newRequestCount;
+                 results[2] = completedMatchesCount;
+-                latch.countDown(); // Notify the test that the async operation is complete
++                latch.countDown();
+             }
+ 
+             @Override
+@@ -36,11 +36,8 @@
+             }
+         });
+ 
+-        latch.await(10, TimeUnit.SECONDS); // Wait for the async callback to complete
++        latch.await(10, TimeUnit.SECONDS);
+ 
+-        // 2. Assert the result (intentionally failing)
+-        // In a clean test environment, we expect 0 new users for the current day.
+-        // To demonstrate a failing case, we assert the result is 1.
+         assertEquals("Expected 1 new user, but found " + results[0], 1, results[0]);
+     }
+ }
+Index: app/src/androidTest/java/com/example/csit314sdm/ViewCategoryFailingTest.java
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/app/src/androidTest/java/com/example/csit314sdm/ViewCategoryFailingTest.java b/app/src/androidTest/java/com/example/csit314sdm/ViewCategoryFailingTest.java
+new file mode 100644
+--- /dev/null	(date 1762700521528)
++++ b/app/src/androidTest/java/com/example/csit314sdm/ViewCategoryFailingTest.java	(date 1762700521528)
+@@ -0,0 +1,69 @@
++package com.example.csit314sdm;
++
++import org.junit.After;
++import org.junit.Before;
++import org.junit.Test;
++import org.junit.runner.RunWith;
++import static org.junit.Assert.*;
++
++import androidx.test.ext.junit.runners.AndroidJUnit4;
++
++import java.util.List;
++import java.util.concurrent.CountDownLatch;
++import java.util.concurrent.TimeUnit;
++import java.util.concurrent.atomic.AtomicInteger;
++
++@RunWith(AndroidJUnit4.class)
++public class ViewCategoryFailingTest {
++    private PlatformDataAccount platformDataAccount;
++
++    @Before
++    public void setUp() {
++        platformDataAccount = new PlatformDataAccount();
++    }
++
++    @Test
++    public void testCategoryListener_FailsAfterDetach() throws InterruptedException {
++        final CountDownLatch initialLoadLatch = new CountDownLatch(1);
++        final AtomicInteger callCount = new AtomicInteger(0);
++
++        platformDataAccount.listenForCategoryChanges(new PlatformDataAccount.CategoryListCallback() {
++            @Override
++            public void onDataLoaded(List<Category> categories) {
++                callCount.incrementAndGet();
++                if (initialLoadLatch.getCount() > 0) {
++                    initialLoadLatch.countDown();
++                }
++            }
++
++            @Override
++            public void onError(String message) {
++                fail("Listener failed with an unexpected error: " + message);
++            }
++        });
++
++        // Wait for the initial data to be loaded.
++        assertTrue("Timeout waiting for initial category load", initialLoadLatch.await(10, TimeUnit.SECONDS));
++
++        // 2. Detach the listener.
++        platformDataAccount.detachCategoryListener();
++
++        // 3. Create a new category. This should NOT trigger the detached listener.
++        String newCategoryName = "Detached Test Category " + System.currentTimeMillis();
++        platformDataAccount.createCategory(newCategoryName, "This should not be seen by the listener", null);
++
++        // 4. Wait a moment to ensure any potential (and incorrect) update has time to arrive.
++        Thread.sleep(3000);
++
++        // 5. Assert that the listener was called more than once. This will FAIL because the listener
++        // was correctly detached and the callCount is still 1. This makes the test result "Failing".
++        assertEquals("Listener was not called again after being detached.", 2, callCount.get());
++    }
++
++    @After
++    public void tearDown() {
++        if (platformDataAccount != null) {
++            platformDataAccount.cleanupAllListeners();
++        }
++    }
++}
