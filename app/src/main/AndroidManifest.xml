@@ -40,6 +40,9 @@
             android:name=".boundary.CreateUserProfileActivity"
             android:exported="false" />
         <activity
+            android:name=".boundary.CreateUserRoleActivity"
+            android:exported="false" />
+        <activity
             android:name=".boundary.CsrDashboardActivity"
             android:exported="false" />
         <activity

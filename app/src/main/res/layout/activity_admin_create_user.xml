@@ -32,7 +32,7 @@
             android:id="@+id/tvHeaderTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Create Account"
+            android:text="Create User Account"
             android:textColor="@color/white"
             android:textSize="20sp"
             android:textStyle="bold"
@@ -57,7 +57,6 @@
             android:orientation="vertical"
             android:padding="24dp">
 
-            <!-- Fields for CreateUserAccountActivity (Self-Registration) -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/layoutFullName"
                 android:layout_width="match_parent"
@@ -70,13 +69,12 @@
                     android:inputType="textPersonName" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Fields for BOTH Activities -->
             <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/layoutEmail"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:hint="Email Address">
-                <!-- FIXED ID -->
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etCreateUserEmail"
                     android:layout_width="match_parent"
@@ -85,12 +83,12 @@
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/layoutPassword"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 app:passwordToggleEnabled="true"
                 android:hint="Password (min. 6 characters)">
-                <!-- FIXED ID -->
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etCreateUserPassword"
                     android:layout_width="match_parent"
@@ -98,7 +96,6 @@
                     android:inputType="textPassword"/>
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Fields for CreateUserAccountActivity -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/layoutPhoneNumber"
                 android:layout_width="match_parent"
@@ -138,44 +135,14 @@
                     android:inputType="textPostalAddress"/>
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Spinner for CreateUserAccountActivity -->
-            <TextView
-                android:id="@+id/tvRoleLabel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:text="I am a..."
-                android:textSize="12sp"
-                android:textColor="?android:attr/textColorSecondary"
-                android:visibility="gone" />
-            <Spinner
-                android:id="@+id/spinnerRole"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_marginTop="4dp"
-                android:visibility="gone" />
-
-            <!-- Button for CreateUserAccountActivity -->
-            <Button
-                android:id="@+id/btnCreateAccount"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="32dp"
-                android:padding="12dp"
-                android:text="Create My Account"
-                android:textSize="16sp"
-                android:visibility="gone" />
-
-            <!-- Views for AdminCreateUserActivity -->
             <TextView
                 android:id="@+id/tvAdminRoleLabel"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
-                android:text="Select User Role (Admin)"
+                android:text="Select User Role"
                 android:textColor="?android:attr/textColorSecondary"
-                android:textSize="12sp"
-                android:visibility="gone" />
+                android:textSize="12sp"/>
 
             <Spinner
                 android:id="@+id/spinnerCreateUserRole"
@@ -183,8 +150,16 @@
                 android:layout_height="50dp"
                 android:paddingStart="12dp"
                 android:paddingEnd="12dp"
-                android:spinnerMode="dropdown"
-                android:visibility="gone" />
+                android:spinnerMode="dropdown"/>
+
+            <Button
+                android:id="@+id/btnGoToCreateRole"
+                style="?android:attr/borderlessButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:text="Create New Role"
+                android:textAllCaps="false" />
 
             <Button
                 android:id="@+id/btnAdminCreateUser"
@@ -192,9 +167,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="32dp"
                 android:padding="12dp"
-                android:text="Create User"
-                android:textSize="16sp"
-                android:visibility="gone" />
+                android.text="Create User"
+                android:textSize="16sp"/>
 
         </LinearLayout>
     </ScrollView>

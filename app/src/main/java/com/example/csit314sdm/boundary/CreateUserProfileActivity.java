@@ -8,7 +8,6 @@ import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
-import android.widget.Spinner;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -26,7 +25,6 @@ public class CreateUserProfileActivity extends AppCompatActivity {
     private UserProfileController CreateUserProfileController;
     private AutoCompleteTextView spinnerUserAccount;
     private TextInputEditText etFullName, etContactNumber, etDateOfBirth, etAddress;
-    private Spinner spinnerRole;
     private Button btnSaveProfile;
     private ImageButton btnBack;
     private ProgressBar progressBar;
@@ -52,7 +50,6 @@ public class CreateUserProfileActivity extends AppCompatActivity {
         etContactNumber = findViewById(R.id.etContactNumber);
         etDateOfBirth = findViewById(R.id.etDateOfBirth);
         etAddress = findViewById(R.id.etAddress);
-        spinnerRole = findViewById(R.id.spinnerRole);
         btnSaveProfile = findViewById(R.id.btnSaveProfile);
         btnBack = findViewById(R.id.btnBack);
         progressBar = findViewById(R.id.progressBar);
@@ -61,11 +58,6 @@ public class CreateUserProfileActivity extends AppCompatActivity {
         etContactNumber.setEnabled(false);
         etDateOfBirth.setEnabled(false);
         etAddress.setEnabled(false);
-
-        String[] userTypes = {"PIN", "CSR", "User Admin", "Platform Manager"};
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, userTypes);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerRole.setAdapter(adapter);
 
         btnBack.setOnClickListener(v -> finish());
         btnSaveProfile.setOnClickListener(v -> handleCreateUser());
@@ -133,11 +125,9 @@ public class CreateUserProfileActivity extends AppCompatActivity {
             return;
         }
 
-        String role = spinnerRole.getSelectedItem().toString();
-
         progressBar.setVisibility(View.VISIBLE);
 
-        CreateUserProfileController.updateUserRole(selectedUser.getId(), role, new UserProfileController.ProfileCallback() {
+        CreateUserProfileController.updateUserRole(selectedUser.getId(), null, new UserProfileController.ProfileCallback() {
             @Override
             public void onProfileSaveSuccess() {
                 progressBar.setVisibility(View.GONE);
