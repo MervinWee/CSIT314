@@ -110,9 +110,9 @@ public class CreateRequestActivity extends AppCompatActivity {
 
         String pinId = FirebaseAuth.getInstance().getCurrentUser().getUid();
         
-        CreateRequestController createController = new CreateRequestController();
-        
-        createController.createHelpRequest(
+        CreateRequestController createRequestController = new CreateRequestController();
+
+        createRequestController.createHelpRequest(
                 requestType, description, location, selectedRegion, preferredTime, notes, urgencyLevel, pinId,
                 new CreateRequestController.CreateRequestCallback() {
                     @Override

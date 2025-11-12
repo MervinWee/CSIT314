@@ -42,6 +42,8 @@ public class AdminDashboardActivity extends AppCompatActivity {
             cardRetrieveUserAccount.setOnClickListener(v -> {
                 Intent intent = new Intent(AdminDashboardActivity.this, UserAccountsActivity.class);
                 intent.putExtra("MODE", "VIEW_ONLY");
+                // This title is for the other screen and is correct.
+                intent.putExtra("SCREEN_TITLE", "All User Profiles"); 
                 startActivity(intent);
             });
         }
@@ -49,7 +51,8 @@ public class AdminDashboardActivity extends AppCompatActivity {
         if (cardRetrieveUserProfile != null) {
             cardRetrieveUserProfile.setOnClickListener(v -> {
                 Intent intent = new Intent(AdminDashboardActivity.this, UserManagementActivity.class);
-                intent.putExtra("SCREEN_TITLE", "Retrieve User Profiles");
+                // Corrected the title for this screen.
+                intent.putExtra("SCREEN_TITLE", "All User Accounts");
                 startActivity(intent);
             });
         }

@@ -27,6 +27,7 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
 
     private HelpRequestController detailController;
     private UserManagementController userManagementController;
+    private RetrieveUserAccountController retrieveUserAccountController; // Added controller
     private MaterialToolbar topAppBar;
     private ProgressBar progressBar;
     private TextView tvRequestType, tvStatus, tvDescription, tvLocation, tvPreferredTime, tvUrgency, tvPostedDate;
@@ -55,6 +56,7 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
 
         detailController = new HelpRequestController();
         userManagementController = new UserManagementController();
+        retrieveUserAccountController = new RetrieveUserAccountController(); // Instantiated controller
 
         initializeUI();
     }
@@ -360,7 +362,8 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
 
         String currentUserId = currentUser.getUid();
 
-        userManagementController.fetchUserById(currentUserId, new UserManagementController.UserCallback<User>() {
+        // Corrected to use RetrieveUserAccountController
+        retrieveUserAccountController.fetchUserById(currentUserId, new RetrieveUserAccountController.UserCallback<User>() {
             @Override
             public void onSuccess(User user) {
                 if (user != null && user.getCompanyId() != null && !user.getCompanyId().isEmpty()) {

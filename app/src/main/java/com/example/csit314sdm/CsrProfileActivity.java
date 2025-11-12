@@ -15,7 +15,7 @@ import com.google.firebase.auth.FirebaseUser;
 
 public class CsrProfileActivity extends AppCompatActivity {
 
-    private UserManagementController userManagementController; // Corrected controller
+    private RetrieveUserAccountController retrieveUserAccountController; // Corrected controller
     private TextView tvCsrId, tvCsrName, tvCsrEmail;
     private Button btnEditProfile, btnChangePassword;
 
@@ -24,7 +24,7 @@ public class CsrProfileActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_csr_profile);
 
-        userManagementController = new UserManagementController(); // Corrected instantiation
+        retrieveUserAccountController = new RetrieveUserAccountController(); // Corrected instantiation
 
         MaterialToolbar toolbar = findViewById(R.id.toolbarCsrProfile);
         toolbar.setNavigationOnClickListener(v -> finish());
@@ -51,17 +51,17 @@ public class CsrProfileActivity extends AppCompatActivity {
     private void loadCsrProfile() {
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser != null) {
-            // Corrected to use UserManagementController and its UserCallback
-            userManagementController.fetchUserById(currentUser.getUid(), new UserManagementController.UserCallback<User>() {
+            // Corrected to use RetrieveUserAccountController and its UserCallback
+            retrieveUserAccountController.fetchUserById(currentUser.getUid(), new RetrieveUserAccountController.UserCallback<User>() {
                 @Override
-                public void onSuccess(User user) { // Corrected method name
+                public void onSuccess(User user) {
                     tvCsrId.setText(user.getShortId());
                     tvCsrName.setText(user.getFullName());
                     tvCsrEmail.setText(user.getEmail());
                 }
 
                 @Override
-                public void onFailure(Exception e) { // Corrected method name and parameter
+                public void onFailure(Exception e) {
                     Toast.makeText(CsrProfileActivity.this, "Failed to load profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 }
             });

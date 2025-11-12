@@ -18,7 +18,8 @@ import java.util.List;
 
 public class UserAccountsActivity extends AppCompatActivity {
 
-    private UserManagementController controller;
+    // Corrected to use the new specific controller
+    private SearchUserProfileController controller;
     private SimpleUserAdapter adapter;
     private ProgressBar progressBar;
     private TextInputEditText etSearchUsers;
@@ -38,13 +39,15 @@ public class UserAccountsActivity extends AppCompatActivity {
         MaterialToolbar toolbar = findViewById(R.id.toolbarUserAccounts);
         toolbar.setNavigationOnClickListener(v -> finish());
 
+        // Changed the title as requested
         if ("VIEW_ONLY".equals(launchMode)) {
-            toolbar.setTitle("All User Accounts");
+            toolbar.setTitle("All User Profiles");
         } else {
             toolbar.setTitle("User Management");
         }
 
-        controller = new UserManagementController();
+        // Corrected instantiation to the new controller
+        controller = new SearchUserProfileController();
         progressBar = findViewById(R.id.progressBarUserAccounts);
         etSearchUsers = findViewById(R.id.etSearchUsers);
 
@@ -67,8 +70,8 @@ public class UserAccountsActivity extends AppCompatActivity {
 
     private void loadUsers() {
         progressBar.setVisibility(View.VISIBLE);
-        // Corrected to use the existing searchUsers method to fetch all users
-        controller.searchUsers("", "All", new UserManagementController.UserCallback<List<User>>() {
+        // Corrected to use SearchUserProfileController and its callback
+        controller.searchUsers("", "All", new SearchUserProfileController.UserCallback<List<User>>() {
             @Override
             public void onSuccess(List<User> users) {
                 progressBar.setVisibility(View.GONE);

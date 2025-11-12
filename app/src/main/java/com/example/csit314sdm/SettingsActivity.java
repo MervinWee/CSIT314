@@ -15,7 +15,8 @@ import com.google.firebase.auth.FirebaseUser;
 
 public class SettingsActivity extends AppCompatActivity {
 
-    private UserManagementController userManagementController; // Corrected controller
+    // Corrected to use the new specific controller
+    private UpdateUserProfileController updateUserProfileController;
     private String currentUserId;
 
     @Override
@@ -23,7 +24,8 @@ public class SettingsActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings);
 
-        userManagementController = new UserManagementController(); // Corrected instantiation
+        // Instantiated the correct controller
+        updateUserProfileController = new UpdateUserProfileController();
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser != null) {
             currentUserId = currentUser.getUid();
@@ -58,8 +60,8 @@ public class SettingsActivity extends AppCompatActivity {
             return;
         }
 
-        // Corrected to use UserManagementController and the correct User.UserDeleteCallback
-        userManagementController.deleteUserAccount(currentUserId, new User.UserDeleteCallback() {
+        // Corrected to use UpdateUserProfileController
+        updateUserProfileController.deleteUserAccount(currentUserId, new User.UserDeleteCallback() {
             @Override
             public void onDeleteSuccess() {
                 Toast.makeText(SettingsActivity.this, "Account deleted successfully.", Toast.LENGTH_SHORT).show();
