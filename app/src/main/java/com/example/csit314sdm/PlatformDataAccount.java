@@ -1,6 +1,9 @@
 package com.example.csit314sdm;
 
 import android.util.Log;
+
+import com.example.csit314sdm.entity.Category;
+import com.example.csit314sdm.entity.User;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.Tasks;
 import com.google.firebase.firestore.CollectionReference;

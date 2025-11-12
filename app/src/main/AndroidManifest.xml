@@ -15,121 +15,121 @@
 
         <!-- A clean, sorted list of all your activities -->
         <activity
-            android:name=".AdminCreateUserActivity"
+            android:name=".boundary.AdminCreateUserActivity"
             android:exported="false" />
         <activity
-            android:name=".AdminDashboardActivity"
+            android:name=".boundary.AdminDashboardActivity"
             android:exported="false" />
 
         <activity
-            android:name=".LoginActivity"
+            android:name=".boundary.LoginActivity"
             android:exported="false" />
         <activity
-            android:name=".AllRequestsActivity"
+            android:name=".boundary.AllRequestsActivity"
             android:exported="false" />
         <activity
-            android:name=".CategoryManagementActivity"
+            android:name=".boundary.CategoryManagementActivity"
             android:exported="false" />
         <activity
-            android:name=".ChangePasswordActivity"
+            android:name=".boundary.ChangePasswordActivity"
             android:exported="false" />
         <activity
-            android:name=".CreateRequestActivity"
+            android:name=".boundary.CreateRequestActivity"
             android:exported="false" />
         <activity
-            android:name=".CreateUserProfileActivity"
+            android:name=".boundary.CreateUserProfileActivity"
             android:exported="false" />
         <activity
-            android:name=".CsrDashboardActivity"
+            android:name=".boundary.CsrDashboardActivity"
             android:exported="false" />
         <activity
-            android:name=".CSRHomeScreenActivity"
+            android:name=".boundary.CSRHomeScreenActivity"
             android:exported="false" />
         <activity
-            android:name=".CsrProfileActivity"
+            android:name=".boundary.CsrProfileActivity"
             android:exported="false" />
         <activity
-            android:name=".CSRSettingsActivity"
+            android:name=".boundary.CSRSettingsActivity"
             android:exported="false" />
         <activity
-            android:name=".DailyReportActivity"
+            android:name=".boundary.DailyReportActivity"
             android:exported="false" />
         <activity
-            android:name=".EditCsrProfileActivity"
+            android:name=".boundary.EditCsrProfileActivity"
             android:exported="false" />
         <activity
-            android:name=".EditHelpRequestActivity"
+            android:name=".boundary.EditHelpRequestActivity"
             android:exported="false" />
         <activity
-            android:name=".EditPinProfileActivity"
+            android:name=".boundary.EditPinProfileActivity"
             android:exported="false" />
         <activity
-            android:name=".ForgotPasswordActivity"
+            android:name=".boundary.ForgotPasswordActivity"
             android:exported="false" />
         <activity
-            android:name=".HelpRequestDetailActivity"
+            android:name=".boundary.HelpRequestDetailActivity"
             android:exported="false" />
         <activity
-            android:name=".HistoryActivity"
+            android:name=".boundary.HistoryActivity"
             android:exported="false" />
         <activity
-            android:name=".ManageCategoriesActivity"
+            android:name=".boundary.ManageCategoriesActivity"
             android:exported="false" />
         <activity
-            android:name=".MatchHistoryActivity"
+            android:name=".boundary.MatchHistoryActivity"
             android:exported="false" />
         <activity
-            android:name=".MonthlyReportActivity"
+            android:name=".boundary.MonthlyReportActivity"
             android:exported="false" />
         <activity
-            android:name=".MyMatchesActivity"
+            android:name=".boundary.MyMatchesActivity"
             android:exported="false" />
         <activity
-            android:name=".MyRequestsActivity"
+            android:name=".boundary.MyRequestsActivity"
             android:exported="false" />
         <activity
-            android:name=".PINHomeScreenActivity"
+            android:name=".boundary.PINHomeScreenActivity"
             android:exported="false" />
         <activity
-            android:name=".PinProfileActivity"
+            android:name=".boundary.PinProfileActivity"
             android:exported="false" />
         <activity
-            android:name=".PINSettingsActivity"
+            android:name=".boundary.PINSettingsActivity"
             android:exported="false" />
         <activity
-            android:name=".PlatformDashboardActivity"
+            android:name=".boundary.PlatformDashboardActivity"
             android:exported="false" />
         <activity
-            android:name=".RegisterActivity"
+            android:name=".boundary.RegisterActivity"
             android:exported="false" />
         <activity
-            android:name=".SearchUserActivity"
+            android:name=".boundary.SearchUserActivity"
             android:exported="false" />
         <activity
-            android:name=".UserAccountsActivity"
+            android:name=".boundary.UserAccountsActivity"
             android:exported="false" />
         <activity
-            android:name=".UserDetailActivity"
+            android:name=".boundary.UserDetailActivity"
             android:exported="false" />
         <activity
-            android:name=".UserManagementActivity"
+            android:name=".boundary.UserManagementActivity"
             android:exported="false" />
         <activity
-            android:name=".ViewAllUsersActivity"
+            android:name=".boundary.ViewAllUsersActivity"
             android:exported="false" />
         <activity
-            android:name=".MyInProgressRequestsActivity"
+            android:name=".boundary.MyInProgressRequestsActivity"
             android:exported="false" />
         <activity
-            android:name=".ViewSavedRequestsActivity"
+            android:name=".boundary.ViewSavedRequestsActivity"
             android:exported="false" />
         <activity
-            android:name=".WeeklyReportActivity"
+            android:name=".boundary.WeeklyReportActivity"
             android:exported="false" />
 
         <!-- Launcher Activity (The first screen that opens) -->
         <activity
-            android:name=".loginPage"
+            android:name=".boundary.loginPage"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

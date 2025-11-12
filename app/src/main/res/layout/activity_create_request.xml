@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context=".CreateRequestActivity">
+    tools:context=".boundary.CreateRequestActivity">
 
     <!-- Top App Bar for the Create Request Screen -->
     <com.google.android.material.appbar.AppBarLayout

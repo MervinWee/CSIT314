@@ -6,25 +6,28 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.example.csit314sdm.entity.HelpRequest;
+
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Locale;
 
 public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.HistoryViewHolder> {
 
-    private List<HelpRequestEntity> requests;
+    private List<HelpRequest> requests;
     private OnItemClickListener listener;
 
     // Interface for click events
     public interface OnItemClickListener {
-        void onItemClick(HelpRequestEntity request);
+        void onItemClick(HelpRequest request);
     }
 
     public void setOnItemClickListener(OnItemClickListener listener) {
         this.listener = listener;
     }
 
-    public HistoryAdapter(List<HelpRequestEntity> requests) {
+    public HistoryAdapter(List<HelpRequest> requests) {
         this.requests = requests;
     }
 
@@ -37,7 +40,7 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.HistoryV
 
     @Override
     public void onBindViewHolder(@NonNull HistoryViewHolder holder, int position) {
-        HelpRequestEntity currentRequest = requests.get(position);
+        HelpRequest currentRequest = requests.get(position);
         holder.bind(currentRequest, listener);
     }
 
@@ -46,7 +49,7 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.HistoryV
         return requests != null ? requests.size() : 0;
     }
 
-    public void setRequests(List<HelpRequestEntity> newRequests) {
+    public void setRequests(List<HelpRequest> newRequests) {
         this.requests = newRequests;
         notifyDataSetChanged();
     }
@@ -65,7 +68,7 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.HistoryV
             tvStatus = itemView.findViewById(R.id.tvHistoryItemStatus);
         }
 
-        public void bind(final HelpRequestEntity request, final OnItemClickListener listener) {
+        public void bind(final HelpRequest request, final OnItemClickListener listener) {
             tvCategory.setText(request.getCategory());
             tvStatus.setText(request.getStatus());
 
