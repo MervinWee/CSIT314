@@ -61,6 +61,7 @@
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
                 android:hint="Type to search user by email">
 
                 <AutoCompleteTextView
@@ -76,7 +77,6 @@
                 android:id="@+id/layoutFullName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
                 android:hint="Full Name">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etFullName"
@@ -150,6 +150,32 @@
                     android:layout_height="wrap_content"
                     android:inputType="textPostalAddress"/>
             </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView
+                android:id="@+id/tvAdminRoleLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="Select User Role"
+                android:textColor="?android:attr/textColorSecondary"
+                android:textSize="12sp"/>
+
+            <Spinner
+                android:id="@+id/spinnerCreateUserRole"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:spinnerMode="dropdown"/>
+
+            <Button
+                android:id="@+id/btnGoToCreateRole"
+                style="?android:attr/borderlessButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:text="Create New Role"
+                android:textAllCaps="false" />
 
             <Button
                 android:id="@+id/btnAdminCreateUser"
