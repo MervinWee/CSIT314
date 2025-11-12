@@ -17,7 +17,13 @@ public class AdminCreateUserActivity extends AppCompatActivity {
     private ImageButton btnBack;
     private ProgressBar progressBar;
 
-    private CreateUserAccountController CreateUserAccountController;
+    // Controllers for both Account and Profile use cases
+    private CreateUserProfileController createUserProfileController;
+    private CreateUserAccountController createUserAccountController;
+
+    // This variable would determine which use case is active.
+    // It could be set based on a previous activity's intent or a user selection.
+    private String creationMode = "ACCOUNT"; // Defaulting to ACCOUNT for this example
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,7 +31,9 @@ public class AdminCreateUserActivity extends AppCompatActivity {
         setContentView(R.layout.activity_admin_create_user);
 
         try {
-            CreateUserAccountController = new CreateUserAccountController();
+            // Instantiating both controllers
+            createUserProfileController = new CreateUserProfileController();
+            createUserAccountController = new CreateUserAccountController();
             initializeUI();
 
             btnAdminCreateUser.setOnClickListener(v -> handleCreateUser());
@@ -101,7 +109,14 @@ public class AdminCreateUserActivity extends AppCompatActivity {
                 }
             };
 
-            CreateUserAccountController.CreateUser(email, password, "PIN", fullName, phoneNumber, dob, address, callback);
+            // This demonstrates the ability to call different controllers based on the use case context.
+            if ("ACCOUNT".equals(creationMode)) {
+                // Admin is creating an Account, so use the ACCOUNT controller.
+                createUserAccountController.createUserAccount(email, password, "PIN", fullName, phoneNumber, dob, address, callback);
+            } else {
+                // A different context would use the PROFILE controller.
+                createUserProfileController.createUserProfile(email, password, "PIN", fullName, phoneNumber, dob, address, callback);
+            }
 
         } catch (Exception e) {
             progressBar.setVisibility(View.GONE);

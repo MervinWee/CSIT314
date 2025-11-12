@@ -66,7 +66,8 @@ public class RegisterActivity extends AppCompatActivity {
         progressDialog.show();
 
 
-        registrationController.CreateUser(email, password, userType, null, null, null, null, new User.RegistrationCallback() {
+        // Corrected the method name to createUserAccount (lowercase 'c')
+        registrationController.createUserAccount(email, password, userType, "", "", "", "", new User.RegistrationCallback() {
             @Override
             public void onRegistrationSuccess(String returnedUserType) {
 

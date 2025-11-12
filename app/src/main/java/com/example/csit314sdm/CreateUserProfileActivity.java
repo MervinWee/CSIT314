@@ -19,7 +19,7 @@ import java.util.List;
 
 public class CreateUserProfileActivity extends AppCompatActivity {
 
-    private UserProfileController profileController;
+    private UserProfileController CreateUserProfileController;
     private AutoCompleteTextView spinnerUserAccount;
     private TextInputEditText etFullName, etContactNumber, etDateOfBirth, etAddress;
     private Spinner spinnerRole;
@@ -37,7 +37,7 @@ public class CreateUserProfileActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_create_user_profile);
 
-        profileController = new UserProfileController();
+        CreateUserProfileController = new UserProfileController();
         initializeUI();
         loadUsersWithoutProfiles();
     }
@@ -64,7 +64,7 @@ public class CreateUserProfileActivity extends AppCompatActivity {
         spinnerRole.setAdapter(adapter);
 
         btnBack.setOnClickListener(v -> finish());
-        btnSaveProfile.setOnClickListener(v -> handleSaveProfile());
+        btnSaveProfile.setOnClickListener(v -> handleCreateUser());
 
         spinnerUserAccount.setOnItemClickListener((parent, view, position, id) -> {
             String selectedEmail = (String) parent.getItemAtPosition(position);
@@ -86,7 +86,7 @@ public class CreateUserProfileActivity extends AppCompatActivity {
     private void loadUsersWithoutProfiles() {
         progressBar.setVisibility(View.VISIBLE);
 
-        profileController.getAllUsersWithProfileCheck(new UserProfileController.UsersLoadCallback() {
+        CreateUserProfileController.getAllUsersWithProfileCheck(new UserProfileController.UsersLoadCallback() {
             @Override
             public void onUsersLoaded(List<User> allUsers) {
                 progressBar.setVisibility(View.GONE);
@@ -117,7 +117,7 @@ public class CreateUserProfileActivity extends AppCompatActivity {
         });
     }
 
-    private void handleSaveProfile() {
+    private void handleCreateUser() {
         String currentText = spinnerUserAccount.getText().toString();
         boolean userIsValid = false;
         if (selectedUser != null && selectedUser.getEmail().equals(currentText)) {
@@ -133,7 +133,7 @@ public class CreateUserProfileActivity extends AppCompatActivity {
 
         progressBar.setVisibility(View.VISIBLE);
 
-        profileController.updateUserRole(selectedUser.getId(), role, new UserProfileController.ProfileCallback() {
+        CreateUserProfileController.updateUserRole(selectedUser.getId(), role, new UserProfileController.ProfileCallback() {
             @Override
             public void onProfileSaveSuccess() {
                 progressBar.setVisibility(View.GONE);

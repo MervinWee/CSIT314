@@ -164,19 +164,6 @@ public class User {
         FirebaseAuth.getInstance().signOut();
     }
 
-    public static void createUser(String email, String password, String role, String companyId, final RegistrationCallback callback) {
-        if (!isInputValid(email, password, callback)) {
-            return;
-        }
-        createUserWithSecondaryAuth(email, password, role, companyId, "", "", "", "", callback);
-    }
-
-    public static void createUser(String email, String password, String role, final RegistrationCallback callback) {
-        if (!isInputValid(email, password, callback)) {
-            return;
-        }
-        createUserWithSecondaryAuth(email, password, role, null, "", "", "", "", callback);
-    }
 
     public static void createUser(String email, String password, String role, String companyId, String fullName, String phoneNumber, String dob, String address, final RegistrationCallback callback) {
         if (!isInputValid(email, password, callback)) {
@@ -413,6 +400,12 @@ public class User {
                 .addOnFailureListener(e -> callback.onProfileSaveFailure("Failed to save profile: " + e.getMessage()));
     }
 
+    // Added for the "Update User Account" use case
+    public static void updateUserAccount(String userId, Map<String, Object> updates, UserCallback<Void> callback) {
+        // The underlying implementation is the same as updating a profile.
+        updateUserProfile(userId, updates, callback);
+    }
+
     public static void updateUserProfile(String userId, Map<String, Object> updates, UserCallback<Void> callback) {
         if (userId == null || userId.isEmpty()) {
             callback.onFailure(new IllegalArgumentException("User ID cannot be empty."));
@@ -422,6 +415,8 @@ public class User {
                 .addOnSuccessListener(aVoid -> callback.onSuccess(null))
                 .addOnFailureListener(callback::onFailure);
     }
+
+
 
     public static void updateUserRole(String userId, String role, UserCallback<Void> callback) {
         if (userId == null || userId.isEmpty()) {

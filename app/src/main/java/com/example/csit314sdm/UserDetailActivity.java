@@ -1,4 +1,3 @@
-// File: app/src/main/java/com/example/csit314sdm/UserDetailActivity.java
 package com.example.csit314sdm;
 
 import android.os.Bundle;
@@ -14,13 +13,12 @@ import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import com.google.android.material.appbar.MaterialToolbar; // Import this if missing
+import com.google.android.material.appbar.MaterialToolbar;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 public class UserDetailActivity extends AppCompatActivity {
-
 
     private EditText etFullName, etContact;
     private TextView tvEmail, tvStatus;
@@ -30,8 +28,16 @@ public class UserDetailActivity extends AppCompatActivity {
     private ScrollView contentScrollView;
     private MaterialToolbar toolbar;
 
+    // Controllers for both Account and Profile use cases
+    private RetrieveUserAccountController retrieveUserAccountController;
+    private RetrieveUserProfileController retrieveUserProfileController;
+    private UpdateUserAccountController updateUserAccountController;
 
-    private UserManagementController controller;
+    private UpdateUserProfileController updateUserProfileController;
+
+    private SuspendUserAccountController suspendUserAccountController;
+    private SuspendUserProfileController suspendUserProfileController;
+    private CreateUserProfileController createUserProfileController;
 
     private TextView tvToolbarTitle;
     private String userId;
@@ -40,20 +46,25 @@ public class UserDetailActivity extends AppCompatActivity {
     private boolean isEditMode = false;
     private final String[] roles = {"PIN", "CSR", "User Admin"};
 
-
-    private String launchMode = "MANAGE"; //
+    private String launchMode = "MANAGE";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_user_detail);
 
-
         if (getIntent().hasExtra("MODE")) {
             launchMode = getIntent().getStringExtra("MODE");
         }
 
-        controller = new UserManagementController();
+        // Instantiating all necessary controllers
+        retrieveUserAccountController = new RetrieveUserAccountController();
+        retrieveUserProfileController = new RetrieveUserProfileController(); // Added instantiation
+        updateUserAccountController = new UpdateUserAccountController();
+        suspendUserAccountController = new SuspendUserAccountController();
+        suspendUserProfileController = new SuspendUserProfileController();
+        createUserProfileController = new CreateUserProfileController();
+
         userId = getIntent().getStringExtra("USER_ID");
 
         if (userId == null || userId.isEmpty()) {
@@ -67,15 +78,10 @@ public class UserDetailActivity extends AppCompatActivity {
         loadUserDetails();
     }
 
-
     private void initializeViews() {
-
         tvToolbarTitle = findViewById(R.id.tvToolbarTitle);
-
-
         ImageButton btnBack = findViewById(R.id.btnBack);
         btnBack.setOnClickListener(v -> finish());
-
 
         etFullName = findViewById(R.id.etDetailFullName);
         etContact = findViewById(R.id.etDetailContact);
@@ -95,60 +101,70 @@ public class UserDetailActivity extends AppCompatActivity {
         btnToggleSuspend.setOnClickListener(v -> confirmAndToggleSuspend());
     }
 
-
     private void applyLaunchMode() {
         if ("VIEW_ONLY".equals(launchMode)) {
-            // 1. Change the title using the correct TextView
-            if (tvToolbarTitle != null) {
-                tvToolbarTitle.setText("User Account Details");
-            }
-
-            // 2. Hide the "Edit" button
+            if (tvToolbarTitle != null) tvToolbarTitle.setText("User Account Details");
             btnToggleEdit.setVisibility(View.GONE);
-
-            // 3. Ensure all fields are disabled
             etFullName.setEnabled(false);
             etContact.setEnabled(false);
             spinnerRole.setEnabled(false);
-
-            // 4. Hide the suspend button
             btnToggleSuspend.setVisibility(View.GONE);
-
         } else {
-
-            if (tvToolbarTitle != null) {
-                tvToolbarTitle.setText("User Profile Details");
-            }
-
+            if (tvToolbarTitle != null) tvToolbarTitle.setText("User Profile Details");
             btnToggleEdit.setVisibility(View.VISIBLE);
         }
     }
 
-
     private void loadUserDetails() {
         progressBar.setVisibility(View.VISIBLE);
         contentScrollView.setVisibility(View.GONE);
-        controller.fetchUserById(userId, new UserManagementController.UserCallback<User>() {
-            @Override
-            public void onSuccess(User user) {
-                currentUser = user;
-                populateUI(user);
-                progressBar.setVisibility(View.GONE);
-                contentScrollView.setVisibility(View.VISIBLE);
 
-                // Only show buttons if not in VIEW_ONLY mode
-                if (!"VIEW_ONLY".equals(launchMode)) {
-                    btnToggleEdit.setVisibility(View.VISIBLE);
-                    btnToggleSuspend.setVisibility(View.VISIBLE);
+        // Decide which controller to use based on the context (launchMode)
+        if ("MANAGE".equals(launchMode)) {
+            // Admin is managing an account, so use the ACCOUNT controller.
+            retrieveUserAccountController.fetchUserById(userId, new RetrieveUserAccountController.UserCallback<User>() {
+                @Override
+                public void onSuccess(User user) {
+                    handleSuccess(user);
                 }
-            }
 
-            @Override
-            public void onFailure(Exception e) {
-                progressBar.setVisibility(View.GONE);
-                Toast.makeText(UserDetailActivity.this, "Failed to load user: " + e.getMessage(), Toast.LENGTH_LONG).show();
-            }
-        });
+                @Override
+                public void onFailure(Exception e) {
+                    handleFailure(e);
+                }
+            });
+        } else {
+            // A different context (e.g., viewing a profile) would use the PROFILE controller.
+            retrieveUserProfileController.fetchUserById(userId, new RetrieveUserProfileController.UserCallback<User>() {
+                @Override
+                public void onSuccess(User user) {
+                    handleSuccess(user);
+                }
+
+                @Override
+                public void onFailure(Exception e) {
+                    handleFailure(e);
+                }
+            });
+        }
+    }
+
+    // Helper method to handle successful data loading to avoid code duplication
+    private void handleSuccess(User user) {
+        currentUser = user;
+        populateUI(user);
+        progressBar.setVisibility(View.GONE);
+        contentScrollView.setVisibility(View.VISIBLE);
+        if (!"VIEW_ONLY".equals(launchMode)) {
+            btnToggleEdit.setVisibility(View.VISIBLE);
+            btnToggleSuspend.setVisibility(View.VISIBLE);
+        }
+    }
+
+    // Helper method to handle failed data loading
+    private void handleFailure(Exception e) {
+        progressBar.setVisibility(View.GONE);
+        Toast.makeText(UserDetailActivity.this, "Failed to load user: " + e.getMessage(), Toast.LENGTH_LONG).show();
     }
 
     private void populateUI(User user) {
@@ -157,12 +173,7 @@ public class UserDetailActivity extends AppCompatActivity {
         tvEmail.setText(user.getEmail());
         tvStatus.setText(user.getAccountStatus());
         spinnerRole.setSelection(Arrays.asList(roles).indexOf(user.getRole()));
-
-        if ("Suspended".equals(user.getAccountStatus())) {
-            btnToggleSuspend.setText("Reinstate User");
-        } else {
-            btnToggleSuspend.setText("Suspend User");
-        }
+        btnToggleSuspend.setText("Suspended".equals(user.getAccountStatus()) ? "Reinstate User" : "Suspend User");
     }
 
     private void toggleEditMode() {
@@ -170,31 +181,37 @@ public class UserDetailActivity extends AppCompatActivity {
         etFullName.setEnabled(isEditMode);
         etContact.setEnabled(isEditMode);
         spinnerRole.setEnabled(isEditMode);
-
-        if (isEditMode) {
-            btnToggleEdit.setText("Cancel");
-            btnUpdateProfile.setVisibility(View.VISIBLE);
-            btnToggleSuspend.setVisibility(View.GONE);
-        } else {
-            btnToggleEdit.setText("Edit");
-            btnUpdateProfile.setVisibility(View.GONE);
-            btnToggleSuspend.setVisibility(View.VISIBLE);
-            populateUI(currentUser);
-        }
+        btnToggleEdit.setText(isEditMode ? "Cancel" : "Edit");
+        btnUpdateProfile.setVisibility(isEditMode ? View.VISIBLE : View.GONE);
+        btnToggleSuspend.setVisibility(isEditMode ? View.GONE : View.VISIBLE);
+        if (!isEditMode) populateUI(currentUser);
     }
 
     private void saveChanges() {
-        String newFullName = etFullName.getText().toString();
-        String newContact = etContact.getText().toString();
-        String newRole = spinnerRole.getSelectedItem().toString();
-
         Map<String, Object> updates = new HashMap<>();
-        updates.put("fullName", newFullName);
-        updates.put("phoneNumber", newContact);
-        updates.put("role", newRole);
+        updates.put("fullName", etFullName.getText().toString());
+        updates.put("phoneNumber", etContact.getText().toString());
+        updates.put("role", spinnerRole.getSelectedItem().toString());
 
         progressBar.setVisibility(View.VISIBLE);
-        controller.updateUserProfile(userId, updates, new UserManagementController.UserCallback<Void>() {
+        updateUserAccountController.updateUserAccount(userId, updates, new UpdateUserAccountController.UserCallback<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+                progressBar.setVisibility(View.GONE);
+                Toast.makeText(UserDetailActivity.this, "Profile updated successfully", Toast.LENGTH_SHORT).show();
+                isEditMode = false;
+                loadUserDetails();
+                toggleEditMode();
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                progressBar.setVisibility(View.GONE);
+                Toast.makeText(UserDetailActivity.this, "Update failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        updateUserProfileController.updateUserProfile(userId, updates, new UpdateUserProfileController.UserCallback<Void>() {
             @Override
             public void onSuccess(Void result) {
                 progressBar.setVisibility(View.GONE);
@@ -220,16 +237,30 @@ public class UserDetailActivity extends AppCompatActivity {
                 .setTitle(action.substring(0, 1).toUpperCase() + action.substring(1) + " User")
                 .setMessage("Are you sure you want to " + action + " this user?")
                 .setPositiveButton(action.toUpperCase(), (dialog, which) -> {
-                    if (isSuspending) {
-                        controller.suspendUserProfile(userId, new UserManagementController.UserCallback<Void>() {
-                            @Override public void onSuccess(Void result) { loadUserDetails(); }
-                            @Override public void onFailure(Exception e) { /* Handle error */ }
-                        });
+                    if ("MANAGE".equals(launchMode)) {
+                        if (isSuspending) {
+                            suspendUserAccountController.suspendUserAccount(userId, new SuspendUserAccountController.UserCallback<Void>() {
+                                @Override public void onSuccess(Void result) { loadUserDetails(); }
+                                @Override public void onFailure(Exception e) { /* Handle error */ }
+                            });
+                        } else {
+                            suspendUserAccountController.reinstateUserAccount(userId, new SuspendUserAccountController.UserCallback<Void>() {
+                                @Override public void onSuccess(Void result) { loadUserDetails(); }
+                                @Override public void onFailure(Exception e) { /* Handle error */ }
+                            });
+                        }
                     } else {
-                        controller.reinstateUserProfile(userId, new UserManagementController.UserCallback<Void>() {
-                            @Override public void onSuccess(Void result) { loadUserDetails(); }
-                            @Override public void onFailure(Exception e) { /* Handle error */ }
-                        });
+                        if (isSuspending) {
+                            suspendUserProfileController.suspendUserProfile(userId, new SuspendUserProfileController.UserCallback<Void>() {
+                                @Override public void onSuccess(Void result) { loadUserDetails(); }
+                                @Override public void onFailure(Exception e) { /* Handle error */ }
+                            });
+                        } else {
+                            suspendUserProfileController.reinstateUserProfile(userId, new SuspendUserProfileController.UserCallback<Void>() {
+                                @Override public void onSuccess(Void result) { loadUserDetails(); }
+                                @Override public void onFailure(Exception e) { /* Handle error */ }
+                            });
+                        }
                     }
                 })
                 .setNegativeButton("Cancel", null)
