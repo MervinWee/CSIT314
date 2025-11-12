@@ -18,8 +18,9 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.appbar.MaterialToolbar;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.Query;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -34,7 +35,7 @@ public class MatchHistoryActivity extends AppCompatActivity {
 
     private RecyclerView recyclerView;
     private PinMyRequestsAdapter adapter;
-    private List<HelpRequest> historyList = new ArrayList<>();
+    private List<HelpRequestEntity> historyList = new ArrayList<>();
     private TextView tvNoHistory;
     private ProgressBar progressBar;
 
@@ -44,6 +45,7 @@ public class MatchHistoryActivity extends AppCompatActivity {
 
     private HelpRequestController controller;
     private Date fromDate, toDate;
+    private String currentUserId; // This will hold the logged-in user's ID
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
 
     @Override
@@ -51,11 +53,19 @@ public class MatchHistoryActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_match_history);
 
+        // FIX: Get the currently logged-in user's ID to ensure we only show their history.
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            Toast.makeText(this, "You must be logged in to view match history.", Toast.LENGTH_LONG).show();
+            finish();
+            return;
+        }
+        currentUserId = currentUser.getUid();
+
         controller = new HelpRequestController();
 
         initializeUI();
         setupFilters();
-
         loadMatchHistory("All", null, null);
     }
 
@@ -112,43 +122,43 @@ public class MatchHistoryActivity extends AppCompatActivity {
         datePickerDialog.show();
     }
 
+    // This method now correctly uses the logged-in user's ID to fetch THEIR history only.
     private void loadMatchHistory(String category, Date fromDate, Date toDate) {
         progressBar.setVisibility(View.VISIBLE);
         tvNoHistory.setVisibility(View.GONE);
         recyclerView.setVisibility(View.GONE);
 
-        Query query = controller.getMatchHistoryQuery(category, fromDate, toDate);
+        String categoryFilter = "All".equals(category) ? null : category;
 
-        if (query == null) {
-            progressBar.setVisibility(View.GONE);
-            Toast.makeText(this, "You must be logged in to view history.", Toast.LENGTH_SHORT).show();
-            finish();
-            return;
-        }
+        // FIX: Now passing the currentUserId to the query to fetch the correct user's history.
+        Query query = controller.getMatchHistoryQuery(categoryFilter, fromDate, toDate, currentUserId);
+        HelpRequestEntity.getAllRequests(query, new HelpRequestEntity.ListCallback() {
+            @Override
+            public void onRequestsLoaded(List<HelpRequestEntity> requests) {
+                runOnUiThread(() -> {
+                    progressBar.setVisibility(View.GONE);
+                    historyList.clear();
+                    historyList.addAll(requests);
+                    adapter.notifyDataSetChanged();
 
-        query.get().addOnCompleteListener(task -> {
-            progressBar.setVisibility(View.GONE);
-            if (task.isSuccessful()) {
-                historyList.clear();
-                for (QueryDocumentSnapshot document : task.getResult()) {
-                    HelpRequest request = document.toObject(HelpRequest.class);
-                    request.setId(document.getId());
-                    historyList.add(request);
-                }
-                adapter.notifyDataSetChanged();
+                    if (historyList.isEmpty()) {
+                        tvNoHistory.setText("No history found for the selected filters.");
+                        tvNoHistory.setVisibility(View.VISIBLE);
+                    } else {
+                        recyclerView.setVisibility(View.VISIBLE);
+                    }
+                });
+            }
 
-                if (historyList.isEmpty()) {
-                    tvNoHistory.setText("No history found for the selected filters.");
+            @Override
+            public void onDataLoadFailed(String errorMessage) {
+                runOnUiThread(() -> {
+                    progressBar.setVisibility(View.GONE);
+                    tvNoHistory.setText("Failed to load history.");
                     tvNoHistory.setVisibility(View.VISIBLE);
-                } else {
-                    recyclerView.setVisibility(View.VISIBLE);
-                }
-
-            } else {
-                tvNoHistory.setText("Failed to load history.");
-                tvNoHistory.setVisibility(View.VISIBLE);
-                Toast.makeText(this, "Failed to load history. Check logs for index errors.", Toast.LENGTH_LONG).show();
-                Log.e(TAG, "Error loading history: ", task.getException());
+                    Toast.makeText(MatchHistoryActivity.this, "Failed to load history: " + errorMessage, Toast.LENGTH_LONG).show();
+                    Log.e(TAG, "Error loading history: " + errorMessage);
+                });
             }
         });
     }

@@ -18,7 +18,7 @@ public class CreateRequestController {
             return;
         }
 
-        HelpRequest newRequest = new HelpRequest();
+        HelpRequestEntity newRequest = new HelpRequestEntity();
         newRequest.setSubmittedBy(pinId);
         newRequest.setPinId(pinId);
         newRequest.setCategory(requestType);
@@ -34,7 +34,7 @@ public class CreateRequestController {
         newRequest.setShortlistedDate(null); 
         newRequest.setViewCount(0); 
 
-        HelpRequest.create(newRequest, new HelpRequest.CreateCallback() {
+        HelpRequestEntity.createRequest(newRequest, new HelpRequestEntity.CreateCallback() {
             @Override
             public void onCreateSuccess(String documentId) {
                 if (callback != null) callback.onRequestCreated(documentId);

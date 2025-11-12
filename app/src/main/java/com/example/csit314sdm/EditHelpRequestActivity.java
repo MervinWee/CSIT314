@@ -23,7 +23,7 @@ public class EditHelpRequestActivity extends AppCompatActivity {
 
     private HelpRequestController helpRequestController;
     private String currentRequestId;
-    private HelpRequest currentRequest;
+    private HelpRequestEntity currentRequest;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -89,7 +89,7 @@ public class EditHelpRequestActivity extends AppCompatActivity {
     private void loadExistingData() {
         helpRequestController.getHelpRequestById(currentRequestId, "PIN", new HelpRequestController.SingleRequestLoadCallback() {
             @Override
-            public void onRequestLoaded(HelpRequest request) {
+            public void onRequestLoaded(HelpRequestEntity request) {
                 currentRequest = request;
                 runOnUiThread(() -> {
                     if (request != null) {

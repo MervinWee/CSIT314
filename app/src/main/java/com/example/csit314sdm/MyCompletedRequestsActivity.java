@@ -15,6 +15,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,22 +24,31 @@ import java.util.List;
 public class MyCompletedRequestsActivity extends AppCompatActivity {
 
     private MyCompletedRequestsController controller;
-    private HelpRequestAdapter adapter; // We can reuse the existing HelpRequestAdapter
-    private ViewCategoriesController viewCategoriesController;
+    private HelpRequestAdapter adapter;
+    private PlatformDataAccount platformDataAccount;
     private RecyclerView recyclerView;
     private ProgressBar progressBar;
     private TextView tvNoResults;
     private TextInputEditText etSearchKeyword;
     private AutoCompleteTextView spinnerLocation, spinnerCategory;
     private Button btnSearch;
+    private String currentCsrId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_my_completed_requests);
 
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            Toast.makeText(this, "No user is logged in.", Toast.LENGTH_LONG).show();
+            finish();
+            return;
+        }
+        currentCsrId = currentUser.getUid();
+
         controller = new MyCompletedRequestsController();
-        viewCategoriesController = new ViewCategoriesController();
+        platformDataAccount = new PlatformDataAccount();
 
         initializeUI();
         setupListeners();
@@ -48,8 +59,8 @@ public class MyCompletedRequestsActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (viewCategoriesController != null) {
-            viewCategoriesController.cleanup();
+        if (platformDataAccount != null) {
+            platformDataAccount.detachCategoryListener();
         }
     }
 
@@ -66,12 +77,14 @@ public class MyCompletedRequestsActivity extends AppCompatActivity {
         btnSearch = findViewById(R.id.btnSearch);
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+        // FIX: Added currentCsrId to the constructor
         adapter = new HelpRequestAdapter(request -> {
             Intent intent = new Intent(MyCompletedRequestsActivity.this, HelpRequestDetailActivity.class);
             intent.putExtra(HelpRequestDetailActivity.EXTRA_REQUEST_ID, request.getId());
             intent.putExtra("user_role", "CSR");
             startActivity(intent);
-        });
+        }, currentCsrId);
         recyclerView.setAdapter(adapter);
     }
 
@@ -92,9 +105,9 @@ public class MyCompletedRequestsActivity extends AppCompatActivity {
         spinnerLocation.setAdapter(locationAdapter);
         spinnerLocation.setText(locations[0], false);
 
-        viewCategoriesController.getAllCategories(new ViewCategoriesController.CategoryFetchCallback() {
+        platformDataAccount.listenForCategoryChanges(new PlatformDataAccount.CategoryListCallback() {
             @Override
-            public void onCategoriesFetched(List<Category> categories) {
+            public void onDataLoaded(List<Category> categories) {
                 runOnUiThread(() -> {
                     List<String> categoryNames = new ArrayList<>();
                     categoryNames.add("All");
@@ -107,27 +120,30 @@ public class MyCompletedRequestsActivity extends AppCompatActivity {
                             categoryNames
                     );
                     spinnerCategory.setAdapter(categoryAdapter);
-                    spinnerCategory.setText(categoryNames.get(0), false);
+                    if (!categoryNames.isEmpty()) {
+                        spinnerCategory.setText(categoryNames.get(0), false);
+                    }
                 });
             }
 
             @Override
-            public void onFailure(String errorMessage) {
-                runOnUiThread(() -> Toast.makeText(MyCompletedRequestsActivity.this, "Failed to load categories: " + errorMessage, Toast.LENGTH_SHORT).show());
+            public void onError(String errorMessage) {
+                Toast.makeText(MyCompletedRequestsActivity.this, "Failed to load categories.", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
     private void performSearch() {
         String keyword = etSearchKeyword.getText().toString().trim();
-        String location = spinnerLocation.getText().toString();
-        String category = spinnerCategory.getText().toString();
+        // Note: The controller currently only supports filtering by keyword.
+        // The 'location' and 'category' spinners are ignored in the search logic.
 
         showLoading(true);
 
-        controller.searchMyCompletedRequests(keyword, location, category, new HelpRequestController.HelpRequestsLoadCallback() {
+        // FIX: Corrected controller method call and callback type.
+        controller.searchMyCompletedRequests(currentCsrId, keyword, new HelpRequestEntity.ListCallback() {
             @Override
-            public void onRequestsLoaded(List<HelpRequest> requests) {
+            public void onRequestsLoaded(List<HelpRequestEntity> requests) {
                 runOnUiThread(() -> {
                     showLoading(false);
                     if (requests == null || requests.isEmpty()) {
@@ -155,7 +171,9 @@ public class MyCompletedRequestsActivity extends AppCompatActivity {
 
     private void showLoading(boolean isLoading) {
         progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
-        tvNoResults.setVisibility(isLoading ? View.VISIBLE : View.GONE);
-        recyclerView.setVisibility(isLoading ? View.GONE : View.VISIBLE);
+        if (isLoading) {
+            recyclerView.setVisibility(View.GONE);
+            tvNoResults.setVisibility(View.GONE);
+        }
     }
 }

@@ -28,7 +28,6 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.Catego
     @NonNull
     @Override
     public CategoryViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        // Use a custom layout for two lines of text.
         View view = LayoutInflater.from(parent.getContext()).inflate(android.R.layout.simple_list_item_2, parent, false);
         return new CategoryViewHolder(view);
     }
@@ -44,15 +43,13 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.Catego
         return categories.size();
     }
 
-    // This method was missing.
     public void updateCategories(List<Category> newCategories) {
         this.categories = new ArrayList<>(newCategories);
-        selectedPosition = RecyclerView.NO_POSITION; // Reset selection on data change
+        selectedPosition = RecyclerView.NO_POSITION;
         notifyDataSetChanged();
     }
 
-    class CategoryViewHolder extends RecyclerView.ViewHolder {
-        // These correspond to the two lines in simple_list_item_2
+    public class CategoryViewHolder extends RecyclerView.ViewHolder {
         TextView tvCategoryName;
         TextView tvCategoryDescription;
 
@@ -65,14 +62,13 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.Catego
         public void bind(final Category category, final OnCategoryClickListener listener, boolean isSelected) {
             tvCategoryName.setText(category.getName());
             tvCategoryDescription.setText(category.getDescription());
-            itemView.setActivated(isSelected); // Use activated state for selection highlight
+            itemView.setActivated(isSelected);
 
             itemView.setOnClickListener(v -> {
-                if (getAdapterPosition() == RecyclerView.NO_POSITION) return;
+                if (getBindingAdapterPosition() == RecyclerView.NO_POSITION) return;
 
-                // Update selection state in the adapter
                 notifyItemChanged(selectedPosition);
-                selectedPosition = getAdapterPosition();
+                selectedPosition = getBindingAdapterPosition();
                 notifyItemChanged(selectedPosition);
 
                 listener.onCategoryClick(category);

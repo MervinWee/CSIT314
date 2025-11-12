@@ -64,7 +64,7 @@ public class AllRequestsActivity extends AppCompatActivity {
 
         controller.getActiveHelpRequests(new HelpRequestController.HelpRequestsLoadCallback() {
             @Override
-            public void onRequestsLoaded(List<HelpRequest> requests) {
+            public void onRequestsLoaded(List<HelpRequestEntity> requests) {
                 runOnUiThread(() -> {
                     progressBar.setVisibility(View.GONE);
                     if (requests.isEmpty()) {
@@ -77,7 +77,7 @@ public class AllRequestsActivity extends AppCompatActivity {
                             intent.putExtra(HelpRequestDetailActivity.EXTRA_REQUEST_ID, request.getId());
                             intent.putExtra("user_role", "CSR");
                             startActivity(intent);
-                        });
+                        }, currentCsrId);
 
                         adapter.setRequests(requests);
                         recyclerView.setAdapter(adapter);

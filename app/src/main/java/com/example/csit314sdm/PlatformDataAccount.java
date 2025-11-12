@@ -38,8 +38,6 @@ public class PlatformDataAccount {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         usersRef = db.collection("users");
         requestsRef = db.collection("help_requests");
-        // ** THE FIX IS HERE **
-        // Changed "HelpCategories" to "categories" to match the security rules.
         categoriesRef = db.collection("categories");
     }
 
@@ -182,7 +180,6 @@ public class PlatformDataAccount {
         });
     }
 
-
     public void listenForCategoryChanges(final CategoryListCallback callback) {
         if (categoryListenerRegistration != null) categoryListenerRegistration.remove();
         categoryListenerRegistration = categoriesRef.orderBy("name").addSnapshotListener((snapshots, e) -> {
@@ -223,7 +220,9 @@ public class PlatformDataAccount {
             if (!queryDocumentSnapshots.isEmpty()) {
                 if (callback != null) callback.onError("A category with this name already exists.");
             } else {
-                Category newCategory = new Category(name, description);
+                Category newCategory = new Category();
+                newCategory.setName(name);
+                newCategory.setDescription(description);
                 categoriesRef.add(newCategory).addOnSuccessListener(documentReference -> {
                     if (callback != null) callback.onSuccess("Category created successfully.");
                 }).addOnFailureListener(e -> {
@@ -240,7 +239,9 @@ public class PlatformDataAccount {
             if (callback != null) callback.onError("Category ID is missing. Cannot update.");
             return;
         }
-        Category updatedCategory = new Category(newName, newDescription);
+        Category updatedCategory = new Category();
+        updatedCategory.setName(newName);
+        updatedCategory.setDescription(newDescription);
         updatedCategory.setId(category.getId());
         categoriesRef.document(category.getId()).set(updatedCategory).addOnSuccessListener(aVoid -> {
             if (callback != null) callback.onSuccess("Category updated successfully.");

@@ -13,38 +13,35 @@ import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.firebase.auth.FirebaseAuth;
-
 import java.util.ArrayList;
 import java.util.List;
 
 public class HelpRequestAdapter extends RecyclerView.Adapter<HelpRequestAdapter.RequestViewHolder> {
 
-    private List<HelpRequest> requestList = new ArrayList<>();
+    private List<HelpRequestEntity> requestList = new ArrayList<>();
     private final OnItemClickListener listener;
     private OnSaveClickListener saveClickListener;
     private String currentUserId;
     private Context context;
 
     public interface OnItemClickListener {
-        void onItemClick(HelpRequest request);
+        void onItemClick(HelpRequestEntity request);
     }
-
 
     public interface OnSaveClickListener {
-        void onSaveClick(HelpRequest request, boolean isSaved);
+        void onSaveClick(HelpRequestEntity request, boolean isSaved);
     }
 
-    public HelpRequestAdapter(OnItemClickListener listener) {
+    public HelpRequestAdapter(OnItemClickListener listener, String currentUserId) {
         this.listener = listener;
-        this.currentUserId = FirebaseAuth.getInstance().getUid();
+        this.currentUserId = currentUserId;
     }
 
     public void setOnSaveClickListener(OnSaveClickListener listener) {
         this.saveClickListener = listener;
     }
 
-    public void setRequests(List<HelpRequest> requests) {
+    public void setRequests(List<HelpRequestEntity> requests) {
         this.requestList = requests;
         notifyDataSetChanged();
     }
@@ -53,7 +50,7 @@ public class HelpRequestAdapter extends RecyclerView.Adapter<HelpRequestAdapter.
     @Override
     public RequestViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         this.context = parent.getContext();
-        View view = LayoutInflater.from(this.context).inflate(R.layout.item_help_request, parent, false);
+        View view = LayoutInflater.from(context).inflate(R.layout.item_help_request, parent, false);
         return new RequestViewHolder(view);
     }
 
@@ -84,58 +81,42 @@ public class HelpRequestAdapter extends RecyclerView.Adapter<HelpRequestAdapter.
             tvPinId = itemView.findViewById(R.id.tvPinId);
         }
 
-        public void bind(final HelpRequest request, final OnItemClickListener listener, final OnSaveClickListener saveClickListener, String currentUserId, Context context) {
+        public void bind(final HelpRequestEntity request, final OnItemClickListener listener,
+                         final OnSaveClickListener saveClickListener, String currentUserId, Context context) {
+
             tvCategory.setText(request.getCategory());
             tvOrg.setText(request.getOrganization());
 
-            if (request.getPinName() != null) {
-                tvPinName.setText("PIN Name: " + request.getPinName());
-                tvPinName.setVisibility(View.VISIBLE);
-            } else {
-                tvPinName.setVisibility(View.GONE);
-            }
+            tvPinName.setVisibility(request.getPinName() != null ? View.VISIBLE : View.GONE);
+            if(request.getPinName() != null) tvPinName.setText("PIN Name: " + request.getPinName());
 
-            if (request.getPinShortId() != null) {
-                tvPinId.setText("PIN ID: " + request.getPinShortId());
-                tvPinId.setVisibility(View.VISIBLE);
-            } else {
-                tvPinId.setVisibility(View.GONE);
-            }
+            tvPinId.setVisibility(request.getPinShortId() != null ? View.VISIBLE : View.GONE);
+            if(request.getPinShortId() != null) tvPinId.setText("PIN ID: " + request.getPinShortId());
 
-            if (request.getCreationTimestamp() != null) {
+            if(request.getCreationTimestamp() != null){
                 long now = System.currentTimeMillis();
                 CharSequence relativeTime = DateUtils.getRelativeTimeSpanString(request.getCreationTimestamp().getTime(), now, DateUtils.DAY_IN_MILLIS);
                 tvDate.setText("Posted " + relativeTime);
             }
 
-            if (request.getUrgencyLevel() != null && !request.getUrgencyLevel().isEmpty()) {
-                String urgency = request.getUrgencyLevel().trim();
-                tvUrgency.setText(urgency);
-                tvUrgency.setVisibility(View.VISIBLE);
-
-                if ("High Urgency".equalsIgnoreCase(urgency) || "High".equalsIgnoreCase(urgency)) {
-                    tvUrgency.setBackground(ContextCompat.getDrawable(context, R.drawable.chip_background_red));
-                } else if ("Moderate Urgency".equalsIgnoreCase(urgency) || "Medium".equalsIgnoreCase(urgency)) {
-                    tvUrgency.setBackground(ContextCompat.getDrawable(context, R.drawable.chip_background_yellow));
-                } else if ("Low Urgency".equalsIgnoreCase(urgency) || "Low".equalsIgnoreCase(urgency)) {
-                    tvUrgency.setBackground(ContextCompat.getDrawable(context, R.drawable.chip_background_green));
-                } else {
-                    tvUrgency.setBackground(ContextCompat.getDrawable(context, R.drawable.chip_background));
+            tvUrgency.setVisibility(request.getUrgencyLevel() != null ? View.VISIBLE : View.GONE);
+            if(request.getUrgencyLevel() != null){
+                tvUrgency.setText(request.getUrgencyLevel());
+                switch(request.getUrgencyLevel().toLowerCase()){
+                    case "high": tvUrgency.setBackground(ContextCompat.getDrawable(context, R.drawable.chip_background_red)); break;
+                    case "medium": tvUrgency.setBackground(ContextCompat.getDrawable(context, R.drawable.chip_background_yellow)); break;
+                    case "low": tvUrgency.setBackground(ContextCompat.getDrawable(context, R.drawable.chip_background_green)); break;
+                    default: tvUrgency.setBackground(ContextCompat.getDrawable(context, R.drawable.chip_background));
                 }
-            } else {
-                tvUrgency.setVisibility(View.GONE);
             }
 
             final boolean isSaved = request.getSavedByCsrId() != null && request.getSavedByCsrId().contains(currentUserId);
-
             btnSave.setImageResource(isSaved ? R.drawable.ic_star_filled : R.drawable.ic_star);
 
             btnViewDetails.setOnClickListener(v -> listener.onItemClick(request));
 
-            if (saveClickListener != null) {
-                btnSave.setOnClickListener(v -> {
-                    saveClickListener.onSaveClick(request, isSaved);
-                });
+            if(saveClickListener != null){
+                btnSave.setOnClickListener(v -> saveClickListener.onSaveClick(request, isSaved));
             }
         }
     }

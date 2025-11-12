@@ -1,23 +1,12 @@
 package com.example.csit314sdm;
 
+import java.util.List;
+import java.util.Date; // Import the Date class
+
 public class MyCompletedRequestsController {
-
-    public void searchMyCompletedRequests(String keyword, String location, String category, final HelpRequestController.HelpRequestsLoadCallback callback) {
-        // This controller simply delegates the call to the static method in the HelpRequest entity.
-        HelpRequest.searchMyCompletedRequests(keyword, location, category, new HelpRequestController.HelpRequestsLoadCallback() {
-            @Override
-            public void onRequestsLoaded(java.util.List<HelpRequest> requests) {
-                if (callback != null) {
-                    callback.onRequestsLoaded(requests);
-                }
-            }
-
-            @Override
-            public void onDataLoadFailed(String errorMessage) {
-                if (callback != null) {
-                    callback.onDataLoadFailed(errorMessage);
-                }
-            }
-        });
+    public void searchMyCompletedRequests(String csrId, String keyword, HelpRequestEntity.ListCallback callback) {
+        // Fix: Pass null for the second String parameter and the two Date parameters
+        // to match the required method signature.
+        HelpRequestEntity.getCompletedHistory(csrId, null, null, null, keyword, callback);
     }
 }

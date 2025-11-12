@@ -3,7 +3,6 @@ package com.example.csit314sdm;
 import android.app.DatePickerDialog;
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
@@ -12,7 +11,6 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -21,7 +19,6 @@ import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -30,242 +27,199 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-public class HistoryActivity extends AppCompatActivity implements HelpRequestAdapter.OnSaveClickListener {
+public class HistoryActivity extends AppCompatActivity {
 
-    private static final String TAG = "HistoryActivity";
-
-    private TextInputEditText etDateFrom, etDateTo;
-    private AutoCompleteTextView spinnerCategory;
-    private Button btnApplyFilters;
-    private RecyclerView recyclerViewHistory;
-    private ProgressBar progressBarHistory;
-    private TextView tvNoHistoryResults;
-
-    private ViewCategoriesController viewCategoriesController;
-    private HelpRequestController controller;
+    private RecyclerView recyclerView;
     private HelpRequestAdapter adapter;
-    private List<HelpRequest> historyList = new ArrayList<>();
-    private Calendar fromDateCalendar = Calendar.getInstance();
-    private Calendar toDateCalendar = Calendar.getInstance();
+    private ProgressBar progressBar;
+    private TextView tvNoResults;
+    private TextInputEditText etFromDate, etToDate;
+    private AutoCompleteTextView spinnerCategory;
+    private Button btnSearchHistory;
+
+    private HelpRequestController helpRequestController;
+    private PlatformDataAccount platformDataAccount; // FIX: Changed from CategoryController
+    private RetrieveUserAccountController retrieveUserAccountController;
+
     private Date fromDate, toDate;
+    private String currentCsrId;
+    private String companyId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_history);
 
-        MaterialToolbar toolbar = findViewById(R.id.toolbarHistory);
-        setSupportActionBar(toolbar);
-        ActionBar actionBar = getSupportActionBar();
-        if (actionBar != null) {
-            actionBar.setDisplayHomeAsUpEnabled(true);
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser != null) {
+            currentCsrId = currentUser.getUid();
+        } else {
+            Toast.makeText(this, "You must be logged in to view history.", Toast.LENGTH_LONG).show();
+            finish();
+            return;
         }
 
-        initializeViews();
-        controller = new HelpRequestController();
-        viewCategoriesController = new ViewCategoriesController();
-        setupRecyclerView();
-        setupSpinners();
-        setupDatePickers();
+        helpRequestController = new HelpRequestController();
+        platformDataAccount = new PlatformDataAccount(); // FIX: Initialized PlatformDataAccount
+        retrieveUserAccountController = new RetrieveUserAccountController();
 
-        btnApplyFilters.setOnClickListener(v -> fetchCsrCompanyIdAndLoadHistory());
-        fetchCsrCompanyIdAndLoadHistory();
+        initializeUI();
+        setupDatePickerListeners();
+        populateCategorySpinner();
+        fetchCompanyAndLoadHistory();
+
+        btnSearchHistory.setOnClickListener(v -> loadCompletedRequests());
     }
 
     @Override
     public boolean onSupportNavigateUp() {
-        onBackPressed();
+        finish();
         return true;
     }
 
+    // FIX: Added onDestroy to detach the listener and prevent memory leaks
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (viewCategoriesController != null) {
-            viewCategoriesController.cleanup();
+        if (platformDataAccount != null) {
+            platformDataAccount.detachCategoryListener();
         }
     }
 
-    private void fetchCsrCompanyIdAndLoadHistory() {
-        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
-        if (currentUser == null) {
-            Toast.makeText(this, "No user is logged in.", Toast.LENGTH_LONG).show();
-            return;
-        }
+    private void initializeUI() {
+        MaterialToolbar topAppBar = findViewById(R.id.toolbarHistory);
+        setSupportActionBar(topAppBar);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        setLoadingState(true);
+        recyclerView = findViewById(R.id.recyclerViewHistory);
+        progressBar = findViewById(R.id.progressBarHistory);
+        tvNoResults = findViewById(R.id.tvNoHistoryResults);
+        etFromDate = findViewById(R.id.etDateFrom);
+        etToDate = findViewById(R.id.etDateTo);
+        spinnerCategory = findViewById(R.id.spinnerHistoryCategory);
+        btnSearchHistory = findViewById(R.id.btnApplyFilters);
 
-        FirebaseFirestore.getInstance().collection("users").document(currentUser.getUid()).get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (documentSnapshot.exists()) {
-                        String companyId = documentSnapshot.getString("companyId");
-                        if (companyId != null && !companyId.isEmpty()) {
-                            fetchHistory(companyId);
-                        } else {
-                            setLoadingState(false);
-                            Toast.makeText(HistoryActivity.this, "Could not find company ID for this user.", Toast.LENGTH_LONG).show();
-                        }
-                    } else {
-                        setLoadingState(false);
-                        Toast.makeText(HistoryActivity.this, "User profile not found.", Toast.LENGTH_LONG).show();
-                    }
-                })
-                .addOnFailureListener(e -> {
-                    setLoadingState(false);
-                    Toast.makeText(HistoryActivity.this, "Failed to fetch user profile.", Toast.LENGTH_LONG).show();
-                    Log.e(TAG, "Error fetching user profile for companyId", e);
-                });
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
     }
 
-    private void fetchHistory(String companyId) {
-        String category = spinnerCategory.getText().toString();
+    private void setupDatePickerListeners() {
+        etFromDate.setOnClickListener(v -> showDatePickerDialog(true));
+        etToDate.setOnClickListener(v -> showDatePickerDialog(false));
+    }
 
-        controller.getCompletedHistory(companyId, fromDate, toDate, category, new HelpRequestController.HelpRequestsLoadCallback() {
+    private void showDatePickerDialog(final boolean isFromDate) {
+        Calendar cal = Calendar.getInstance();
+        DatePickerDialog datePickerDialog = new DatePickerDialog(this, (view, year, month, dayOfMonth) -> {
+            Calendar selectedDate = Calendar.getInstance();
+            selectedDate.set(year, month, dayOfMonth);
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+            String formattedDate = sdf.format(selectedDate.getTime());
+            if (isFromDate) {
+                fromDate = selectedDate.getTime();
+                etFromDate.setText(formattedDate);
+            } else {
+                toDate = selectedDate.getTime();
+                etToDate.setText(formattedDate);
+            }
+        }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH));
+        datePickerDialog.show();
+    }
+
+    // FIX: Updated to use PlatformDataAccount
+    private void populateCategorySpinner() {
+        platformDataAccount.listenForCategoryChanges(new PlatformDataAccount.CategoryListCallback() {
             @Override
-            public void onRequestsLoaded(List<HelpRequest> requests) {
+            public void onDataLoaded(List<Category> categories) {
                 runOnUiThread(() -> {
-                    setLoadingState(false);
-                    historyList.clear();
-                    historyList.addAll(requests);
+                    List<String> categoryNames = new ArrayList<>();
+                    categoryNames.add("All");
+                    for (Category cat : categories) {
+                        categoryNames.add(cat.getName());
+                    }
+                    ArrayAdapter<String> categoryAdapter = new ArrayAdapter<>(HistoryActivity.this, android.R.layout.simple_dropdown_item_1line, categoryNames);
+                    spinnerCategory.setAdapter(categoryAdapter);
+                    if (!categoryNames.isEmpty()) {
+                        spinnerCategory.setText(categoryNames.get(0), false);
+                    }
+                });
+            }
 
-                    if (historyList.isEmpty()) {
-                        tvNoHistoryResults.setVisibility(View.VISIBLE);
-                        recyclerViewHistory.setVisibility(View.GONE);
+            @Override
+            public void onError(String errorMessage) {
+                Toast.makeText(HistoryActivity.this, "Failed to load categories.", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void fetchCompanyAndLoadHistory() {
+        showLoading(true);
+        retrieveUserAccountController.fetchUserById(currentCsrId, new RetrieveUserAccountController.UserCallback<User>() {
+            @Override
+            public void onSuccess(User user) {
+                companyId = user.getCompanyId();
+                if (companyId == null || companyId.isEmpty()) {
+                    showError("Cannot fetch history: Your user profile is missing a Company ID.");
+                    return;
+                }
+                loadCompletedRequests();
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                showError("Cannot fetch history: Could not load your user profile.");
+            }
+        });
+    }
+
+    private void loadCompletedRequests() {
+        showLoading(true);
+
+        String category = spinnerCategory.getText().toString();
+        if ("All".equals(category)) {
+            category = null;
+        }
+
+        adapter = new HelpRequestAdapter(request -> {
+            Intent intent = new Intent(HistoryActivity.this, HelpRequestDetailActivity.class);
+            intent.putExtra(HelpRequestDetailActivity.EXTRA_REQUEST_ID, request.getId());
+            intent.putExtra("user_role", "CSR");
+            startActivity(intent);
+        }, currentCsrId);
+        recyclerView.setAdapter(adapter);
+
+        // FIX: Passing currentCsrId to the history method
+        helpRequestController.getCompletedHistory(companyId, currentCsrId, fromDate, toDate, category, new HelpRequestController.HelpRequestsLoadCallback() {
+            @Override
+            public void onRequestsLoaded(List<HelpRequestEntity> requests) {
+                runOnUiThread(() -> {
+                    showLoading(false);
+                    if (requests.isEmpty()) {
+                        showError("No completed requests found for the selected criteria.");
                     } else {
-                        tvNoHistoryResults.setVisibility(View.GONE);
-                        recyclerViewHistory.setVisibility(View.VISIBLE);
-                        adapter.setRequests(historyList);
+                        tvNoResults.setVisibility(View.GONE);
+                        recyclerView.setVisibility(View.VISIBLE);
+                        adapter.setRequests(requests);
                     }
                 });
             }
 
             @Override
             public void onDataLoadFailed(String errorMessage) {
-                runOnUiThread(() -> {
-                    setLoadingState(false);
-                    tvNoHistoryResults.setText("Error loading data. Check logs for index errors.");
-                    tvNoHistoryResults.setVisibility(View.VISIBLE);
-                    Toast.makeText(HistoryActivity.this, errorMessage, Toast.LENGTH_LONG).show();
-                    Log.e(TAG, "Error from getCompletedHistory: " + errorMessage);
-                });
+                runOnUiThread(() -> showError(errorMessage));
             }
         });
     }
 
-    private void setLoadingState(boolean isLoading) {
-        if (isLoading) {
-            progressBarHistory.setVisibility(View.VISIBLE);
-            tvNoHistoryResults.setVisibility(View.GONE);
-            recyclerViewHistory.setVisibility(View.GONE);
-        } else {
-            progressBarHistory.setVisibility(View.GONE);
-        }
+    private void showLoading(boolean isLoading) {
+        progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+        recyclerView.setVisibility(isLoading ? View.GONE : View.VISIBLE);
+        tvNoResults.setVisibility(View.GONE);
     }
 
-    private void initializeViews() {
-        etDateFrom = findViewById(R.id.etDateFrom);
-        etDateTo = findViewById(R.id.etDateTo);
-        spinnerCategory = findViewById(R.id.spinnerHistoryCategory);
-        btnApplyFilters = findViewById(R.id.btnApplyFilters);
-        recyclerViewHistory = findViewById(R.id.recyclerViewHistory);
-        progressBarHistory = findViewById(R.id.progressBarHistory);
-        tvNoHistoryResults = findViewById(R.id.tvNoHistoryResults);
-    }
-
-    private void setupRecyclerView() {
-        recyclerViewHistory.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new HelpRequestAdapter(request -> {
-            Intent intent = new Intent(HistoryActivity.this, HelpRequestDetailActivity.class);
-            intent.putExtra(HelpRequestDetailActivity.EXTRA_REQUEST_ID, request.getId());
-            startActivity(intent);
-        });
-        adapter.setOnSaveClickListener(this);
-        recyclerViewHistory.setAdapter(adapter);
-    }
-
-    private void setupSpinners() {
-        viewCategoriesController.getAllCategories(new ViewCategoriesController.CategoryFetchCallback() {
-            @Override
-            public void onCategoriesFetched(List<Category> categories) {
-                List<String> categoryNames = new ArrayList<>();
-                categoryNames.add("All");
-                for (Category category : categories) {
-                    categoryNames.add(category.getName());
-                }
-                ArrayAdapter<String> categoryAdapter = new ArrayAdapter<>(HistoryActivity.this, android.R.layout.simple_dropdown_item_1line, categoryNames);
-                spinnerCategory.setAdapter(categoryAdapter);
-                spinnerCategory.setText("All", false);
-            }
-
-            @Override
-            public void onFailure(String errorMessage) {
-                Toast.makeText(HistoryActivity.this, "Failed to load categories.", Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    private void setupDatePickers() {
-        DatePickerDialog.OnDateSetListener fromDateListener = (view, year, month, dayOfMonth) -> {
-            fromDateCalendar.set(Calendar.YEAR, year);
-            fromDateCalendar.set(Calendar.MONTH, month);
-            fromDateCalendar.set(Calendar.DAY_OF_MONTH, dayOfMonth);
-            fromDate = fromDateCalendar.getTime();
-            updateLabel(etDateFrom, fromDateCalendar);
-        };
-
-        DatePickerDialog.OnDateSetListener toDateListener = (view, year, month, dayOfMonth) -> {
-            toDateCalendar.set(Calendar.YEAR, year);
-            toDateCalendar.set(Calendar.MONTH, month);
-            toDateCalendar.set(Calendar.DAY_OF_MONTH, dayOfMonth);
-            toDate = toDateCalendar.getTime();
-            updateLabel(etDateTo, toDateCalendar);
-        };
-
-        etDateFrom.setOnClickListener(v -> new DatePickerDialog(HistoryActivity.this, fromDateListener,
-                fromDateCalendar.get(Calendar.YEAR), fromDateCalendar.get(Calendar.MONTH), fromDateCalendar.get(Calendar.DAY_OF_MONTH)).show());
-
-        etDateTo.setOnClickListener(v -> new DatePickerDialog(HistoryActivity.this, toDateListener,
-                toDateCalendar.get(Calendar.YEAR), toDateCalendar.get(Calendar.MONTH), toDateCalendar.get(Calendar.DAY_OF_MONTH)).show());
-    }
-
-    private void updateLabel(TextInputEditText editText, Calendar calendar) {
-        String myFormat = "dd/MM/yy";
-        SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.US);
-        editText.setText(sdf.format(calendar.getTime()));
-    }
-
-    @Override
-    public void onSaveClick(HelpRequest request, boolean isSaved) {
-        if (isSaved) {
-
-            controller.unsaveRequest(request.getId(), new HelpRequestController.SaveCallback() {
-                @Override
-                public void onSaveSuccess() {
-                    Toast.makeText(HistoryActivity.this, "Request unsaved", Toast.LENGTH_SHORT).show();
-                    fetchCsrCompanyIdAndLoadHistory();
-                }
-
-                @Override
-                public void onSaveFailure(String errorMessage) {
-                    Toast.makeText(HistoryActivity.this, "Failed to unsave request: " + errorMessage, Toast.LENGTH_SHORT).show();
-                }
-            });
-
-        } else {
-
-            controller.saveRequest(request.getId(), new HelpRequestController.SaveCallback() {
-                @Override
-                public void onSaveSuccess() {
-                    Toast.makeText(HistoryActivity.this, "Request saved", Toast.LENGTH_SHORT).show();
-                    fetchCsrCompanyIdAndLoadHistory();
-                }
-
-                @Override
-                public void onSaveFailure(String errorMessage) {
-                    Toast.makeText(HistoryActivity.this, "Failed to save request: " + errorMessage, Toast.LENGTH_SHORT).show();
-                }
-            });
-
-        }
+    private void showError(String message) {
+        progressBar.setVisibility(View.GONE);
+        recyclerView.setVisibility(View.GONE);
+        tvNoResults.setText(message);
+        tvNoResults.setVisibility(View.VISIBLE);
     }
 }

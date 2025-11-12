@@ -98,6 +98,7 @@ public class User {
     @PropertyName("phoneNumber")
     public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
 
+    @PropertyName("dateOfBirth")
     public String getDob() {
         if (dob instanceof String) {
             return (String) dob;
@@ -109,7 +110,7 @@ public class User {
         return null;
     }
 
-    @PropertyName("dob")
+    @PropertyName("dateOfBirth")
     public void setDob(Object dob) { this.dob = dob; }
 
     public String getRole() { return role; }
@@ -223,7 +224,7 @@ public class User {
                 newUserMap.put("shortId", shortId);
                 newUserMap.put("fullName", fullName);
                 newUserMap.put("phoneNumber", phoneNumber);
-                newUserMap.put("dob", dob);
+                newUserMap.put("dateOfBirth", dob);
                 newUserMap.put("address", address);
 
                 if (companyId != null && !companyId.isEmpty()) {
@@ -391,7 +392,7 @@ public class User {
         Map<String, Object> profileData = new HashMap<>();
         profileData.put("fullName", fullName);
         profileData.put("phoneNumber", contact);
-        profileData.put("dob", dob);
+        profileData.put("dateOfBirth", dob);
         profileData.put("address", address);
 
         FirebaseFirestore.getInstance().collection("users").document(user.getId())

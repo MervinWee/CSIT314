@@ -12,19 +12,19 @@ import java.util.Locale;
 
 public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.HistoryViewHolder> {
 
-    private List<HelpRequest> requests;
+    private List<HelpRequestEntity> requests;
     private OnItemClickListener listener;
 
     // Interface for click events
     public interface OnItemClickListener {
-        void onItemClick(HelpRequest request);
+        void onItemClick(HelpRequestEntity request);
     }
 
     public void setOnItemClickListener(OnItemClickListener listener) {
         this.listener = listener;
     }
 
-    public HistoryAdapter(List<HelpRequest> requests) {
+    public HistoryAdapter(List<HelpRequestEntity> requests) {
         this.requests = requests;
     }
 
@@ -37,7 +37,7 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.HistoryV
 
     @Override
     public void onBindViewHolder(@NonNull HistoryViewHolder holder, int position) {
-        HelpRequest currentRequest = requests.get(position);
+        HelpRequestEntity currentRequest = requests.get(position);
         holder.bind(currentRequest, listener);
     }
 
@@ -46,7 +46,7 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.HistoryV
         return requests != null ? requests.size() : 0;
     }
 
-    public void setRequests(List<HelpRequest> newRequests) {
+    public void setRequests(List<HelpRequestEntity> newRequests) {
         this.requests = newRequests;
         notifyDataSetChanged();
     }
@@ -65,7 +65,7 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.HistoryV
             tvStatus = itemView.findViewById(R.id.tvHistoryItemStatus);
         }
 
-        public void bind(final HelpRequest request, final OnItemClickListener listener) {
+        public void bind(final HelpRequestEntity request, final OnItemClickListener listener) {
             tvCategory.setText(request.getCategory());
             tvStatus.setText(request.getStatus());
 

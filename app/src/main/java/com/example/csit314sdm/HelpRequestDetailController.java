@@ -7,7 +7,7 @@ public class HelpRequestDetailController {
 
     // Define a callback interface to handle asynchronous data loading
     public interface RequestDetailCallback {
-        void onRequestLoaded(HelpRequest request);
+        void onRequestLoaded(HelpRequestEntity request);
         void onDataLoadFailed(String errorMessage);
     }
 
@@ -21,7 +21,7 @@ public class HelpRequestDetailController {
                         DocumentSnapshot document = task.getResult();
                         if (document != null && document.exists()) {
 
-                            HelpRequest request = document.toObject(HelpRequest.class);
+                            HelpRequestEntity request = document.toObject(HelpRequestEntity.class);
                             if (request != null) {
                                 callback.onRequestLoaded(request);
                             } else {

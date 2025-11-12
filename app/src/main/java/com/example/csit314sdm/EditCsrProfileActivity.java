@@ -60,17 +60,21 @@ public class EditCsrProfileActivity extends AppCompatActivity {
             retrieveUserAccountController.fetchUserById(currentUser.getUid(), new RetrieveUserAccountController.UserCallback<User>() {
                 @Override
                 public void onSuccess(User user) {
-                    etFullName.setText(user.getFullName());
-                    etContactNumber.setText(user.getPhoneNumber());
-                    etDateOfBirth.setText(user.getDob());
-                    etAddress.setText(user.getAddress());
-                    progressBar.setVisibility(View.GONE);
+                    runOnUiThread(() -> {
+                        etFullName.setText(user.getFullName());
+                        etContactNumber.setText(user.getPhoneNumber());
+                        etDateOfBirth.setText(user.getDob());
+                        etAddress.setText(user.getAddress());
+                        progressBar.setVisibility(View.GONE);
+                    });
                 }
 
                 @Override
                 public void onFailure(Exception e) {
-                    progressBar.setVisibility(View.GONE);
-                    Toast.makeText(EditCsrProfileActivity.this, "Failed to load profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    runOnUiThread(() -> {
+                        progressBar.setVisibility(View.GONE);
+                        Toast.makeText(EditCsrProfileActivity.this, "Failed to load profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    });
                 }
             });
         }
@@ -94,22 +98,26 @@ public class EditCsrProfileActivity extends AppCompatActivity {
             Map<String, Object> updates = new HashMap<>();
             updates.put("fullName", fullName);
             updates.put("phoneNumber", contact);
-            updates.put("dob", dob);
+            updates.put("dateOfBirth", dob);
             updates.put("address", address);
 
             // Corrected to use UpdateUserProfileController and its UserCallback
             updateUserProfileController.updateUserProfile(currentUser.getUid(), updates, new UpdateUserProfileController.UserCallback<Void>() {
                 @Override
                 public void onSuccess(Void aVoid) {
-                    progressBar.setVisibility(View.GONE);
-                    Toast.makeText(EditCsrProfileActivity.this, "Profile updated successfully!", Toast.LENGTH_SHORT).show();
-                    finish();
+                    runOnUiThread(() -> {
+                        progressBar.setVisibility(View.GONE);
+                        Toast.makeText(EditCsrProfileActivity.this, "Profile updated successfully!", Toast.LENGTH_SHORT).show();
+                        finish();
+                    });
                 }
 
                 @Override
                 public void onFailure(Exception e) {
-                    progressBar.setVisibility(View.GONE);
-                    Toast.makeText(EditCsrProfileActivity.this, "Failed to update profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    runOnUiThread(() -> {
+                        progressBar.setVisibility(View.GONE);
+                        Toast.makeText(EditCsrProfileActivity.this, "Failed to update profile: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    });
                 }
             });
         }

@@ -47,7 +47,7 @@ public class LoginActivity extends AppCompatActivity {
                 progressBar.setVisibility(View.GONE);
                 Toast.makeText(LoginActivity.this, "Login Successful", Toast.LENGTH_SHORT).show();
 
-                if ("Admin".equals(userRole)) {
+                if ("User Admin".equalsIgnoreCase(userRole)) {
                     Intent intent = new Intent(LoginActivity.this, AdminDashboardActivity.class);
                     startActivity(intent);
                     finish();
@@ -55,11 +55,11 @@ public class LoginActivity extends AppCompatActivity {
                     Intent intent = new Intent(LoginActivity.this, CSRHomeScreenActivity.class);
                     startActivity(intent);
                     finish();
-                } else if ("Platform".equals(userRole)){
+                } else if ("Platform".equalsIgnoreCase(userRole)){
                     Intent intent = new Intent(LoginActivity.this, PlatformDashboardActivity.class);
                     startActivity(intent);
                     finish();
-                } else if ("PIN".equals(userRole)) { // Corrected the redirection for PIN user
+                } else if ("PIN".equalsIgnoreCase(userRole)) { // Corrected the redirection for PIN user
                     Intent intent = new Intent(LoginActivity.this, PINHomeScreenActivity.class);
                     startActivity(intent);
                     finish();

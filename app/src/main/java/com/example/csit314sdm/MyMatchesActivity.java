@@ -10,8 +10,8 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class MyMatchesActivity extends AppCompatActivity {
@@ -20,7 +20,6 @@ public class MyMatchesActivity extends AppCompatActivity {
     private ProgressBar progressBar;
     private TextView tvNoMatches;
     private MyMatchesController controller;
-    // Removed the non-existent SearchMyMatchesController
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,11 +28,12 @@ public class MyMatchesActivity extends AppCompatActivity {
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setTitle("My Matches");
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setTitle("My Matches");
+        }
 
         controller = new MyMatchesController();
-        // Removed instantiation of non-existent controller
         recyclerView = findViewById(R.id.recyclerViewMatches);
         progressBar = findViewById(R.id.progressBar);
         tvNoMatches = findViewById(R.id.tvNoMatches);
@@ -53,34 +53,51 @@ public class MyMatchesActivity extends AppCompatActivity {
 
     private void loadMatches() {
         progressBar.setVisibility(View.VISIBLE);
-        String csrId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        tvNoMatches.setVisibility(View.GONE);
+        recyclerView.setVisibility(View.GONE);
+
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            progressBar.setVisibility(View.GONE);
+            tvNoMatches.setText("You must be logged in to see your matches.");
+            tvNoMatches.setVisibility(View.VISIBLE);
+            return;
+        }
+
+        String csrId = currentUser.getUid();
         controller.getMatchedPINs(csrId, new MyMatchesController.MatchedPINsCallback() {
             @Override
             public void onMatchedPINsReceived(List<User> pins) {
-                progressBar.setVisibility(View.GONE);
-                if (pins.isEmpty()) {
-                    tvNoMatches.setVisibility(View.VISIBLE);
-                } else {
-                    adapter.setMatches(pins);
-                    tvNoMatches.setVisibility(View.GONE);
-                }
+                runOnUiThread(() -> {
+                    progressBar.setVisibility(View.GONE);
+                    if (pins == null || pins.isEmpty()) {
+                        tvNoMatches.setText("No matches found.");
+                        tvNoMatches.setVisibility(View.VISIBLE);
+                        recyclerView.setVisibility(View.GONE);
+                    } else {
+                        adapter.setMatches(pins);
+                        tvNoMatches.setVisibility(View.GONE);
+                        recyclerView.setVisibility(View.VISIBLE);
+                    }
+                });
             }
 
             @Override
             public void onError(String message) {
-                progressBar.setVisibility(View.GONE);
-                tvNoMatches.setText(message);
-                tvNoMatches.setVisibility(View.VISIBLE);
+                runOnUiThread(() -> {
+                    progressBar.setVisibility(View.GONE);
+                    tvNoMatches.setText("Error: " + message);
+                    tvNoMatches.setVisibility(View.VISIBLE);
+                    recyclerView.setVisibility(View.GONE);
+                });
             }
         });
     }
 
-    // Removed the unused searchMatches method that was causing the error
-
     private void onMatchClicked(User user) {
         Intent intent = new Intent(this, UserDetailActivity.class);
         intent.putExtra("USER_ID", user.getId());
-        intent.putExtra("MODE", "VIEW_ONLY"); // Add this line
+        intent.putExtra("MODE", "VIEW_ONLY");
         startActivity(intent);
     }
 }

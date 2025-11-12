@@ -26,13 +26,6 @@
     <!-- =========== END: ADD THIS TOOLBAR SECTION =========== -->
 
 
-    <!-- Header (No longer needed, the Toolbar replaces it) -->
-    <!--
-    <TextView
-        android:id="@+id/tvHistoryTitle"
-        ... />
-    -->
-
     <!-- Date Range Filters -->
     <!-- MODIFICATION: Constrain this to the new appBarLayout -->
     <LinearLayout

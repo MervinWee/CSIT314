@@ -6,14 +6,12 @@ public class ShortlistHelpRequestController {
 
     // --- Callbacks ---
     public interface HelpRequestsLoadCallback {
-        void onRequestsLoaded(List<HelpRequest> requests);
-
+        void onRequestsLoaded(List<HelpRequestEntity> requests);
         void onDataLoadFailed(String errorMessage);
     }
 
     public interface ShortlistCallback {
         void onShortlistSuccess();
-
         void onShortlistFailure(String errorMessage);
     }
 
@@ -24,9 +22,9 @@ public class ShortlistHelpRequestController {
     // --- Shortlist Management Methods ---
 
     public void getSavedHelpRequests(final HelpRequestsLoadCallback callback) {
-        HelpRequest.getSavedHelpRequests(new HelpRequestController.HelpRequestsLoadCallback() {
+        HelpRequestEntity.getSavedHelpRequests(new HelpRequestEntity.ListCallback() {
             @Override
-            public void onRequestsLoaded(List<HelpRequest> requests) {
+            public void onRequestsLoaded(List<HelpRequestEntity> requests) {
                 if (callback != null) {
                     callback.onRequestsLoaded(requests);
                 }
@@ -42,9 +40,9 @@ public class ShortlistHelpRequestController {
     }
 
     public void searchShortlistedRequests(String keyword, String location, String category, final HelpRequestsLoadCallback callback) {
-        HelpRequest.searchShortlistedRequests(keyword, location, category, new HelpRequestController.HelpRequestsLoadCallback() {
+        HelpRequestEntity.searchShortlistedRequests(keyword, location, category, new HelpRequestEntity.ListCallback() {
             @Override
-            public void onRequestsLoaded(List<HelpRequest> requests) {
+            public void onRequestsLoaded(List<HelpRequestEntity> requests) {
                 if (callback != null) {
                     callback.onRequestsLoaded(requests);
                 }
@@ -60,16 +58,16 @@ public class ShortlistHelpRequestController {
     }
 
     public void saveRequest(String requestId, final ShortlistCallback callback) {
-        HelpRequest.saveRequest(requestId, new HelpRequestController.SaveCallback() {
+        HelpRequestEntity.saveRequest(requestId, new HelpRequestEntity.UpdateCallback() {
             @Override
-            public void onSaveSuccess() {
+            public void onUpdateSuccess() {
                 if (callback != null) {
                     callback.onShortlistSuccess();
                 }
             }
 
             @Override
-            public void onSaveFailure(String errorMessage) {
+            public void onUpdateFailure(String errorMessage) {
                 if (callback != null) {
                     callback.onShortlistFailure(errorMessage);
                 }
@@ -78,16 +76,16 @@ public class ShortlistHelpRequestController {
     }
 
     public void unsaveRequest(String requestId, final ShortlistCallback callback) {
-        HelpRequest.unsaveRequest(requestId, new HelpRequestController.SaveCallback() {
+        HelpRequestEntity.unsaveRequest(requestId, new HelpRequestEntity.UpdateCallback() {
             @Override
-            public void onSaveSuccess() {
+            public void onUpdateSuccess() {
                 if (callback != null) {
                     callback.onShortlistSuccess();
                 }
             }
 
             @Override
-            public void onSaveFailure(String errorMessage) {
+            public void onUpdateFailure(String errorMessage) {
                 if (callback != null) {
                     callback.onShortlistFailure(errorMessage);
                 }

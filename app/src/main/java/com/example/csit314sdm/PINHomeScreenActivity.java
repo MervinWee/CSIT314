@@ -21,46 +21,55 @@ import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.navigation.NavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.ListenerRegistration;
-import com.google.firebase.firestore.Query;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
+// This Activity now uses Controllers for data handling instead of direct Firebase calls,
+// respecting the app's architecture and fixing data filtering issues.
 public class PINHomeScreenActivity extends AppCompatActivity {
 
     private static final String TAG = "PINHomeScreen";
 
-    private FirebaseAuth mAuth;
-    private FirebaseFirestore db;
+    // Controllers for data handling
+    private HelpRequestController helpRequestController;
+    private RetrieveUserAccountController retrieveUserAccountController;
+    private LogoutController logoutController;
+
+    private String currentPinId;
+
+    // UI Components
     private DrawerLayout drawerLayout;
     private NavigationView navigationView;
     private ActionBarDrawerToggle drawerToggle;
     private MaterialToolbar topAppBar;
-
     private TextView tvWelcomeMessage, tvActiveRequests, tvCompleted;
     private RecyclerView recyclerViewActiveRequests;
-    private Button btnLogout, btnCreateNewRequest;
-    private ImageButton btnNotifications, btnProfile;
-
+    private Button btnCreateNewRequest, btnLogout;
+    private ImageButton btnProfile;
     private CardView cardActiveRequests, cardCompleted;
 
     private SimpleRequestAdapter requestAdapter;
-    private List<HelpRequest> helpRequestList;
-    private ListenerRegistration requestListener;
-    private LogoutController logoutController; // Added LogoutController
+    private List<HelpRequestEntity> helpRequestEntityList; // The list that the adapter uses
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_pinhome_screen);
 
-        mAuth = FirebaseAuth.getInstance();
-        db = FirebaseFirestore.getInstance();
-        logoutController = new LogoutController(); // Initialized controller
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        if (currentUser == null) {
+            startActivity(new Intent(this, LoginActivity.class)
+                    .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
+            finish();
+            return;
+        }
+        currentPinId = currentUser.getUid();
+
+        // Initialize controllers
+        helpRequestController = new HelpRequestController();
+        retrieveUserAccountController = new RetrieveUserAccountController();
+        logoutController = new LogoutController();
 
         initializeUI();
         setupListeners();
@@ -70,29 +79,20 @@ public class PINHomeScreenActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        FirebaseUser currentUser = mAuth.getCurrentUser();
-        if (currentUser == null) {
-            handleLogout(); // Correctly handle if user becomes null
+        // Re-check user status on resume
+        if (FirebaseAuth.getInstance().getCurrentUser() == null) {
+            handleLogout();
             return;
         }
-        loadUserData(currentUser.getUid());
-        loadAllRequestDataWithListener(currentUser.getUid());
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        if (requestListener != null) {
-            requestListener.remove();
-            requestListener = null;
-        }
+        // Load fresh data every time the screen is shown
+        loadUserData();
+        loadDashboardData();
     }
 
     private void initializeUI() {
         drawerLayout = findViewById(R.id.drawer_layout);
         navigationView = findViewById(R.id.navigation_view);
         topAppBar = findViewById(R.id.topAppBar);
-        btnNotifications = findViewById(R.id.btnNotifications);
         btnProfile = findViewById(R.id.btnProfile);
         tvWelcomeMessage = findViewById(R.id.tvWelcomeMessage);
         btnCreateNewRequest = findViewById(R.id.btnCreateNewRequest);
@@ -104,8 +104,8 @@ public class PINHomeScreenActivity extends AppCompatActivity {
         btnLogout = findViewById(R.id.btnLogout);
 
         recyclerViewActiveRequests.setLayoutManager(new LinearLayoutManager(this));
-        helpRequestList = new ArrayList<>();
-        requestAdapter = new SimpleRequestAdapter(helpRequestList, this, request -> {
+        helpRequestEntityList = new ArrayList<>(); // Initialize the list
+        requestAdapter = new SimpleRequestAdapter(helpRequestEntityList, this, request -> {
             Intent intent = new Intent(this, HelpRequestDetailActivity.class);
             intent.putExtra(HelpRequestDetailActivity.EXTRA_REQUEST_ID, request.getId());
             intent.putExtra("user_role", "PIN");
@@ -116,18 +116,20 @@ public class PINHomeScreenActivity extends AppCompatActivity {
     }
 
     private void setupListeners() {
-        btnNotifications.setOnClickListener(v -> Toast.makeText(this, "Notifications clicked", Toast.LENGTH_SHORT).show());
         btnProfile.setOnClickListener(v -> startActivity(new Intent(this, PinProfileActivity.class)));
         btnCreateNewRequest.setOnClickListener(v -> startActivity(new Intent(this, CreateRequestActivity.class)));
 
+        // FIX: Pass the user ID to the activities so they can load the correct data.
         cardActiveRequests.setOnClickListener(v -> {
             Intent intent = new Intent(this, MyRequestsActivity.class);
-            intent.putExtra("STATUS_FILTER", "Active");
+            intent.putExtra("USER_ID", currentPinId);
+            intent.putExtra("user_role", "PIN");
             startActivity(intent);
         });
 
         cardCompleted.setOnClickListener(v -> {
             Intent intent = new Intent(this, MatchHistoryActivity.class);
+            intent.putExtra("USER_ID", currentPinId);
             startActivity(intent);
         });
 
@@ -142,9 +144,12 @@ public class PINHomeScreenActivity extends AppCompatActivity {
         navigationView.setNavigationItemSelectedListener(item -> {
             int id = item.getItemId();
             if (id == R.id.nav_home) {
-                Toast.makeText(this, "Already on Home screen", Toast.LENGTH_SHORT).show();
+                // Already home
             } else if (id == R.id.nav_my_requests || id == R.id.nav_filter_requests) {
-                startActivity(new Intent(this, MyRequestsActivity.class));
+                Intent intent = new Intent(this, MyRequestsActivity.class);
+                intent.putExtra("USER_ID", currentPinId); // Pass user ID
+                intent.putExtra("user_role", "PIN");
+                startActivity(intent);
             } else if (id == R.id.nav_profile) {
                 startActivity(new Intent(this, PinProfileActivity.class));
             } else if (id == R.id.nav_settings) {
@@ -156,116 +161,94 @@ public class PINHomeScreenActivity extends AppCompatActivity {
             return true;
         });
 
-        View headerView = navigationView.getHeaderView(0);
-        TextView navHeaderName = headerView.findViewById(R.id.nav_header_name);
-        TextView navHeaderEmail = headerView.findViewById(R.id.nav_header_email);
-        FirebaseUser currentUser = mAuth.getCurrentUser();
-        if (currentUser != null) {
-            if (currentUser.getEmail() != null) {
-                navHeaderEmail.setText(currentUser.getEmail());
-            }
-
-            db.collection("users").document(currentUser.getUid()).get()
-                    .addOnSuccessListener(documentSnapshot -> {
-                        if (documentSnapshot.exists()) {
-                            User user = documentSnapshot.toObject(User.class);
-                            if (user != null) {
-                                user.setId(documentSnapshot.getId()); // This prevents crashes
-                                if (user.getFullName() != null && !user.getFullName().isEmpty()) {
-                                    navHeaderName.setText(user.getFullName());
-                                } else {
-                                    navHeaderName.setText("Valued User"); // Fallback text
-                                }
-                            }
-                        }
-                    });
-        }
+        loadNavHeaderData();
     }
 
     private void handleLogout() {
-        // 1. Detach any active listeners to prevent memory leaks.
-        if (requestListener != null) {
-            requestListener.remove();
-            requestListener = null;
-        }
-
-        // 2. Call the simple logout method on the controller.
         logoutController.logoutUser();
-
-        // 3. Immediately handle the UI changes.
         Toast.makeText(this, "You have been logged out.", Toast.LENGTH_SHORT).show();
-        Intent intent = new Intent(this, LoginActivity.class); // Corrected to LoginActivity.class
+        Intent intent = new Intent(this, LoginActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
     }
 
-    private void loadUserData(String userId) {
-        db.collection("users").document(userId).get()
-                .addOnSuccessListener(documentSnapshot -> {
-                    if (documentSnapshot.exists()) {
-                        User user = documentSnapshot.toObject(User.class);
-                        if (user != null) {
-                            user.setId(documentSnapshot.getId()); // This prevents crashes
-                            if (user.getFullName() != null && !user.getFullName().isEmpty()) {
-                                String[] names = user.getFullName().split(" ");
-                                tvWelcomeMessage.setText("Hello, " + names[0] + "!");
-                            } else {
-                                tvWelcomeMessage.setText("Hello!");
-                            }
-                        }
-                    }
-                })
-                .addOnFailureListener(e -> Log.e(TAG, "Error fetching user data", e));
+    private void loadUserData() {
+        retrieveUserAccountController.fetchUserById(currentPinId, new RetrieveUserAccountController.UserCallback<User>() {
+            @Override
+            public void onSuccess(User user) {
+                if (user != null && user.getFullName() != null && !user.getFullName().isEmpty()) {
+                    String[] names = user.getFullName().split(" ");
+                    tvWelcomeMessage.setText("Hello, " + names[0] + "!");
+                } else {
+                    tvWelcomeMessage.setText("Hello!");
+                }
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                Log.e(TAG, "Error fetching user welcome data", e);
+                tvWelcomeMessage.setText("Hello!");
+            }
+        });
     }
 
-    private void loadAllRequestDataWithListener(String userId) {
-        if (requestListener != null) {
-            requestListener.remove();
-        }
-        requestListener = db.collection("help_requests").whereEqualTo("submittedBy", userId)
-                .addSnapshotListener((queryDocumentSnapshots, error) -> {
-                    if (error != null) {
-                        Log.e(TAG, "Listen failed.", error);
-                        return;
-                    }
-                    if (queryDocumentSnapshots == null) return;
+    private void loadNavHeaderData() {
+        View headerView = navigationView.getHeaderView(0);
+        TextView navHeaderName = headerView.findViewById(R.id.nav_header_name);
+        TextView navHeaderEmail = headerView.findViewById(R.id.nav_header_email);
 
-                    int activeCount = 0;
-                    int completedCount = 0;
-                    List<HelpRequest> openRequests = new ArrayList<>();
+        retrieveUserAccountController.fetchUserById(currentPinId, new RetrieveUserAccountController.UserCallback<User>() {
+            @Override
+            public void onSuccess(User user) {
+                if (user != null) {
+                    navHeaderName.setText(user.getFullName() != null ? user.getFullName() : "Valued User");
+                    navHeaderEmail.setText(user.getEmail() != null ? user.getEmail() : "");
+                }
+            }
 
-                    for (DocumentSnapshot snapshot : queryDocumentSnapshots) {
-                        HelpRequest request = snapshot.toObject(HelpRequest.class);
-                        if (request != null) {
-                            request.setId(snapshot.getId());
-                            switch (request.getStatus()) {
-                                case "Open":
-                                case "In-progress":
-                                    activeCount++;
-                                    openRequests.add(request);
-                                    break;
-                                case "Completed":
-                                case "Cancelled":
-                                    completedCount++;
-                                    break;
-                            }
-                        }
-                    }
+            @Override
+            public void onFailure(Exception e) {
+                Log.e(TAG, "Failed to load nav header data", e);
+            }
+        });
+    }
 
-                    tvActiveRequests.setText("Active Requests\n(" + activeCount + ")");
-                    tvCompleted.setText("History\n(" + completedCount + ")");
+    // This method now uses the controllers to fetch data, fixing the filtering issues.
+    private void loadDashboardData() {
+        // Fetch active requests to show the top 3 and get the count
+        helpRequestController.getFilteredHelpRequests("Active", currentPinId, "PIN", new HelpRequestController.HelpRequestsLoadCallback() {
+            @Override
+            public void onRequestsLoaded(List<HelpRequestEntity> requests) {
+                runOnUiThread(() -> {
+                    tvActiveRequests.setText("Active Requests\n(" + requests.size() + ")");
 
-                    Collections.sort(openRequests, (r1, r2) -> {
-                        if (r1.getCreationTimestamp() == null || r2.getCreationTimestamp() == null) return 0;
-                        return r2.getCreationTimestamp().compareTo(r1.getCreationTimestamp());
-                    });
-
-                    int limit = Math.min(3, openRequests.size());
-                    helpRequestList.clear();
-                    helpRequestList.addAll(openRequests.subList(0, limit));
+                    // The entity already sorts by date, so we just take the top 3
+                    int limit = Math.min(3, requests.size());
+                    helpRequestEntityList.clear();
+                    helpRequestEntityList.addAll(requests.subList(0, limit));
                     requestAdapter.notifyDataSetChanged();
                 });
+            }
+            @Override
+            public void onDataLoadFailed(String errorMessage) {
+                runOnUiThread(() -> Log.e(TAG, "Failed to load active requests: " + errorMessage));
+            }
+        });
+
+        // Fetch history requests just to get the count
+        helpRequestController.getFilteredHelpRequests("History", currentPinId, "PIN", new HelpRequestController.HelpRequestsLoadCallback() {
+            @Override
+            public void onRequestsLoaded(List<HelpRequestEntity> requests) {
+                runOnUiThread(() -> {
+                    tvCompleted.setText("History\n(" + requests.size() + ")");
+                });
+            }
+            @Override
+            public void onDataLoadFailed(String errorMessage) {
+                runOnUiThread(() -> Log.e(TAG, "Failed to load history count: " + errorMessage));
+            }
+        });
     }
 
     @Override

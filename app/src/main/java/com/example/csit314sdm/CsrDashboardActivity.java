@@ -104,7 +104,7 @@ public class CsrDashboardActivity extends AppCompatActivity implements HelpReque
             intent.putExtra(HelpRequestDetailActivity.EXTRA_REQUEST_ID, request.getId());
             intent.putExtra("user_role", "CSR"); // Pass the role
             startActivity(intent);
-        });
+        }, currentCsrId);
         adapter.setOnSaveClickListener(this); // Set the save listener
         recyclerView.setAdapter(adapter);
     }
@@ -184,7 +184,7 @@ public class CsrDashboardActivity extends AppCompatActivity implements HelpReque
 
         controller.searchShortlistedRequests(keyword, location, category, new HelpRequestController.HelpRequestsLoadCallback() {
             @Override
-            public void onRequestsLoaded(List<HelpRequest> requests) {
+            public void onRequestsLoaded(List<HelpRequestEntity> requests) {
                 runOnUiThread(() -> {
                     progressBar.setVisibility(View.GONE);
                     if (requests.isEmpty()) {
@@ -306,7 +306,7 @@ public class CsrDashboardActivity extends AppCompatActivity implements HelpReque
 
         controller.getSavedHelpRequests(new HelpRequestController.HelpRequestsLoadCallback() {
             @Override
-            public void onRequestsLoaded(List<HelpRequest> requests) {
+            public void onRequestsLoaded(List<HelpRequestEntity> requests) {
                 runOnUiThread(() -> {
                     progressBar.setVisibility(View.GONE);
                     if (requests.isEmpty()) {
@@ -340,7 +340,7 @@ public class CsrDashboardActivity extends AppCompatActivity implements HelpReque
     }
 
     @Override
-    public void onSaveClick(HelpRequest request, boolean isSaved) {
+    public void onSaveClick(HelpRequestEntity request, boolean isSaved) {
         if (isSaved) {
 
             controller.unsaveRequest(request.getId(), new HelpRequestController.SaveCallback() {

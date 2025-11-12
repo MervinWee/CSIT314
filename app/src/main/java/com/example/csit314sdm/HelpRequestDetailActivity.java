@@ -37,7 +37,7 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
 
     private String currentRequestId;
     private String userRole;
-    private HelpRequest currentRequest;
+    private HelpRequestEntity currentRequest;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -106,7 +106,7 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
         progressBar.setVisibility(View.VISIBLE);
         detailController.getHelpRequestById(requestId, userRole, new HelpRequestController.SingleRequestLoadCallback() {
             @Override
-            public void onRequestLoaded(HelpRequest request) {
+            public void onRequestLoaded(HelpRequestEntity request) {
                 currentRequest = request;
                 runOnUiThread(() -> {
                     progressBar.setVisibility(View.GONE);
@@ -124,7 +124,7 @@ public class HelpRequestDetailActivity extends AppCompatActivity {
         });
     }
 
-    private void populateUI(HelpRequest request) {
+    private void populateUI(HelpRequestEntity request) {
         tvRequestType.setText(detailController.getCategory(request));
         tvStatus.setText(detailController.getStatus(request));
         tvDescription.setText(detailController.getDescription(request));
