@@ -175,11 +175,11 @@ public class UserDetailActivity extends AppCompatActivity {
 
     private void toggleEditMode() {
         isEditMode = !isEditMode;
-        
+
         if ("ACCOUNT_DETAILS".equals(launchMode)) {
-            spinnerRole.setEnabled(isEditMode);
-            etFullName.setEnabled(false);
-            etContact.setEnabled(false);
+            etFullName.setEnabled(isEditMode);
+            etContact.setEnabled(isEditMode);
+            spinnerRole.setEnabled(false);
         } else {
             etFullName.setEnabled(isEditMode);
             etContact.setEnabled(isEditMode);
@@ -196,7 +196,8 @@ public class UserDetailActivity extends AppCompatActivity {
         Map<String, Object> updates = new HashMap<>();
 
         if ("ACCOUNT_DETAILS".equals(launchMode)) {
-            updates.put("role", spinnerRole.getSelectedItem().toString());
+            updates.put("fullName", etFullName.getText().toString());
+            updates.put("phoneNumber", etContact.getText().toString());
         } else {
             updates.put("fullName", etFullName.getText().toString());
             updates.put("phoneNumber", etContact.getText().toString());

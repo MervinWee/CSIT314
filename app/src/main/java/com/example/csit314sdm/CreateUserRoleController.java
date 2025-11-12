@@ -1,5 +1,7 @@
 package com.example.csit314sdm;
 
+import com.example.csit314sdm.entity.User;
+
 public class CreateUserRoleController {
 
     public interface CreateUserRoleCallback {

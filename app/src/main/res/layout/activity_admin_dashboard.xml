@@ -91,7 +91,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Create User Profile"
+                        android:text="Create User Role"
                         android:textSize="20sp"
                         android:textColor="?android:attr/textColorPrimary"
                         android:fontFamily="sans-serif-medium"/>
@@ -100,7 +100,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="Add or edit detailed information for an existing user."/>
+                        android:text="Define new roles and permissions for users."/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -122,7 +122,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Create User Role"
+                        android:text="Create User Profile"
                         android:textSize="20sp"
                         android:textColor="?android:attr/textColorPrimary"
                         android:fontFamily="sans-serif-medium"/>
@@ -131,7 +131,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="Define new roles and permissions for users."/>
+                        android:text="Add or edit detailed information for an existing user."/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -153,7 +153,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Retrieve User Accounts"
+                        android:text="Retrieve User Profiles"
                         android:textSize="20sp"
                         android:textColor="?android:attr/textColorPrimary"
                         android:fontFamily="sans-serif-medium"/>
@@ -162,7 +162,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="Search and view detailed profiles of users."/>
+                        android.text="View a list of all users and their roles."/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -184,7 +184,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Retrieve User Profiles"
+                        android:text="Retrieve User Accounts"
                         android:textSize="20sp"
                         android:textColor="?android:attr/textColorPrimary"
                         android:fontFamily="sans-serif-medium"/>
@@ -193,7 +193,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="View a list of all users and their roles."/>
+                        android:text="Search and view detailed profiles of users."/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
