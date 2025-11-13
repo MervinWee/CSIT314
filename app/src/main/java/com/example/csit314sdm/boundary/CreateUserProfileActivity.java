@@ -13,8 +13,8 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.csit314sdm.R;
-import com.example.csit314sdm.entity.User;
 import com.example.csit314sdm.controller.UserProfileController;
+import com.example.csit314sdm.entity.User;
 import com.google.android.material.textfield.TextInputEditText;
 
 import java.util.ArrayList;
@@ -22,7 +22,7 @@ import java.util.List;
 
 public class CreateUserProfileActivity extends AppCompatActivity {
 
-    private UserProfileController CreateUserProfileController;
+    private UserProfileController userProfileController;
     private AutoCompleteTextView spinnerUserAccount;
     private TextInputEditText etFullName, etContactNumber, etDateOfBirth, etAddress;
     private Button btnSaveProfile;
@@ -39,7 +39,7 @@ public class CreateUserProfileActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_create_user_profile);
 
-        CreateUserProfileController = new UserProfileController();
+        userProfileController = new UserProfileController();
         initializeUI();
         loadUsersWithoutProfiles();
     }
@@ -82,7 +82,7 @@ public class CreateUserProfileActivity extends AppCompatActivity {
     private void loadUsersWithoutProfiles() {
         progressBar.setVisibility(View.VISIBLE);
 
-        CreateUserProfileController.getAllUsersWithProfileCheck(new UserProfileController.UsersLoadCallback() {
+        userProfileController.getAllUsersWithProfileCheck(new UserProfileController.UsersLoadCallback() {
             @Override
             public void onUsersLoaded(List<User> allUsers) {
                 progressBar.setVisibility(View.GONE);
@@ -125,13 +125,18 @@ public class CreateUserProfileActivity extends AppCompatActivity {
             return;
         }
 
+        String fullName = etFullName.getText().toString();
+        String phoneNumber = etContactNumber.getText().toString();
+        String dob = etDateOfBirth.getText().toString();
+        String address = etAddress.getText().toString();
+
         progressBar.setVisibility(View.VISIBLE);
 
-        CreateUserProfileController.updateUserRole(selectedUser.getId(), null, new UserProfileController.ProfileCallback() {
+        userProfileController.saveUserProfile(selectedUser, fullName, phoneNumber, dob, address, new UserProfileController.ProfileCallback() {
             @Override
             public void onProfileSaveSuccess() {
                 progressBar.setVisibility(View.GONE);
-                Toast.makeText(CreateUserProfileActivity.this, "User role updated successfully!", Toast.LENGTH_LONG).show();
+                Toast.makeText(CreateUserProfileActivity.this, "User profile created successfully!", Toast.LENGTH_LONG).show();
                 finish();
             }
 

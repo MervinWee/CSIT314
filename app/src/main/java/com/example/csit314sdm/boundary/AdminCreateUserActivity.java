@@ -15,7 +15,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.csit314sdm.R;
-import com.example.csit314sdm.controller.CreateUserAccountController;
+import com.example.csit314sdm.controller.CreateUserProfileController;
 import com.example.csit314sdm.controller.UserProfileController;
 import com.example.csit314sdm.entity.User;
 
@@ -31,7 +31,7 @@ public class AdminCreateUserActivity extends AppCompatActivity {
     private ProgressBar progressBar;
     private AutoCompleteTextView acUserSearchEmail;
 
-    private CreateUserAccountController createUserAccountController;
+    private CreateUserProfileController createUserProfileController;
     private UserProfileController userProfileController;
     private List<User> userList = new ArrayList<>();
     private User selectedUser;
@@ -42,7 +42,7 @@ public class AdminCreateUserActivity extends AppCompatActivity {
         setContentView(R.layout.activity_admin_create_user);
 
         try {
-            createUserAccountController = new CreateUserAccountController();
+            createUserProfileController = new CreateUserProfileController();
             userProfileController = new UserProfileController();
             initializeUI();
             loadUsers();
@@ -182,7 +182,7 @@ public class AdminCreateUserActivity extends AppCompatActivity {
                 }
             };
 
-            createUserAccountController.createUserAccount(email, password, role, fullName, phoneNumber, dob, address, callback);
+            createUserProfileController.createUserProfile(email, password, role, fullName, phoneNumber, dob, address, callback);
 
         } catch (Exception e) {
             progressBar.setVisibility(View.GONE);
