@@ -278,16 +278,41 @@ public class HelpRequest {
         String csrId = FirebaseAuth.getInstance().getCurrentUser().getUid();
         Query query = FirebaseFirestore.getInstance().collection("help_requests").whereArrayContains("savedByCsrId", csrId);
 
-        if (keyword != null && !keyword.isEmpty()) {
-            query = query.whereEqualTo("title", keyword); // Firestore doesn't support full-text search. This is a simple keyword match.
-        }
         if (location != null && !location.isEmpty() && !location.equalsIgnoreCase("All")) {
             query = query.whereEqualTo("location", location);
         }
         if (category != null && !category.isEmpty() && !category.equalsIgnoreCase("All")) {
             query = query.whereEqualTo("category", category);
         }
-        getAllRequests(query.orderBy("creationTimestamp", Query.Direction.DESCENDING), callback);
+
+        getAllRequests(query.orderBy("creationTimestamp", Query.Direction.DESCENDING), new ListCallback() {
+            @Override
+            public void onRequestsLoaded(List<HelpRequest> requests) {
+                if (callback != null) {
+                    if (keyword != null && !keyword.isEmpty()) {
+                        List<HelpRequest> filteredList = new ArrayList<>();
+                        String lowerCaseKeyword = keyword.toLowerCase();
+                        for (HelpRequest request : requests) {
+                            boolean matchesTitle = request.getTitle() != null && request.getTitle().toLowerCase().contains(lowerCaseKeyword);
+                            boolean matchesDescription = request.getDescription() != null && request.getDescription().toLowerCase().contains(lowerCaseKeyword);
+                            if (matchesTitle || matchesDescription) {
+                                filteredList.add(request);
+                            }
+                        }
+                        callback.onRequestsLoaded(filteredList);
+                    } else {
+                        callback.onRequestsLoaded(requests); // No keyword, return original list
+                    }
+                }
+            }
+
+            @Override
+            public void onDataLoadFailed(String errorMessage) {
+                if (callback != null) {
+                    callback.onDataLoadFailed(errorMessage);
+                }
+            }
+        });
     }
 
     public static void acceptRequest(String requestId, String companyId, String csrId, final UpdateCallback callback) {
