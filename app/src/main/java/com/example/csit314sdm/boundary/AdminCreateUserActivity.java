@@ -5,7 +5,6 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
-import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -16,11 +15,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.csit314sdm.R;
 import com.example.csit314sdm.controller.CreateUserProfileController;
-import com.example.csit314sdm.controller.UserProfileController;
 import com.example.csit314sdm.entity.User;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class AdminCreateUserActivity extends AppCompatActivity {
 
@@ -29,12 +24,8 @@ public class AdminCreateUserActivity extends AppCompatActivity {
     private Button btnAdminCreateUser, btnGoToCreateRole;
     private ImageButton btnBack;
     private ProgressBar progressBar;
-    private AutoCompleteTextView acUserSearchEmail;
 
     private CreateUserProfileController createUserProfileController;
-    private UserProfileController userProfileController;
-    private List<User> userList = new ArrayList<>();
-    private User selectedUser;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,32 +34,13 @@ public class AdminCreateUserActivity extends AppCompatActivity {
 
         try {
             createUserProfileController = new CreateUserProfileController();
-            userProfileController = new UserProfileController();
             initializeUI();
-            loadUsers();
 
             btnAdminCreateUser.setOnClickListener(v -> handleCreateUser());
             btnBack.setOnClickListener(v -> finish());
             btnGoToCreateRole.setOnClickListener(v -> {
                 Intent intent = new Intent(AdminCreateUserActivity.this, CreateUserRoleActivity.class);
                 startActivity(intent);
-            });
-
-            acUserSearchEmail.setOnItemClickListener((parent, view, position, id) -> {
-                String selectedEmail = (String) parent.getItemAtPosition(position);
-                for (User user : userList) {
-                    if (user.getEmail().equals(selectedEmail)) {
-                        selectedUser = user;
-                        break;
-                    }
-                }
-                if (selectedUser != null) {
-                    etFullName.setText(selectedUser.getFullName());
-                    etCreateUserEmail.setText(selectedUser.getEmail());
-                    etPhoneNumber.setText(selectedUser.getPhoneNumber());
-                    etDob.setText(selectedUser.getDob());
-                    etAddress.setText(selectedUser.getAddress());
-                }
             });
 
         } catch (Exception e) {
@@ -79,7 +51,6 @@ public class AdminCreateUserActivity extends AppCompatActivity {
     }
 
     private void initializeUI() {
-        acUserSearchEmail = findViewById(R.id.acUserSearchEmail);
         etFullName = findViewById(R.id.etFullName);
         etCreateUserEmail = findViewById(R.id.etCreateUserEmail);
         etCreateUserPassword = findViewById(R.id.etCreateUserPassword);
@@ -108,32 +79,6 @@ public class AdminCreateUserActivity extends AppCompatActivity {
                 R.array.user_roles, android.R.layout.simple_spinner_item);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerCreateUserRole.setAdapter(adapter);
-    }
-
-    private void loadUsers() {
-        progressBar.setVisibility(View.VISIBLE);
-        userProfileController.getAllUsersWithProfileCheck(new UserProfileController.UsersLoadCallback() {
-            @Override
-            public void onUsersLoaded(List<User> allUsers) {
-                progressBar.setVisibility(View.GONE);
-                if (allUsers != null && !allUsers.isEmpty()) {
-                    userList.clear();
-                    userList.addAll(allUsers);
-                    List<String> userEmails = new ArrayList<>();
-                    for (User user : allUsers) {
-                        userEmails.add(user.getEmail());
-                    }
-                    ArrayAdapter<String> adapter = new ArrayAdapter<>(AdminCreateUserActivity.this, android.R.layout.simple_dropdown_item_1line, userEmails);
-                    acUserSearchEmail.setAdapter(adapter);
-                }
-            }
-
-            @Override
-            public void onDataLoadFailed(String errorMessage) {
-                progressBar.setVisibility(View.GONE);
-                Toast.makeText(AdminCreateUserActivity.this, "Error loading users: " + errorMessage, Toast.LENGTH_SHORT).show();
-            }
-        });
     }
 
     private void handleCreateUser() {
@@ -170,7 +115,6 @@ public class AdminCreateUserActivity extends AppCompatActivity {
                     etDob.setText("");
                     etAddress.setText("");
                     spinnerCreateUserRole.setSelection(0);
-                    acUserSearchEmail.setText("");
                 }
 
                 @Override
